@@ -880,8 +880,14 @@ class CourierMachine:
         # parity happened to be odd. The run stayed in command mode for ever
         # after its own CONNECT. An 8N1 profile (the 403's own EEPROM) has
         # bit 7 clear in every result code, so the mask costs it nothing.
-        recent = bytes(byte & 0x7F for byte in self.serial[-10:])
-        if not self.online_mode and b"CONNECT" in recent.upper():
+        #
+        # Only the result code counts: CONNECT, in capitals, at the start of a
+        # line. ATI6 prints "No Connection", which a case-blind search took for
+        # one, and the console then passed the parity bit through on
+        # everything after it.
+        recent = bytes(byte & 0x7F for byte in self.serial[-8:])
+        if (not self.online_mode and recent[1:] == b"CONNECT"
+                and recent[:1] in (b"\r", b"\n")):
             self.online_mode = True
             self.serial_trace.append("entered-data-mode")
         if (self.online_mode and self._serial_input_after_connect
