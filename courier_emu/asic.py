@@ -160,7 +160,7 @@ REGISTERS: tuple[AsicRegister, ...] = (
     ),
     AsicRegister(
         "indicators-cd", (0x14,), None,
-        "Active low: CD, CS, AA, ARQ, HS, SYN. Also the board-ID strap "
+        "Active low: CD, CS, AA, ARQ, SYN. Also the board-ID strap "
         "matrix - drives at 0x40/0x10/0x20, sense at 0x08 - read once at "
         "boot by the scan at 0x5bfc6. Not the DIP bank.",
     ),

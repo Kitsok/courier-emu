@@ -39,7 +39,7 @@ MAX_PANEL_EVENTS = 512
 # Scott read the release sweep off the board and it names eight of the nine:
 #
 #   idx  port  bit    lamp
-#    0   0x12  0x10   HS
+#    0   0x12  0x10   (read as HS, but it is the speaker gate - see below)
 #    1   0x14  0x40   - no lamp: this is the front-panel button line -
 #    2   0x14  0x10   AA          (driven directly)
 #    3   0x14  0x01   CD          (driven directly)
@@ -139,7 +139,11 @@ OUTPUT_BITS: dict[int, dict[int, str]] = {
         # The fatal blinker at 0x5c77d/0x5c78f toggles this bit in shadow 0x064e,
         # though it emits the shadow on port 0x40 rather than through this latch.
         0x08: "blink-code-bit",
-        0x10: "indicator-12-10",
+        # Not a lamp: the speaker gate. On the 302, ATM (handler 0xa5f97,
+        # entry 'M' of the command table at cs:0x327) stores M0-M3 in [0x5e8];
+        # 0x87481 drives this bit low at off-hook for M1/M2 and 0x82612
+        # releases it unless M2. ATM0 then ATH1 leaves it high.
+        0x10: "speaker-on",
         0x20: "indicator-12-20",
         0x40: "indicator-12-40",
         0x80: "indicator-12-80",
@@ -173,14 +177,20 @@ OUTPUT_BITS: dict[int, dict[int, str]] = {
 #
 # The carrier-detect pair follows the same convention: 0x5de65 clears both
 # lines for &C0, which is the setting that holds carrier detect asserted.
+# The speaker gate is driven low (0x8279b) to switch the speaker on.
 ACTIVE_LOW: frozenset[tuple[int, int]] = frozenset(
-    {(0x10, 0x04), (0x14, 0x01), (0x14, 0x80)}
+    {(0x10, 0x04), (0x12, 0x10), (0x14, 0x01), (0x14, 0x80)}
 )
 
 # The nine-step self test sweep above is also the front panel's lamp list, so
 # it is the one place the board names its own indicators. Restating it as a
 # table lets a run report which lamps are lit rather than which latch bits are
 # low - index 1 is left out because it is the front-panel button, not a lamp.
+#
+# HS is not in the table. Index 0 was read as HS from the sweep order, but
+# the 302 firmware drives that bit as the speaker gate (ATM; see "speaker-on"
+# above), and a real HS lamp does not light on ATH1. Which bit carries HS is
+# not established.
 #
 # Polarity: the sweep releases a port by writing 0xff and drives a lamp by
 # pulling its bit low, so the 0x12 and 0x14 lamps are active low - CS
@@ -201,7 +211,6 @@ class Led:
 
 
 FRONT_PANEL_LEDS: tuple[Led, ...] = (
-    Led("HS", 0x12, 0x10, True, "release order, self-test index 0"),
     Led("AA", 0x14, 0x10, True, "measured: driven on the board"),
     Led("CD", 0x14, 0x01, True, "measured: three blinks on bit 0x01"),
     Led("OH", 0x10, 0x01, False, "measured: 0xdf lights it and pulls the relay in"),
