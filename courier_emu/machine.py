@@ -890,6 +890,13 @@ class CourierMachine:
                 and recent[:1] in (b"\r", b"\n")):
             self.online_mode = True
             self.serial_trace.append("entered-data-mode")
+        # And NO CARRIER is the way back: the firmware has dropped the call and
+        # its command parser owns the port again. The whole line, CR included,
+        # so payload that merely mentions it does not end the session early.
+        tail = bytes(byte & 0x7F for byte in self.serial[-12:])
+        if self.online_mode and tail == b"\nNO CARRIER\r":
+            self.online_mode = False
+            self.serial_trace.append("left-data-mode")
         if (self.online_mode and self._serial_input_after_connect
                 and value & 0x7F == 0x0A):
             guard = AFTER_CONNECT_GUARD_MS * INSTRUCTIONS_PER_MS
