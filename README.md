@@ -341,6 +341,10 @@ unbounded, so the session ends when you do.
 ./courier run main211.xmf --console --daa-line dial-tone --nvram board.eeprom
 ```
 
+When stdout is a terminal, its bottom row shows the front-panel lamps live
+(lit ones in red, from `FRONT_PANEL_LEDS` in `courier_emu/panel.py`); the
+firmware's output scrolls above it.
+
 Everything the modem sends goes to stdout and the run's own report goes to
 stderr, so `--console > session.txt` captures exactly what the firmware said.
 Input may also be piped, which is the same live path without a terminal:

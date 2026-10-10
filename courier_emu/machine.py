@@ -2144,6 +2144,7 @@ class CourierMachine:
                         self._serial_cooldown = min(self._serial_cooldown, 64)
                     if self.console.closed:
                         self.stop_requested = True
+                    self.console.show_lamps(self.panel.format_leds())
             while (self._serial_input_schedule
                    and self.instructions >= self._serial_input_schedule[0][0]):
                 _, typed = self._serial_input_schedule.popleft()

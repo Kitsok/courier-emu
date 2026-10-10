@@ -28,8 +28,18 @@ MAX_PENDING_OUTPUT = 64 * 1024
 class SerialConsole:
     """Non-blocking byte transport over an inherited file descriptor."""
 
-    def __init__(self, fd: int, *, poll_instructions: int = DEFAULT_POLL_INSTRUCTIONS) -> None:
+    def __init__(
+        self,
+        fd: int,
+        *,
+        poll_instructions: int = DEFAULT_POLL_INSTRUCTIONS,
+        lamps_fd: int | None = None,
+    ) -> None:
         self.fd = fd
+        # A second, one-way channel carrying the front-panel lamp line to the
+        # terminal, which draws it apart from the serial stream.
+        self.lamps_fd = lamps_fd
+        self._lamps = ""
         self.poll_instructions = poll_instructions
         self.received = 0
         self.sent = 0
@@ -37,6 +47,8 @@ class SerialConsole:
         self.closed = False
         self._pending = bytearray()
         os.set_blocking(fd, False)
+        if lamps_fd is not None:
+            os.set_blocking(lamps_fd, False)
 
     def poll(self, limit: int = 4096) -> bytes:
         """Return what the terminal has typed since the last call, at most `limit`.
@@ -73,6 +85,25 @@ class SerialConsole:
             self.dropped += excess
         self._drain()
 
+    def show_lamps(self, line: str) -> None:
+        """Send the lamp line on, but only when it differs from the last one sent.
+
+        A full pipe means the terminal is behind; the line is retried at the
+        next poll rather than queued, since only the latest state matters.
+        """
+        if self.lamps_fd is None or line == self._lamps:
+            return
+        try:
+            os.write(self.lamps_fd, line.encode("ascii") + b"\n")
+        except BlockingIOError:
+            return
+        except OSError as exc:
+            if exc.errno in (errno.EPIPE, errno.EBADF):
+                self.lamps_fd = None
+                return
+            raise
+        self._lamps = line
+
     def _drain(self) -> None:
         while self._pending and not self.closed:
             try:
@@ -92,10 +123,13 @@ class SerialConsole:
     def close(self) -> None:
         self._drain()
         self.closed = True
-        try:
-            os.close(self.fd)
-        except OSError:
-            pass
+        for fd in (self.fd, self.lamps_fd):
+            if fd is None:
+                continue
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
     def summary(self) -> dict[str, int | bool]:
         return {

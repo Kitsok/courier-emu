@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import select
+import shutil
 import signal
 import socket
 import subprocess
@@ -50,16 +51,27 @@ def run_console(
         raise ValueError("use --console or --serial-pty, not both")
 
     keep_open: int | None = None
+    lamps_read: int | None = None
+    lamps_write: int | None = None
     if args.serial_pty:
         worker_end, keep_open, device = _pty_channel()
         terminal: socket.socket | None = None
     else:
         left, right = socket.socketpair()
         worker_end, terminal, device = right.fileno(), left, ""
+        # The lamps get the terminal's bottom line, which only means something
+        # when stdout is a terminal; a redirected session stays byte-exact.
+        if sys.stdout.isatty():
+            lamps_read, lamps_write = os.pipe()
 
+    extra = ["--serial-fd", str(worker_end)]
+    passed = [worker_end]
+    if lamps_write is not None:
+        extra += ["--lamps-fd", str(lamps_write)]
+        passed.append(lamps_write)
     process = subprocess.Popen(
-        command + ["--serial-fd", str(worker_end)],
-        pass_fds=(worker_end,),
+        command + extra,
+        pass_fds=tuple(passed),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -71,6 +83,8 @@ def run_console(
         os.close(worker_end)
     else:
         right.close()
+    if lamps_write is not None:
+        os.close(lamps_write)
 
     captured: tuple[str, str] | None = None
     try:
@@ -84,7 +98,7 @@ def run_console(
             captured = process.communicate()
         else:
             assert terminal is not None
-            _drive_terminal(terminal, process)
+            _drive_terminal(terminal, process, lamps_read)
     except KeyboardInterrupt:
         # Nothing has closed the channel, so ask the run to wind itself up
         # rather than waiting out the shutdown timeout.
@@ -95,6 +109,8 @@ def run_console(
             terminal.close()
         if keep_open is not None:
             os.close(keep_open)
+        if lamps_read is not None:
+            os.close(lamps_read)
 
     # In a terminal session stdout is the modem, so the run's own report goes
     # to stderr and `--console > session.txt` captures exactly what the
@@ -117,9 +133,69 @@ def _forward_termination(process: subprocess.Popen[str]) -> None:
     signal.signal(signal.SIGTERM, handler)
 
 
-def _drive_terminal(terminal: socket.socket, process: subprocess.Popen[str]) -> None:
+class LampLine:
+    """The front-panel lamps, held on the terminal's bottom row.
+
+    A scroll region over every row but the last keeps the firmware's output
+    scrolling above it; each redraw saves the cursor, paints the last row, and
+    puts the cursor back, so the serial stream never sees it.
+    """
+
+    LIT = "\x1b[1;31m"   # Courier lamps are red
+    DIM = "\x1b[2m"
+    RESET = "\x1b[0m"
+
+    def __init__(self, fd: int) -> None:
+        self.fd = fd
+        self.rows = 0
+        self.line = ""
+
+    def _write(self, text: str) -> None:
+        os.write(self.fd, text.encode())
+
+    def _reserve(self) -> None:
+        rows = shutil.get_terminal_size().lines
+        if rows == self.rows or rows < 2:
+            return
+        # A newline first, so a cursor already on the last row is lifted
+        # into the region rather than left under the lamps.
+        self._write(f"\n\x1b[1A\x1b7\x1b[1;{rows - 1}r\x1b8")
+        self.rows = rows
+
+    def show(self, line: str) -> None:
+        self.line = line
+        self._reserve()
+        if not self.rows:
+            return
+        parts = []
+        for token in line.split():
+            if token.strip(".?"):
+                parts.append(f"{self.LIT}{token}{self.RESET}")
+            else:
+                parts.append(f"{self.DIM}{token}{self.RESET}")
+        self._write(f"\x1b7\x1b[{self.rows};1H\x1b[2K {'  '.join(parts)}\x1b8")
+
+    def refresh(self) -> None:
+        """Redraw after a resize, which resets nothing on its own."""
+        if self.line and shutil.get_terminal_size().lines != self.rows:
+            self.show(self.line)
+
+    def close(self) -> None:
+        if not self.rows:
+            return
+        self._write(f"\x1b7\x1b[r\x1b[{self.rows};1H\x1b[2K\x1b8")
+        self.rows = 0
+
+
+def _drive_terminal(
+    terminal: socket.socket,
+    process: subprocess.Popen[str],
+    lamps_fd: int | None = None,
+) -> None:
     """Shuttle bytes between this terminal and the modelled DTE."""
     raw = sys.stdin.isatty()
+    lamps = LampLine(sys.stdout.fileno()) if lamps_fd is not None else None
+    pending = b""
     if raw:
         import termios
         import tty
@@ -134,10 +210,24 @@ def _drive_terminal(terminal: socket.socket, process: subprocess.Popen[str]) -> 
     stdin_open = True
     try:
         while process.poll() is None:
-            watched = [terminal]
+            watched: list = [terminal]
             if stdin_open:
                 watched.append(sys.stdin)
+            if lamps_fd is not None:
+                watched.append(lamps_fd)
             readable, _, _ = select.select(watched, [], [], POLL_SECONDS)
+            if lamps is not None:
+                if lamps_fd in readable:
+                    chunk = os.read(lamps_fd, 4096)
+                    if not chunk:
+                        lamps_fd = None
+                    pending += chunk
+                    # Only the newest complete line matters.
+                    if b"\n" in pending:
+                        complete, _, pending = pending.rpartition(b"\n")
+                        latest = complete.rpartition(b"\n")[2]
+                        lamps.show(latest.decode("ascii", "replace"))
+                lamps.refresh()
             if sys.stdin in readable:
                 typed = os.read(sys.stdin.fileno(), 1024)
                 if not typed:
@@ -156,6 +246,8 @@ def _drive_terminal(terminal: socket.socket, process: subprocess.Popen[str]) -> 
                     break
                 os.write(sys.stdout.fileno(), received)
     finally:
+        if lamps is not None:
+            lamps.close()
         if raw:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, saved)
             print(file=sys.stderr)

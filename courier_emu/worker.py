@@ -149,9 +149,17 @@ def main() -> int:
         type=int,
         help="inherited descriptor carrying live terminal bytes both ways",
     )
+    parser.add_argument(
+        "--lamps-fd",
+        type=int,
+        help="inherited descriptor the front-panel lamp line is written to",
+    )
     args = parser.parse_args()
 
-    console = SerialConsole(args.serial_fd) if args.serial_fd is not None else None
+    console = (
+        SerialConsole(args.serial_fd, lamps_fd=args.lamps_fd)
+        if args.serial_fd is not None else None
+    )
 
     ports: dict[int, int] = {}
     for assignment in args.port:
