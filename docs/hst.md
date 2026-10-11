@@ -50,35 +50,44 @@ What `04` and `02` mean is not read. The order on both sides, carrier, `04`,
 
 ### Data across the pair
 
-Each transmitter's host window (the `@57` ring, CBSR2-CBER2, as in
-`fsk_loopback`) was fed a counting byte sequence, one byte per pointer
-advance. Every word the other side delivered at `832f` was recorded.
+**Both channels are bit-exact.** Each transmitter was fed a counting byte
+sequence, and its partner's output was compared after HDLC destuffing:
 
-**Forward channel: bit-exact, HDLC-stuffed.** The sender takes a byte every 12
-frames, which is 4800 bps at 8 bits per byte. There are no start/stop bits:
-the framer `@56` = `8264` is synchronous. Its stream is **HDLC bit-stuffed**,
-with a 0 after every five 1s (the first breaks fall exactly after bytes `0x1f`
-and `0x3f`), and `8264` carries the flag `0x7e` (`8278`). The receiver delivers
-the raw stuffed bits, 2 per symbol, LSB first (`@26` = `8320`). Removing the
-stuffing, **2332 of 2381 bytes arrive exact** over 30000 frames. The other 49
-come through as all or mostly zeros, at a steady cadence of about one per 36
-bytes, without losing alignment. That looks like the transmitter reading a
-window slot before the harness filled it, rather than a line error, but this
-has not been proven. Data mode needs no tag `36`: the transmitter stays on
-`cb34` (n = 2) after training.
+| direction | measured at | result over 30000 frames |
+|---|---|---|
+| forward, 4800 | words delivered to the host window (`832f`) | **2380 of 2380** bytes exact (10 more still in flight) |
+| back, 300 | the receiver's decoded value per data symbol (`@20` at `c5d6`) | **142 of 142** bytes exact |
 
-**Back channel: 3 bits on every other symbol.** In data mode the per-symbol
-handler alternates between `cab5` (fetch, scramble, 8-DPSK phase step) and
-`cae0`/`cae2`, which sends **I = Q = 0**. Only half the line symbols carry
-data: 100 a second x 3 bits = **300 bps** (150 x 3 = **450** with `0x6f` bit
-12). That closes the 600-versus-300 question, and it is the half-baud line the
-squared signal showed. The sender takes a byte every 144 or 216 frames
-(about 303 bps). The receiver delivers one 3-bit word per data symbol, mostly
-72 frames apart (100/s), with occasional longer gaps. **The delivered bits do
-not yet match what was sent.** Raw, phase-step mapped, inverse-mapped,
-descrambled with 1 + x^-14 + x^-17, destuffed, and in either bit order, the
-best variant finds 9 of 149 sent byte pairs, against 0-4 for a shuffled
-control.
+* **Framing.** The datapump's framer (`@56` = `8264`) is synchronous and
+  **HDLC bit-stuffed**: a 0 after every five 1s, with the flag `0x7e` at
+  `8278`. There are no start/stop bits. The forward sender takes a byte every
+  12 frames (4800 bps). The receive side delivers the raw stuffed bits, LSB
+  first, n per symbol (`@26` = `8320`).
+* **Back channel: 3 bits on every other symbol.** In data mode the per-symbol
+  handler alternates between `cab5` (fetch, scramble, 8-DPSK step) and
+  `cae0`/`cae2`, which sends **I = Q = 0**. That is 100 data symbols/s x 3 =
+  **300 bps** (150 x 3 = **450** with `0x6f` bit 12). It is the half-baud line
+  the squared signal showed, and the sender's byte fetches alternate 144 and
+  216 frames apart.
+* **Back-channel receiver** (`c57a` per sample, `c5c4` per symbol). Equaliser
+  (`8968`, `89cf`), then derotation by `@04`/`@05`. The octant decision
+  (`c6eb`-`c6fc`) uses signs and |I| against |Q|, with the reference point from
+  `cbb1`. Differential decode (`c703`-`c710`): `d = k - k_prev`, data = nibble
+  `d` of `0x51376204`, which is the exact inverse of the transmitter's
+  `0x43705261` (all eight entries checked). Descrambling (`c740`) is
+  1 + x^-14 + x^-17, shift `@22` = 3, mirroring `cba2`. Delivery is through
+  `8304`. The decoded values match the transmitter's pre-scrambler values on
+  96% of symbols at a fixed lag; the misses are the receiver's pre-lock
+  symbols.
+* **Harness trap.** The window slots are C5x I/O ports in data `0x50`-`0x5f`.
+  The DSP reads them with `lamm *` in `80e8` (transmit) and writes them in
+  `8320` (receive). On the board those are separate CPU-side registers. A
+  harness that keeps one value per port lets each side's received data
+  overwrite its own transmit bytes. That produced 49 zeroed forward bytes, and
+  back-channel bytes reduced to bits 0 and 7, until the byte was supplied at
+  the moment of the `80e8` read. The `832f` store also fires only when the
+  window has room, so a harness that never drains the receive side sees it
+  skip symbols.
 
 The `10`/`11` dispatchers have a call-mode twin (`9da6`, `a00d`, `9dc1`,
 `a054`), but it branches only for V.22/V.22bis, Bell 103, V.21 and V.23.
@@ -338,10 +347,6 @@ symbol: 200 a second at 300 bps.
 
 Needed before an interoperable reimplementation:
 
-* the back channel's delivered words: how the 3-bit decisions map back to
-  data (the forward channel is bit-exact), and why some data symbols are not
-  delivered;
-* the 49 zeroed forward bytes, and whether they are the harness's window feed;
 * host messages `04` and `02`;
 * how a call selects HST, i.e. the answer and detection sequence, and the
   supervisor's use of tags `32`-`3b`;
