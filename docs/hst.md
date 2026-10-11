@@ -69,13 +69,20 @@ instead. The 256-point table is the only one with no V.32bis counterpart.
 **Coding.**
 
 * n = 2 is differentially encoded through mask-ROM `0x0450`
-  (`(@50 << 2 | @5a) & 0xf`). This matches V.32's 4800 bps scheme.
+  (`(@50 << 2 | @5a) & 0xf`). It is entry for entry SpanDSP's
+  `v32bis_4800_differential_encoder`, transposed: `T[q << 2 | prev]` equals
+  `enc[prev][q]`.
 * n >= 3 goes through a 32-entry table at `0x0460`, indexed by
-  `(@50 << 3) + @5a` mod 32: the 2 low data bits added mod 4 to the previous
-  state, then a lookup that returns the new state. The structure is V.32's
-  differential encoder plus its 8-state convolutional encoder. **That the
-  table equals V.32's has not been checked bit for bit.**
-* Higher bits pass through uncoded (`@50 << 3 & 0x3e0`, then `>> 2`).
+  `(@50 << 3) + @5a` mod 32. The 5-bit state packs the two differential bits
+  (bits 3-4, so adding the data mod 4 is the differential encoder) and the
+  convolutional state, whose top bit is the redundant bit. The output index is
+  `((@50 << 3) & 0x3e0 | state) >> 2`.
+* **This is V.32's encoder exactly.** Driving the ROM path and SpanDSP's
+  `diff_and_convolutional_encode` with the same 3000 random symbols gives
+  identical index streams at every n from 3 to 7. All 32 ROM states map one to
+  one onto SpanDSP's (diff, convolution) pairs. For n = 7, SpanDSP's uncoded
+  mask `(q << 1) & 0x78` has to widen to `0xf8`, because 16800 has one more
+  uncoded bit than 14400. Nothing else changes.
 
 **Scrambler** (`cb92`). `@58:@59` is a 32-bit register. The n scrambled bits
 are `(R >> 5) ^ R ^ data`, masked to n bits. They are inserted at bit 23 and
@@ -168,7 +175,6 @@ follows the data. What makes the supervisor send them is not read.
 
 Needed before an interoperable reimplementation:
 
-* the bit-exact `0x0460` trellis table against V.32's encoder;
 * the receivers (`c4f7`, `c7a4` scripts): which channel each demodulates, and
   what they expect from the far end during training;
 * how a call selects HST, i.e. the answer and detection sequence, and the
