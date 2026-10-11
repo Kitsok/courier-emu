@@ -13,11 +13,18 @@ carrier, and its help text at `0x19f5a` enumerates every carrier the modem can
 produce - 76 of them, two per modulation per rate, one for each side:
 
 ```text
-(0)  Bell 103, 300        (8)  V.23 Forward Channel     (26) HST 48
-(2)  V.21                 (9)  V.23 Backward Channel    (32) HST 375 bps Back Channel
-(4)  V.22                 (10) V.32 48                  (34) V.FC 96
-(6)  V.22bis              ...  V.32 up to 216           (52) V.34 24 ... 288
+(0)  Bell 103, 300        (8)  V.23 Forward Channel     (26) HST 4800 ... (31) 16800
+(2)  V.21                 (9)  V.23 Backward Channel    (32) HST 300 bps Back Channel
+(4)  V.22                 (10) V.32 4800                (33) HST 450 bps Back Channel
+(6)  V.22bis              ...  V.32 up to 21600         (34) V.FC 9600 ... (52) V.34 2400 ... 28800
 ```
+
+The text is token-compressed. Bytes `0x80` and up index a length-prefixed
+dictionary, which the `0x17480` chain reaches only 32 entries in. `a8` is
+`00 bps`, `e7` is ` Originate ` and `c7` is `Answer`, so `HST 3\xa8` is
+300 bps, not 375. `carrier_families` stops at the first token, which is enough
+for family names but not for rates. The menu spells the fifth HST and V.32 rate
+`122` + `00 bps`, i.e. 12200.
 
 `courier_emu.datapumps.carrier_families` reads it: **Bell 103, V.21, V.22,
 V.22bis, V.23, V.32, HST, V.FC, V.34**. Nine families, slowest first - and the
@@ -66,19 +73,23 @@ rather than by the ordering alone:
   that table `9b48` is the originate side.
 * **V.21 and Bell 103**, measured in [fsk-modulation.md](fsk-modulation.md).
 
-Slot 0 has since been executed: see [v34-arming.md](v34-arming.md).
+Slot 0 has since been executed: see [v34-arming.md](v34-arming.md). Slot 3
+has been measured - see [hst.md](hst.md).
 
-Two rest on weaker evidence and are worth re-testing:
+One rests on weaker evidence and is worth re-testing:
 
 * **V.32** for slot 2, whose region writes `@08` = `#4000` = 1800.0 Hz at 7200.
-* **HST** for slot 3, on structure: its two sides have different transmitters
-  (`c9d2`, `c9a5`), and of what is left HST is the asymmetric one - the menu
-  lists 375 and 450 bps back channels for it.
 
 That split is itself informative. Slots 0-2 carry the same entry in both
 tables; slots 3-8 are side-specific. Echo-cancelled full duplex (V.34, V.FC,
 V.32) needs no side in the entry; frequency-split or asymmetric modulations
 (HST, V.22, V.23, V.21, Bell 103) do.
+
+## HST
+
+Slot 3 is measured and decoded in [hst.md](hst.md): forward channel 2400
+baud at 1800 Hz on the V.32bis constellations, back channel 8-DPSK at 200 or
+300 baud near 350 Hz, its own mailbox tags `32`-`3b`.
 
 ## Four images, and why 8 rides with 6
 
@@ -168,9 +179,8 @@ sits below `dc00`.
 
 ## What is still open
 
-* Slot 2 = V.32 and slot 3 = HST rest on one constant and on structure. Both
-  should be measurable the way V.22 and V.23 were, by bringing the entry up and
-  reading its carrier cells.
+* Slot 2 = V.32 rests on one constant. It should be measurable the way HST
+  was.
 * Nothing separates x2 from V.90 *inside* overlay 8 yet. Overlay 8 does hold
   two code families, but the bit that forks them turned out to be `&X`, the
   synchronous clock source - see [pcm-x2-v90.md](pcm-x2-v90.md).
