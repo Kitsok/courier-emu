@@ -62,13 +62,60 @@ pre-emphasis. Neither has been confirmed.
 
 Nothing else from the V.32 family is used. V.FC does not touch the mask-ROM
 constellations above 4800 (`0x250`+), the resident quadrant mapper `bc00` /
-`c280`, or the `bee6` receive selector. Its data-mode constellation is somewhere
-in the overlay, not yet found.
+`c280`, or the `bee6` receive selector.
+
+## Data mode is V.34's structure
+
+The per-symbol mapper is `c723`-`c78b`, writing I/Q to the transmit buffer at
+`0x04b6`.
+
+* **An 8-symbol mapping frame.** `@35` counts 0-7. Each symbol takes one byte
+  of the frame buffer (`ar2`), high and low bytes alternating. `c1bf`, `c20e`
+  and the six-entry tables size the frame per symbol rate (there is a 16-step
+  `subc` division at `c229`).
+* **Quadrant differential coding.** `@5a = (@5a + 2 bits) & 3`.
+* **Point.** The rest of the byte, masked by `@3e = (1 << @25) - 1` and
+  combined with the frame's high bits shifted by `@25`, plus a rotation-code
+  offset from `cb2d` (`0 5 6 1 2 7 4 3`), indexes a **one-quadrant point table
+  at `aeab`** (packed I/Q bytes). The point is then turned by one of four
+  routines through `c804`: 0, (Q, -I), (-I, -Q), (-Q, I).
+* **Trellis.** A 5-bit state in `@36` is advanced by a 7-step parity loop over
+  one of two tap tables: `cb57` (`0070 0101 0002 0004 000a 008a 0103`) or
+  `cb5e` (`0064 0101 0002 0000 0000 0082 0103`), chosen by `0x873` bit 1.
+  `cb5e` has fewer taps, which fits a smaller code. V.34 offers 16 and 32
+  states; this has not been checked against them.
+* `c9c4` runs after each point, and also in training when `0x87f` bit 6 is
+  set. It is not read; precoding or warping are the candidates.
+
+**The point table is V.34's superconstellation, ordered differently.** `aeab`
+is in the *resident*, inside the range overlay 6 overwrites. It is on the
+one-even-one-odd lattice; rotated 45 degrees, `(x + y, x - y)`, it lands on
+V.34's odd lattice. Comparing with SpanDSP's `v34_superconstellation`
+(Figure 5/V.34), with all four rotations applied:
+
+| quarter entries | points | same set as V.34 |
+|---|---|---|
+| 4, 8 | 16, 32 | yes |
+| 16, 32 | 64, 128 | no (8 and 16 points differ) |
+| 48, 64, 96 | 192, 256, 384 | yes |
+| 128-192 | 512-768 | no (8-24 differ) |
+| 240 | 960 | yes |
+| 256 | 1024 | no (8 differ) |
+| **320** | **1280** | end of V.FC's table (`afeb` breaks the lattice) |
+
+Every energy shell V.FC completes holds exactly V.34's points. The sizes that
+differ are those that cut through a shell, where the two tables complete the
+ring in a different order. V.FC's table is also not monotonic in energy, while
+V.34's is. V.FC stops at 1280 points; V.34's goes to 1664, for 33600. **Same
+lattice and shells, different index-to-point order**: on a scope the two look
+alike, but a V.34 mapper cannot stand in for this table.
 
 ## Open
 
-* the data-mode mapping, and how 28800 fits at 3429 baud (8.4 bits per symbol
-  implies fractional-bit mapping);
+* the frame arithmetic in `c1bf`/`c20e` (how bits per 8-symbol frame follow
+  from the symbol rate and data rate), and how it compares with V.34's
+  shell mapping;
+* the trellis taps against V.34's 16- and 32-state encoders, and `c9c4`;
 * what the per-symbol-rate tables and the `cc2d` filter bank are;
 * `cb65` (`aaaa aaab aaaf aabf aaff abff afff bfff`): eight 16-bit patterns,
   possibly rate signals;
