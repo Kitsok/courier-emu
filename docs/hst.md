@@ -48,6 +48,38 @@ feeding the other's codec input. Results:
 What `04` and `02` mean is not read. The order on both sides, carrier, `04`,
 `02`, suggests receiver training stages.
 
+### Data across the pair
+
+Each transmitter's host window (the `@57` ring, CBSR2-CBER2, as in
+`fsk_loopback`) was fed a counting byte sequence, one byte per pointer
+advance. Every word the other side delivered at `832f` was recorded.
+
+**Forward channel: bit-exact, HDLC-stuffed.** The sender takes a byte every 12
+frames, which is 4800 bps at 8 bits per byte. There are no start/stop bits:
+the framer `@56` = `8264` is synchronous. Its stream is **HDLC bit-stuffed**,
+with a 0 after every five 1s (the first breaks fall exactly after bytes `0x1f`
+and `0x3f`), and `8264` carries the flag `0x7e` (`8278`). The receiver delivers
+the raw stuffed bits, 2 per symbol, LSB first (`@26` = `8320`). Removing the
+stuffing, **2332 of 2381 bytes arrive exact** over 30000 frames. The other 49
+come through as all or mostly zeros, at a steady cadence of about one per 36
+bytes, without losing alignment. That looks like the transmitter reading a
+window slot before the harness filled it, rather than a line error, but this
+has not been proven. Data mode needs no tag `36`: the transmitter stays on
+`cb34` (n = 2) after training.
+
+**Back channel: 3 bits on every other symbol.** In data mode the per-symbol
+handler alternates between `cab5` (fetch, scramble, 8-DPSK phase step) and
+`cae0`/`cae2`, which sends **I = Q = 0**. Only half the line symbols carry
+data: 100 a second x 3 bits = **300 bps** (150 x 3 = **450** with `0x6f` bit
+12). That closes the 600-versus-300 question, and it is the half-baud line the
+squared signal showed. The sender takes a byte every 144 or 216 frames
+(about 303 bps). The receiver delivers one 3-bit word per data symbol, mostly
+72 frames apart (100/s), with occasional longer gaps. **The delivered bits do
+not yet match what was sent.** Raw, phase-step mapped, inverse-mapped,
+descrambled with 1 + x^-14 + x^-17, destuffed, and in either bit order, the
+best variant finds 9 of 149 sent byte pairs, against 0-4 for a shuffled
+control.
+
 The `10`/`11` dispatchers have a call-mode twin (`9da6`, `a00d`, `9dc1`,
 `a054`), but it branches only for V.22/V.22bis, Bell 103, V.21 and V.23.
 HST's flag (`@26` bit 5) is not tested there. HST reaches its call roles only
@@ -223,8 +255,8 @@ baud. What `@04` clocks has not been read.
 
 **Mapping** (`caba`-`cace`). This is **differential 8-PSK**. The script
 gives it 3 bits per symbol, which at 200 / 300 baud is 600 / 900 bit/s on the
-line: twice the menu's 300 / 450. Whether data mode halves that (repetition,
-coding, or 1.5 bits per symbol) is open. The 3 scrambled bits select a nibble of the packed constant
+line: twice the menu's 300 / 450. Data mode halves it with a zero symbol
+between data symbols (see *Data across the pair*). The 3 scrambled bits select a nibble of the packed constant
 `0x43705261`:
 
 | bits | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
@@ -306,13 +338,12 @@ symbol: 200 a second at 300 bps.
 
 Needed before an interoperable reimplementation:
 
-* the back-channel demodulator's decision (8-DPSK) and the meaning of host
-  messages `04` and `02`;
-* whether the paired start-up carries data bit-exact, i.e. a BER run over the
-  `c51f` x `c7ed` pair;
+* the back channel's delivered words: how the 3-bit decisions map back to
+  data (the forward channel is bit-exact), and why some data symbols are not
+  delivered;
+* the 49 zeroed forward bytes, and whether they are the harness's window feed;
+* host messages `04` and `02`;
 * how a call selects HST, i.e. the answer and detection sequence, and the
   supervisor's use of tags `32`-`3b`;
 * how data is framed on each channel, i.e. the HST link layer above the
   datapump;
-* the back channel's data-mode bits per symbol: 3-bit 8-DPSK at 200 / 300 baud
-  is twice the rate the menu names;
