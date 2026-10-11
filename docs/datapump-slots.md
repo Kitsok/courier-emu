@@ -38,7 +38,7 @@ codes, and the C5x shifts by `~code & 0xf`, so code 14 is bit 1.
 | slot | flag | table `9b48` (originate) | table `9b51` (answer) | modulation |
 |---:|---|---|---|---|
 | 0 | `@27` bit 1 | `9d00` | `9d00` | **V.34** |
-| 1 | `@26` bit 4 | `b000` | `b000` | **V.FC** |
+| 1 | `@26` bit 4 | `b000` | `b000` | **V.FC** ([vfc.md](vfc.md)) |
 | 2 | `@27` bit 3 | `b052` | `b052` | **V.32 / V.32bis** |
 | 3 | `@26` bit 5 | `c533` | `c7fd` | **HST** |
 | 4 | `@26` bit 3 | `cd61` | `cce0` | **V.22bis** |

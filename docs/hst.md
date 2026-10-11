@@ -100,9 +100,17 @@ No V.32 transmit path reaches `0x340`: V.32 16800 is code 10 through `c280`.
 The two 256-point sets lie on the same lattice (45 degrees apart, inner
 energies 2, 10, ... identical) but have different boundaries. `0x340` is
 squarer and reaches energy 450, while `c280`'s inner 256 are a circle reaching
-314. So receive index 6 is most likely a receiver HST shares, and HST 16800 is
-a constellation of HST's own. Which datapumps call the `bee6` selector has not
-been read.
+314. HST 16800 is a constellation of HST's own.
+
+**The `bee6` selector is shared by V.32 and HST.** It is entered from the
+receive-script step `bec4`. That step waits for `@20 == @21` on eight
+consecutive symbols (`@29` counts down from 8), clears state, sends host
+message `22` through `83b1`, and dispatches on `@2a`. `bec4` appears in V.32's
+receive script (`b35a`) and in HST's answer-side receive script (`c7c2`).
+`c7c2` is the script tail that tag `37` starts, and tag `38` is `bebe`, which
+cancels the wait. So after a turnaround, the HST answerer receives the forward
+channel on the same QAM receiver V.32 uses, and index 6 / `0x340` is reached
+from there.
 
 Every image here caps HST at 16800: the `CONNECT` strings run
 4800/7200/9600/12000/14400/16800`/HST`. 21600 exists only as `/V32` and
@@ -226,8 +234,10 @@ follows the data. What makes the supervisor send them is not read.
 
 Needed before an interoperable reimplementation:
 
-* the receivers (`c4f7`, `c7a4` scripts): which channel each demodulates, and
-  what they expect from the far end during training;
+* the receivers: the answer side's forward-channel receiver is the shared
+  `bee6` selector (above). Still open: the originate-side script `c4f7`, the
+  early part of `c7a4` (`c83e`/`c84c` energy tests against `2a54`), and the
+  back-channel demodulator;
 * how a call selects HST, i.e. the answer and detection sequence, and the
   supervisor's use of tags `32`-`3b`;
 * how data is framed on each channel, i.e. the HST link layer above the
