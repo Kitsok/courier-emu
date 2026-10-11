@@ -65,14 +65,27 @@ before V.32 products, and long before V.32bis. What the ROM shows is that this
 1990s firmware runs HST on one table set that the V.32 family and V.17 fax also
 use. Other users of the same tables: the resident V.32 path (`bc8a`, `bcd2`,
 `bff0`) and the fax datapumps (`e689`, `e6a3`). Whether 1986 HST coded its
-symbols this way cannot be told from one firmware. The 256-point table is the
-size V.32terbo's 16800 needs. The V.32 path's re-encoder masks uncoded bits
-with `0x7e0`, one bit wider than HST's `0x3e0`, which is what 19200 (512
-points) needs. No 512-point table exists in the mask ROM: `0x240`-`0x43f` is
-fully accounted for by the tables above, so the V.32 path's variable base
-`@28` must point elsewhere for 19200 and 21600. With no V.32terbo reference to
-hand, the `0x340` table is the right size for it but has not been confirmed as
-it.
+symbols this way cannot be told from one firmware. **The 256-point table is the Courier's V.32terbo 16800 set.** The V.32 rate
+selector (jump table at `bee6`, indexed by `@2a`) loads the constellation base
+`@28` per rate:
+
+| index | n | `@28` | rate |
+|---|---|---|---|
+| 0 | 2 | - | 4800 |
+| 1 | 3 | `0x250` | 7200 |
+| 2 | 4 | `0x260` | 9600 trellis |
+| 3 | 4 | - (slicer `bfc1`, table `0x440`) | 9600 uncoded |
+| 4 | 5 | `0x280` | 12000 |
+| 5 | 6 | `0x2c0` | 14400 |
+| 6 | 7 | **`0x340`** | **16800** |
+| 7-13 | 3-9 | none (slicer `c009`) | 7200-21600 |
+
+HST 16800 and V.32terbo 16800 therefore share one constellation. Indices 7-13
+are a second family reaching n = 8 and 9 (19200, 21600). It loads no table
+base and decides through `c009`, so its points are computed rather than
+stored. That is why there is no 512-point table, and why the V.32 re-encoder
+masks with `0x7e0`, one bit wider than HST's `0x3e0`. The mask ROM's
+`0x240`-`0x43f` is fully accounted for by the tables above.
 
 The offset is computed rather than tabulated. For n bits per symbol, `cb3f`
 adds `2 << n` to the encoder output, which lands on `0x250`, `0x260`, `0x280`,
