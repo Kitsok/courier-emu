@@ -60,6 +60,20 @@ entry was checked against SpanDSP's `v17_v32bis_tx_constellation_maps.h`:
 | `0x0340` | 256 | none (odd multiples of 4) | 16800 |
 | `0x0244` | 4 | not SpanDSP's ABCD order | training |
 
+**Read this as shared tables, not as HST derived from V.32bis.** HST shipped
+before V.32 products, and long before V.32bis. What the ROM shows is that this
+1990s firmware runs HST on one table set that the V.32 family and V.17 fax also
+use. Other users of the same tables: the resident V.32 path (`bc8a`, `bcd2`,
+`bff0`) and the fax datapumps (`e689`, `e6a3`). Whether 1986 HST coded its
+symbols this way cannot be told from one firmware. The 256-point table is the
+size V.32terbo's 16800 needs. The V.32 path's re-encoder masks uncoded bits
+with `0x7e0`, one bit wider than HST's `0x3e0`, which is what 19200 (512
+points) needs. No 512-point table exists in the mask ROM: `0x240`-`0x43f` is
+fully accounted for by the tables above, so the V.32 path's variable base
+`@28` must point elsewhere for 19200 and 21600. With no V.32terbo reference to
+hand, the `0x340` table is the right size for it but has not been confirmed as
+it.
+
 The offset is computed rather than tabulated. For n bits per symbol, `cb3f`
 adds `2 << n` to the encoder output, which lands on `0x250`, `0x260`, `0x280`,
 `0x2c0` and `0x340` for n = 3 to 7. n = 2 goes through `cb34` and adds 8
