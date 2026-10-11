@@ -350,5 +350,6 @@ Needed before an interoperable reimplementation:
 * host messages `04` and `02`;
 * how a call selects HST, i.e. the answer and detection sequence, and the
   supervisor's use of tags `32`-`3b`;
-* how data is framed on each channel, i.e. the HST link layer above the
-  datapump;
+* the link layer inside the HDLC frames: the datapump only stuffs bits and
+  sends flags. Frame format, addressing, and how the supervisor's "HST" link
+  protocol (next to `MNP` and `LAPM` at `0x1b056`) uses the two channels.
