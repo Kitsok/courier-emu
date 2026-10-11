@@ -65,9 +65,11 @@ before V.32 products, and long before V.32bis. What the ROM shows is that this
 1990s firmware runs HST on one table set that the V.32 family and V.17 fax also
 use. Other users of the same tables: the resident V.32 path (`bc8a`, `bcd2`,
 `bff0`) and the fax datapumps (`e689`, `e6a3`). Whether 1986 HST coded its
-symbols this way cannot be told from one firmware. **The 256-point table is the Courier's V.32terbo 16800 set.** The V.32 rate
-selector (jump table at `bee6`, indexed by `@2a`) loads the constellation base
-`@28` per rate:
+symbols this way cannot be told from one firmware. **HST's 16800 table is its own, not V.32terbo's.** The resident has two
+large-constellation schemes, and only HST uses `0x340`.
+
+*Receive selector.* A jump table at `bee6`, indexed by `@2a`, loads the slicer
+base `@28` per rate:
 
 | index | n | `@28` | rate |
 |---|---|---|---|
@@ -80,12 +82,34 @@ selector (jump table at `bee6`, indexed by `@2a`) loads the constellation base
 | 6 | 7 | **`0x340`** | **16800** |
 | 7-13 | 3-9 | none (slicer `c009`) | 7200-21600 |
 
-HST 16800 and V.32terbo 16800 therefore share one constellation. Indices 7-13
-are a second family reaching n = 8 and 9 (19200, 21600). It loads no table
-base and decides through `c009`, so its points are computed rather than
-stored. That is why there is no 512-point table, and why the V.32 re-encoder
-masks with `0x7e0`, one bit wider than HST's `0x3e0`. The mask ROM's
-`0x240`-`0x43f` is fully accounted for by the tables above.
+*V.32 transmit* (`bbbd`, rate code `@49`). Codes 1-4 go through `bbf1`, the
+same `index + (2 << n)` path HST uses, for n = 3-6 only. Codes 5 and up go
+through `bc00`, with n = code - 3, up to 9. That path takes the trellis subset
+(3 bits) to `c22a` for flags (bit 0: column, bit 1: negate Q, bit 2: negate I,
+bit 3: swap). The uncoded bits index a 256-entry one-quadrant table at
+**`c280` in the resident**, sorted by rising energy, in one-even-one-odd integer
+coordinates. The point is then scaled by `@67` and **warped** by a polynomial
+in r² (`bc2c`-`bc48`: `1566e000`, `1928`, `019f`, `000c`). `c009` is the
+receiver's inverse: unwarp (`dcb3`, `15f9`, `1355`, `03c2`), rotate by
+`@48`/`@49`, and fold into one quadrant. 256 entries x 4 rotations is 1024
+points, i.e. 21600's 9 + 1 bits. Half the table is 19200's 512. Nothing here
+needs a 512-point table, and the V.32 re-encoder's `0x7e0` mask is one bit
+wider than HST's `0x3e0`.
+
+No V.32 transmit path reaches `0x340`: V.32 16800 is code 10 through `c280`.
+The two 256-point sets lie on the same lattice (45 degrees apart, inner
+energies 2, 10, ... identical) but have different boundaries. `0x340` is
+squarer and reaches energy 450, while `c280`'s inner 256 are a circle reaching
+314. So receive index 6 is most likely a receiver HST shares, and HST 16800 is
+a constellation of HST's own. Which datapumps call the `bee6` selector has not
+been read.
+
+Every image here caps HST at 16800: the `CONNECT` strings run
+4800/7200/9600/12000/14400/16800`/HST`. 21600 exists only as `/V32` and
+`/VFC`, and 24000 only as `/VFC` and `/V34`. The `CONNECT` text says
+`12000/HST`, so the menu's `12200` is a label typo. "HST" is also a link
+protocol name next to `SYNC`, `NONE`, `MNP` and `LAPM` (`0x1b056`,
+`0x1be6e`).
 
 The offset is computed rather than tabulated. For n bits per symbol, `cb3f`
 adds `2 << n` to the encoder output, which lands on `0x250`, `0x260`, `0x280`,
@@ -210,5 +234,3 @@ Needed before an interoperable reimplementation:
   datapump;
 * the back channel's data-mode bits per symbol: 3-bit 8-DPSK at 200 / 300 baud
   is twice the rate the menu names;
-* the menu's `12200`, which matches no symbol arithmetic and is probably only
-  a label.
