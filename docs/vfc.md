@@ -79,13 +79,31 @@ The per-symbol mapper is `c723`-`c78b`, writing I/Q to the transmit buffer at
   offset from `cb2d` (`0 5 6 1 2 7 4 3`), indexes a **one-quadrant point table
   at `aeab`** (packed I/Q bytes). The point is then turned by one of four
   routines through `c804`: 0, (Q, -I), (-I, -Q), (-Q, I).
-* **Trellis.** A 5-bit state in `@36` is advanced by a 7-step parity loop over
-  one of two tap tables: `cb57` (`0070 0101 0002 0004 000a 008a 0103`) or
-  `cb5e` (`0064 0101 0002 0000 0000 0082 0103`), chosen by `0x873` bit 1.
-  `cb5e` has fewer taps, which fits a smaller code. V.34 offers 16 and 32
-  states; this has not been checked against them.
-* `c9c4` runs after each point, and also in training when `0x87f` bit 6 is
-  set. It is not read; precoding or warping are the candidates.
+* **Trellis: 2D, V.32-style, not V.34's 4D.** The state advances on *every*
+  symbol, from the 2 quadrant-differential bits. That differs from V.34, which
+  steps once per 4D symbol (two 2D symbols) on 4 bits. The step (`c76f`-`c788`)
+  XORs one tap word per set bit of `u = @36 | (@5a << 5)` into `B`, and keeps
+  `(B ^ ((B >> 7) & (B >> 5) & 3)) & 0x1f`. The AND term makes it nonlinear,
+  as V.32's code is. State bit 0 and the 2 quadrant bits pick one of 8
+  subsets through `cb2d`. The two tap tables, chosen by `0x873` bit 1:
+  * `cb5e` (`0064 0101 0002 0000 0000 0082 0103`) reaches 8 states and **is
+    V.32's 8-state code**. Its redundant bit matches SpanDSP's V.32 encoder
+    (`v17_convolutional_encoder`) on 2000 of 2000 random symbols, under a
+    fixed state mapping.
+  * `cb57` (`0070 0101 0002 0004 000a 008a 0103`) reaches all **32 states**.
+    It agrees with V.32's code only at chance level (1068 of 2000), so it is
+    a different, stronger code.
+* **Precoding** (`c9c4`, after every point). A 3-tap complex FIR over past
+  output, with coefficients at program `2056`/`2059` (not mask ROM, so
+  presumably set in training). Its output is rounded onto a coarse lattice
+  (`+ 0x400`, `& 0xf800`), and the rounding error is added to the point. This
+  is the shape of V.34's precoder (9.6.4/V.34).
+* **Nonlinear encoding** (`c9f7`, when `0x879` bit 10 is set). ζ comes from
+  |x|² (scale `0x28f6`), and the point is multiplied by
+  1 + `0aab`·ζ + `0089`·ζ² + `0003`·ζ³. At Q14 those are 1/6, 1/120 and
+  1/5040, so **Φ = 1 + ζ/6 + ζ²/120 + ζ³/5040**. V.34 9.7 stops at ζ²/120
+  (SpanDSP's `v34tx.c` has it that way too). V.FC carries one more term of
+  the same series.
 
 **The point table is V.34's superconstellation, ordered differently.** `aeab`
 is in the *resident*, inside the range overlay 6 overwrites. It is on the
@@ -115,7 +133,8 @@ alike, but a V.34 mapper cannot stand in for this table.
 * the frame arithmetic in `c1bf`/`c20e` (how bits per 8-symbol frame follow
   from the symbol rate and data rate), and how it compares with V.34's
   shell mapping;
-* the trellis taps against V.34's 16- and 32-state encoders, and `c9c4`;
+* the 32-state code's distance properties, and where the precoder taps come
+  from;
 * what the per-symbol-rate tables and the `cc2d` filter bank are;
 * `cb65` (`aaaa aaab aaaf aabf aaff abff afff bfff`): eight 16-bit patterns,
   possibly rate signals;
