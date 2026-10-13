@@ -1454,7 +1454,16 @@ void C5xCore::op_xc()
 	else
 	{
 		int n = ((m_op >> 12) & 0x1) + 1;
-		CHANGE_PC(m_pc + n);
+		// The skipped words are still fetched (and executed as NOPs), and a
+		// block repeat is detected on that fetch: skipping the last word of an
+		// RPTB body must still loop. CHANGE_PC(m_pc + n) bypassed the check.
+		for (int k = 0; k < n; ++k)
+		{
+			const uint16_t before = m_pc;
+			ROPCODE();
+			if (m_pc != uint16_t(before + 1))
+				break;
+		}
 		CYCLES(1 + n);
 	}
 }
