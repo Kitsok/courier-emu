@@ -1397,13 +1397,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     nvram_source.add_argument(
         "--nvram-fixture",
-        choices=("idsdl302", "idsdl403"),
+        choices=("idsdl302", "idsdl403", "idsdl403-lapm"),
         metavar="NAME",
-        help="attach a deterministic, in-memory settings EEPROM fixture; "
-        "idsdl302 seeds words 94 through 102 from the recovered six records "
-        "and the +S register block AT+SF loads, leaving the rest erased. "
-        "idsdl403 seeds the board's own +S block at the offset 7.4.16 reads "
-        "it from, and nothing else",
+        help="attach deterministic in-memory settings: idsdl302 seeds the "
+        "recovered settings records and +S block; idsdl403 uses the complete "
+        "captured 403 EEPROM; idsdl403-lapm uses that provisioning with S27=0 "
+        "for normal V.42 negotiation",
     )
     run.add_argument(
         "--serial-input-on-ring",

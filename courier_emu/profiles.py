@@ -28,8 +28,8 @@ def resolve_run_profile(args: argparse.Namespace) -> None:
             raise ValueError("--profile analog403 selects its own firmware; omit IMAGE")
         if args.force_online or args.dsp_acquisition_assist:
             raise ValueError("analog403 cannot use forced online or DSP acquisition assist")
-        if args.nvram_fixture not in (None, "idsdl403"):
-            raise ValueError("analog403 requires the idsdl403 EEPROM fixture")
+        if args.nvram_fixture not in (None, "idsdl403-lapm"):
+            raise ValueError("analog403 requires the idsdl403-lapm EEPROM fixture")
         if args.board_id not in (None, "7") or args.tick_ms not in (None, 5):
             raise ValueError("analog403 requires board ID 7 and a 5 ms timer tick")
         if args.dip is not None or args.dip_preset not in (None, "default"):
@@ -47,7 +47,7 @@ def resolve_run_profile(args: argparse.Namespace) -> None:
         args.tick_ms = 5
         args.dip_preset = "default"
         if args.nvram is None:
-            args.nvram_fixture = "idsdl403"
+            args.nvram_fixture = "idsdl403-lapm"
     elif args.image is None:
         raise ValueError("run requires IMAGE or --profile analog403")
     if args.board_id is None:

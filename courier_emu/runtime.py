@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 
 from . import cli, dsp, x86_native
-from .nvram import CourierNvram, IDSDL403_NVRAM
+from .nvram import CourierNvram
 
 
 KEYS = {
@@ -67,7 +67,7 @@ def seed_nvram(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("xb") as output:
-            output.write(IDSDL403_NVRAM)
+            output.write(CourierNvram.idsl403_lapm_fixture().data)
     except FileExistsError:
         CourierNvram.load(path)  # Validate an existing file; never overwrite it.
 

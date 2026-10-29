@@ -115,7 +115,7 @@ def main() -> int:
         "--serial-input-on-ring", action="store_true",
         help="hold the AT input until the line rings, as a host answering a call does")
     parser.add_argument("--nvram")
-    parser.add_argument("--nvram-fixture", choices=("idsdl302", "idsdl403"))
+    parser.add_argument("--nvram-fixture", choices=("idsdl302", "idsdl403", "idsdl403-lapm"))
     parser.add_argument("--board-id", default="")
     parser.add_argument("--dip", action="append", default=[])
     parser.add_argument("--parameter-sector")
@@ -256,6 +256,8 @@ def main() -> int:
         if args.nvram_fixture == "idsdl302"
         else CourierNvram.idsl403_fixture()
         if args.nvram_fixture == "idsdl403"
+        else CourierNvram.idsl403_lapm_fixture()
+        if args.nvram_fixture == "idsdl403-lapm"
         else None
     )
 

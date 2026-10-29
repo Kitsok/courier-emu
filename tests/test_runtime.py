@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from courier_emu import cli
-from courier_emu.nvram import IDSDL403_NVRAM
+from courier_emu.nvram import CourierNvram, IDSDL403_NVRAM
 from courier_emu.pty_device import PtyDevice
 from courier_emu.runtime import read_config, seed_nvram
 from courier_emu.sip import SipConfig, SipSession
@@ -47,7 +47,7 @@ def test_invalid_configuration_fails_before_startup(tmp_path, old, new):
 def test_nvram_is_seeded_once_and_invalid_existing_data_is_preserved(tmp_path):
     path = tmp_path / "state/settings"
     seed_nvram(path)
-    assert path.read_bytes() == IDSDL403_NVRAM
+    assert path.read_bytes() == bytes(CourierNvram.idsl403_lapm_fixture().data)
     changed = bytes([0]) * len(IDSDL403_NVRAM)
     path.write_bytes(changed)
     seed_nvram(path)

@@ -18,7 +18,7 @@ def test_analog403_selects_real_board_and_line_path():
     command = _worker_command(args)
     assert Path(command[3]) == profiles.ROOT / profiles.ANALOG403_IMAGE
     assert "--with-dsp" in command and "--exchange" in command
-    assert command[command.index("--nvram-fixture") + 1] == "idsdl403"
+    assert command[command.index("--nvram-fixture") + 1] == "idsdl403-lapm"
     assert command[command.index("--board-id") + 1] == "7"
     assert command[command.index("--tick-ms") + 1] == "5"
     assert {command[i + 1] for i, item in enumerate(command) if item == "--dip"} == set(DIP_PRESETS["default"])

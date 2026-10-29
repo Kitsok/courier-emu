@@ -223,6 +223,19 @@ class CourierNvram:
         return cls(data=bytearray(IDSDL403_NVRAM))
 
     @classmethod
+    def idsl403_lapm_fixture(cls) -> CourierNvram:
+        """Captured 403 provisioning with normal V.42 negotiation enabled.
+
+        Measured by running ATS27=0&W in the captured firmware: only byte
+        0x29 (S27, previously 48) and the settings checksum change. Keep the
+        raw capture available separately for historical diagnostic runs.
+        """
+        device = cls.idsl403_fixture()
+        device.data[0x29] = 0
+        device.data[CHECKSUM_BYTE] = settings_checksum(device.data)
+        return device
+
+    @classmethod
     def idsl302_fixture(cls) -> CourierNvram:
         """Return an erased EEPROM seeded with the recovered boot settings and
         the +S register defaults; every other word stays erased."""

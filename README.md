@@ -1440,8 +1440,10 @@ instead of invoking a compiler during startup; rebuild with `./build.sh`.
 `run --profile analog403` selects the captured 20.16 MHz analog Courier
 running supervisor 7.4.16 / DSP 3.1.2. It checks the image's SHA-256 before
 starting, enables the DSP and modeled analog exchange, and selects board ID 7,
-a 5 ms timer tick, the default DIP switches, and the matching `idsdl403`
-settings EEPROM. Paths are resolved relative to the installed source tree,
+a 5 ms timer tick, the default DIP switches, and the matching `idsdl403-lapm`
+settings EEPROM. This retains the captured calibration with S27 changed from
+48 to 0 for normal V.42 negotiation. The original `idsdl403` diagnostic fixture
+remains unchanged. Paths are resolved relative to the installed source tree,
 so the command does not depend on the working directory:
 
 ```sh
@@ -1475,8 +1477,10 @@ another installation. Passwords are read from the named environment variable.
 TTY and EEPROM paths are relative to the configuration file, not the caller's
 working directory; `--config PATH` selects another configuration file.
 
-The launcher seeds the persistent EEPROM from the captured 403 settings on
-first use and preserves it on later launches. Invalid existing EEPROM files
+The launcher seeds the persistent EEPROM from the captured 403 settings with
+S27=0 on first use and preserves it on later launches. If an earlier launch
+created settings with S27=48, type `ATS27=0&W` once; the launcher does not
+overwrite an existing EEPROM. Invalid existing EEPROM files
 are rejected without replacement. `--check-config` verifies configuration,
 firmware, and the native build without creating the EEPROM or opening a tty.
 The stable tty symlink is locked for the process lifetime and removed on
@@ -1531,6 +1535,11 @@ The native firmware test in `tests/test_analog_call_control.py` uses a loopback
 SIP peer to verify dialing and keypress cancellation through the PTY, CPU,
 DSP, and analog exchange. It does not test a physical modem or carrier/data
 interoperability.
+
+Physical outgoing calls through the lab ATA have connected to the Courier
+on nanovax at 26400 bit/s with V.34/LAPM/V.42bis and transferred exact test
+strings in both directions. See [the validation record](docs/analog-sip-validation.md)
+for settings, diagnostics, unsuccessful checks, and test limits.
 
 ## Minimal SIP dial-out
 
