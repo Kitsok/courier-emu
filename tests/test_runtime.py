@@ -31,13 +31,16 @@ def test_configuration_resolves_paths_and_network_options(tmp_path):
     assert command[command.index("--sip-local-port") + 1] == "5074"
     assert "--nvram-fixture" not in command
     assert cli.instruction_limit(args) == (1 << 63) - 1
+    assert "--sip-register" not in command
+    registered = cli.build_parser().parse_args(arguments + ["--sip-register"])
+    assert "--sip-register" in cli._worker_command(registered)
 
 
 @pytest.mark.parametrize("old,new", [
     ("port = 5074", "port = 65536"), ("bind = 0.0.0.0", "bind = bad"),
     ("codec = pcmu", "codec = g729"), ("profile = analog403", "profile = imodem"),
-    ("target = sip:{number}@192.168.196.29", "target = sip:100@192.168.196.29"),
-    ("username = courier", "username = courier\nunknown = typo"),
+    ("target = sip:{number}@192.168.196.254", "target = sip:100@192.168.196.254"),
+    ("username = 201", "username = 201\nunknown = typo"),
 ])
 def test_invalid_configuration_fails_before_startup(tmp_path, old, new):
     with pytest.raises(ValueError):

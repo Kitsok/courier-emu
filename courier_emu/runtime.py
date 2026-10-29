@@ -109,9 +109,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--check-config", action="store_true")
+    parser.add_argument("--sip-register", action="store_true",
+                        help="register with the configured SIP server")
     args = parser.parse_args(argv)
     try:
         arguments, nvram = read_config(args.config.absolute())
+        if args.sip_register:
+            arguments.append("--sip-register")
         # Resolve and verify firmware without booting the emulator.
         cli._worker_command(cli.build_parser().parse_args(arguments))
         os.environ["COURIER_EMU_NO_BUILD"] = "1"

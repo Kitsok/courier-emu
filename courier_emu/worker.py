@@ -96,6 +96,7 @@ def main() -> int:
     parser.add_argument("--dsp-batch", type=_number, default=256)
     parser.add_argument("--daa-line", choices=DAA_LINE_STATES)
     parser.add_argument("--sip-server")
+    parser.add_argument("--sip-register", action="store_true")
     parser.add_argument("--sip-bind", default="0.0.0.0")
     parser.add_argument("--sip-advertise", default="0.0.0.0")
     parser.add_argument("--sip-target", default="")
@@ -213,6 +214,8 @@ def main() -> int:
                 codec=args.sip_codec,
             )
         )
+        if args.sip_register:
+            sip.register()
 
     line = None
     if args.line_link:

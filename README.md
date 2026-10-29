@@ -1480,8 +1480,13 @@ Its default SIP and RTP ports are 5074 and 4014, allowing it to coexist with
 the Eicon emulator on 5072/4012. It binds both sockets to `0.0.0.0`; an
 advertise value of `0.0.0.0` selects the address of the route to the SIP server.
 The configured target substitutes the dialed digits for `{number}`. The source
-configuration points at the lab ATA at `192.168.196.29:5060`; change it for
-another installation. Passwords are read from the named environment variable.
+configuration points at the Nanovax Asterisk PBX at `192.168.196.254:5060`.
+`run.sh` passes `--sip-register` to register extension `201`, using the
+existing SIP registration refresh logic. No SIP password is needed inside
+the VoIP subnet. Type `ATDT100` or `ATDT101` to reach the physical Couriers.
+Change the server, target and username in the configuration for another
+installation or simultaneous instance. When needed, passwords are read from
+the named environment variable.
 TTY and EEPROM paths are relative to the configuration file, not the caller's
 working directory; `--config PATH` selects another configuration file.
 
@@ -1701,8 +1706,10 @@ export COURIER_SIP_PASSWORD='your-password'
 `dsp_bridge.sip` reports the target, response status, dialog state, RTP
 endpoints/counters, and a bounded event trace; it never includes the password.
 The client is UDP/IPv4. It does not use SIP/TLS, negotiate codecs beyond
-PCMU/PCMA, or send RFC 2833 events. The stack has registration support, but
-the analog launcher does not register. The analog exchange maps busy and
+PCMU/PCMA, or send RFC 2833 events. Analog registration is opt-in through
+`--sip-register` on the runtime or `courier run` CLI; the source `run.sh`
+enables it by default. Without that option the analog launcher remains a
+direct SIP client. The analog exchange maps busy and
 failure responses into line tones; the firmware determines the result code.
 
 A live 6000-to-7800 validation completed Digest authentication, received

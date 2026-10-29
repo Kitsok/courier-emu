@@ -314,6 +314,8 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
             command.append("--exchange-hotline")
     if args.sip_server:
         command.extend(("--sip-server", args.sip_server))
+        if args.sip_register:
+            command.append("--sip-register")
         command.extend(("--sip-bind", args.sip_bind))
         command.extend(("--sip-advertise", args.sip_advertise))
         command.extend(("--sip-username", args.sip_username))
@@ -1222,6 +1224,8 @@ def build_parser() -> argparse.ArgumentParser:
         "a DAA failure)",
     )
     run.add_argument("--sip-server", metavar="HOST[:PORT]", help="send ATD calls via UDP SIP")
+    run.add_argument("--sip-register", action="store_true",
+                     help="register the analog SIP contact with --sip-server")
     run.add_argument("--sip-bind", default="0.0.0.0", help="local IPv4 bind address")
     run.add_argument("--sip-advertise", default="0.0.0.0", help="advertised IPv4 address; 0.0.0.0 selects the route address")
     run.add_argument(

@@ -23,6 +23,7 @@ def session():
     value = object.__new__(SipSession)
     value.closed = False
     value.state = 'idle'
+    value._media_update = None
     value.config = SimpleNamespace(username='2904')
     value.server_host = 'pbx.test'
     value.server_address = value._dialog_peer = ('127.0.0.1', 5060)
