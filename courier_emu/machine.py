@@ -874,6 +874,26 @@ class CourierMachine:
         callback = int.from_bytes(self.uc.mem_read(layout.callbacks + 4, 2), "little")
         return callback in (layout.command_idle, layout.command_collecting, layout.online_idle)
 
+    def _echo_command_byte(self, uc: Any, value: int) -> None:
+        """Model DTE front-end echo using the firmware's E setting.
+
+        Resident analog firmware reaches its integrated UART through a
+        separate receive path. Its echo cell differs from the XMF one and
+        is located from the ROM by the serial adapter. Only command-mode
+        terminal input is echoed; queued scripts and online payload are not.
+        """
+        if self.console is None or not self._firmware_command_mode():
+            return
+        layout = self._rom_serial
+        setting = layout.echo_setting if layout is not None else ECHO_SETTING
+        if bytes(uc.mem_read(setting, 1))[0]:
+            # Echo is a DTE front-end return, not a firmware result. Do not
+            # pass typed text through CONNECT/result-code detection.
+            if layout is not None:
+                self.console.write(value & 0x7f)
+            else:
+                self._capture_serial(value)
+
     def _capture_serial(self, value: int) -> None:
         value &= 0xFF
         self.at_events.transmitted(value, command_mode=(not self.online_mode or self._firmware_command_mode()))
@@ -1253,27 +1273,6 @@ class CourierMachine:
             if not self._terminal_attached:
                 return False
             return int.from_bytes(_uc.mem_read(0x2A8, 2), "little") in (0x0000, 0x1FCE)
-
-        def echo_command_byte(_uc: Any, value: int) -> None:
-            """Echo a typed character, as the modem does in command mode.
-
-            The echo setting lives at [0x092d]: `ATE1` sets it, `ATE0`
-            clears it, and closing the `no-echo` option switch leaves it
-            clear at 0x63e93, which is the switch position that suppresses
-            offline command echo on the board. The echo itself belongs to
-            the DTE front-end this harness stands in for, so it is emitted
-            here, from the firmware's own setting.
-
-            Only a session with a terminal on the other end has anywhere to
-            echo to. Queued `--at` input is not typed by anyone, and echoing
-            it would put the commands into the captured transcript of runs
-            that never had a terminal.
-            """
-            if self.console is None:
-                return
-            if not bytes(_uc.mem_read(ECHO_SETTING, 1))[0]:
-                return
-            self._capture_serial(value)
 
         key_wait_tests = self._key_wait_tests()
 
@@ -1893,6 +1892,7 @@ class CourierMachine:
                     # intercepted; the line model needs the text only to
                     # know whether this end was told to answer or to call.
                     command_mode = self._firmware_command_mode()
+                    self._echo_command_byte(_uc, byte)
                     self.at_events.received(byte, command_mode=command_mode)
                     if not command_mode:
                         self._rom_command_line.clear()
@@ -2583,7 +2583,7 @@ class CourierMachine:
                     f"rx terminal={terminal_value:02x} wire={value:02x} "
                     f"terminator={terminator:02x} pc={current_pc():05x}"
                 )
-                echo_command_byte(_uc, terminal_value)
+                self._echo_command_byte(_uc, terminal_value)
                 if not self.serial_rx:
                     self._serial_tx_pump = True
             elif self.uart is not None and port == 0 and size == 1:

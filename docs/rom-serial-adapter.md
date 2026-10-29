@@ -29,8 +29,8 @@ UART's actual transmitted-byte count.
 ## What the adapter supplies
 
 `courier_emu/rom_serial.py` locates the callback table's RX ISR, attention
-handler, command dispatchers, mode byte, and output-routing flag from the
-resident instructions. It checks the command dispatcher's event-1 transition
+handler, command dispatchers, mode byte, echo setting, and output-routing flag
+from the resident instructions. It checks the command dispatcher's event-1 transition
 before accepting a layout. Unknown or incomplete layouts do not enable this
 adapter.
 
@@ -50,6 +50,12 @@ output route. It supplies bytes through this image's integrated-UART ISR.
 After a command, queued input waits until the firmware returns to its ready
 state; the adapter then reselects the attention handler. It does not inspect
 command text or construct result strings.
+
+For an attached terminal, the adapter returns command-mode characters using
+the firmware's E setting, located from the resident command-editing code.
+`ATE1` enables this echo and `ATE0` disables it; online data and queued script
+input are excluded. The captured 403 stores this setting at `04d5`, rather
+than the XMF supervisor's `092d`.
 
 This remains an explicit substitute for raw-pin autobaud in a CPU-only run.
 It does not establish cycle-accurate baud detection, DSP startup, or a working

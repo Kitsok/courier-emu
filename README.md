@@ -1467,6 +1467,12 @@ For the configuration-driven source launcher, edit `courier-emu.ini`, then:
 tio artifacts/courier-emu.tty
 ```
 
+Command echo follows the firmware's `ATE1`/`ATE0` setting in both source and
+service sessions. With `ATE1`, each typed character is returned immediately,
+before Enter; terminal-side local echo is unnecessary. `AT&W` saves the echo
+setting in the configured EEPROM file. Connected data is not echoed by this
+command-mode front-end.
+
 The source launcher uses the system Python and refuses runtime compilation.
 Its default SIP and RTP ports are 5074 and 4014, allowing it to coexist with
 the Eicon emulator on 5072/4012. It binds both sockets to `0.0.0.0`; an

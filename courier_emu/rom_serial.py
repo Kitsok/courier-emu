@@ -20,6 +20,7 @@ class RomSerialLayout:
     # like command_idle and then waits for autobaud just the same; "AT"
     # takes it to the collector, CR executes the line, ATO resumes the call.
     online_idle: int
+    echo_setting: int
 
 
 def locate_rom_serial(data: bytes, callbacks: int) -> RomSerialLayout | None:
@@ -29,6 +30,9 @@ def locate_rom_serial(data: bytes, callbacks: int) -> RomSerialLayout | None:
         "attention": rb"\xc6\x06..\x00\x3c\x61\x74.\x3c\x41",
         "mode": rb"\xc6\x06(..)\x02\x33\xc0\xa3",
         "output": rb"\xf6\x06(..)\x01\xf9\x74.\x80\x3e",
+        # Command editing tests E before emitting space/backspace. Discover
+        # its cell from the resident code rather than the XMF RAM map.
+        "echo": rb"\x80\x3e(..)\x00\x74.\xb0\x20\xf6\x06",
         # Find the routine that installs the command-mode dispatcher.
         # Require its indexed event-table prologue as well.
         "command": rb"\x33\xc0\xe8..\xc7\x06" + re.escape((callbacks + 4).to_bytes(2, "little")) + rb"(..)\xe8..\xf8\xc3",
@@ -57,4 +61,5 @@ def locate_rom_serial(data: bytes, callbacks: int) -> RomSerialLayout | None:
                            idle, collecting,
                            int.from_bytes(m["mode"][1], "little"),
                            int.from_bytes(m["output"][1], "little"),
-                           int.from_bytes(m["online"][1], "little"))
+                           int.from_bytes(m["online"][1], "little"),
+                           int.from_bytes(m["echo"][1], "little"))
