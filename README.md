@@ -1456,9 +1456,39 @@ the in-memory EEPROM fixture; that file must contain settings appropriate for
 this board. The fixture is otherwise reset on each launch, so `AT&W` changes
 are not persistent. Explicit-image diagnostic runs keep their existing defaults.
 
+For the configuration-driven source launcher, edit `courier-emu.ini`, then:
+
+```sh
+./run.sh --check-config
+./run.sh
+# In another terminal:
+tio artifacts/courier-emu.tty
+```
+
+The source launcher uses the system Python and refuses runtime compilation.
+Its default SIP and RTP ports are 5074 and 4014, allowing it to coexist with
+the Eicon emulator on 5072/4012. It binds both sockets to `0.0.0.0`; an
+advertise value of `0.0.0.0` selects the address of the route to the SIP server.
+The configured target substitutes the dialed digits for `{number}`. The source
+configuration points at the lab ATA at `192.168.196.29:5060`; change it for
+another installation. Passwords are read from the named environment variable.
+TTY and EEPROM paths are relative to the configuration file, not the caller's
+working directory; `--config PATH` selects another configuration file.
+
+The launcher seeds the persistent EEPROM from the captured 403 settings on
+first use and preserves it on later launches. Invalid existing EEPROM files
+are rejected without replacement. `--check-config` verifies configuration,
+firmware, and the native build without creating the EEPROM or opening a tty.
+The stable tty symlink is locked for the process lifetime and removed on
+shutdown; reconnect `tio` to that same name after a restart. The modem keeps
+running when `tio` disconnects. Stop the foreground launcher with Ctrl-C.
+Interactive runs use a 63-bit instruction ceiling instead of the previous
+roughly four-hour budget.
+
 This profile does not establish physical-modem interoperability by itself.
-Incoming call integration, a stable terminal name, normal operational logging,
-and a build/start workflow are separate implementation stages.
+Incoming call integration and normal operational logging are separate
+implementation stages. The legacy diagnostic report is still printed when
+the worker stops.
 
 ## Minimal SIP dial-out
 

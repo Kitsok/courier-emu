@@ -19,6 +19,7 @@ import socket
 import subprocess
 import sys
 from typing import TextIO
+from .pty_device import PtyDevice
 
 # Ctrl-] , as in telnet: raw mode passes everything else through to the
 # firmware, including Ctrl-C, which a modem is entitled to receive.
@@ -47,6 +48,11 @@ def _pty_channel() -> tuple[int, int, str]:
 def run_console(
     args: argparse.Namespace, command: list[str], environment: dict[str, str]
 ) -> int:
+    with PtyDevice(getattr(args, "serial_link", None)) as device:
+        return _run_console(args, command, environment, device)
+
+
+def _run_console(args, command, environment, publication) -> int:
     if args.console and args.serial_pty:
         raise ValueError("use --console or --serial-pty, not both")
 
@@ -55,6 +61,7 @@ def run_console(
     lamps_write: int | None = None
     if args.serial_pty:
         worker_end, keep_open, device = _pty_channel()
+        publication.publish(device)
         terminal: socket.socket | None = None
     else:
         left, right = socket.socketpair()
@@ -90,7 +97,7 @@ def run_console(
     try:
         if args.serial_pty:
             print(f"serial console on {device}", file=sys.stderr)
-            print(f"attach with: screen {device}", file=sys.stderr)
+            print(f"attach with: tio {publication.path or device}", file=sys.stderr)
             print("stop with: Ctrl-C here", file=sys.stderr, flush=True)
             _forward_termination(process)
             # communicate() rather than wait(): the worker's result can be

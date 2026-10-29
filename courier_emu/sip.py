@@ -255,6 +255,8 @@ class SipConfig:
     rtp_port: int = 0
     display_name: str = "Courier Emulator"
     codec: str = "pcmu"
+    bind: str = "0.0.0.0"
+    advertise: str = "0.0.0.0"
 
 
 class SipSession:
@@ -275,7 +277,7 @@ class SipSession:
         )
         self.server_address = addresses[0][4]
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind(("0.0.0.0", config.local_port))
+        self.socket.bind((config.bind, config.local_port))
         self.socket.connect(self.server_address)
         self.socket.setblocking(False)
         self.local_ip, self.local_port = self.socket.getsockname()
@@ -288,7 +290,9 @@ class SipSession:
                 probe.close()
 
         self.rtp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.rtp_socket.bind(("0.0.0.0", config.rtp_port))
+        if config.advertise != "0.0.0.0":
+            self.local_ip = config.advertise
+        self.rtp_socket.bind((config.bind, config.rtp_port))
         self.rtp_socket.setblocking(False)
         self.rtp_port = self.rtp_socket.getsockname()[1]
         self.remote_rtp: tuple[str, int] | None = None

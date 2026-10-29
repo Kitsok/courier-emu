@@ -64,9 +64,8 @@ DEFAULT_LINE_SOCKET = "/tmp/courier-line.sock"
 DEFAULT_RUN_INSTRUCTIONS = 250_000
 DEFAULT_ISDN_INSTRUCTIONS = 20_000_000
 # A console session ends when its terminal detaches rather than at a count,
-# so this only has to be further away than a session will reach: about four
-# hours of emulated execution.
-CONSOLE_INSTRUCTIONS = 10_000_000_000
+# so use a 63-bit ceiling rather than the old roughly four-hour budget.
+CONSOLE_INSTRUCTIONS = (1 << 63) - 1
 from .dsp import run_dsp
 from .timers import SUGGESTED_TICK_MS, TICK_SOURCES
 from .terminal import run_console
@@ -183,6 +182,8 @@ def daa_codec_wanted(args: argparse.Namespace, image: object) -> bool:
 
 def _worker_command(args: argparse.Namespace) -> list[str]:
     resolve_run_profile(args)
+    if args.serial_link and not args.serial_pty:
+        raise ValueError("--serial-link requires --serial-pty")
     if args.line_audio_only:
         if not args.line_link:
             raise ValueError("--line-audio-only requires --line-link")
@@ -296,6 +297,8 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
             command.append("--exchange-hotline")
     if args.sip_server:
         command.extend(("--sip-server", args.sip_server))
+        command.extend(("--sip-bind", args.sip_bind))
+        command.extend(("--sip-advertise", args.sip_advertise))
         command.extend(("--sip-username", args.sip_username))
         if args.sip_password:
             command.extend(("--sip-password", args.sip_password))
@@ -1014,6 +1017,10 @@ def build_parser() -> argparse.ArgumentParser:
         "minicom, or anything else that drives a serial modem",
     )
     run.add_argument(
+        "--serial-link", metavar="PATH",
+        help="publish a stable symlink to the serial PTY; requires --serial-pty",
+    )
+    run.add_argument(
         "--port",
         action="append",
         default=[],
@@ -1178,6 +1185,8 @@ def build_parser() -> argparse.ArgumentParser:
         "a DAA failure)",
     )
     run.add_argument("--sip-server", metavar="HOST[:PORT]", help="send ATD calls via UDP SIP")
+    run.add_argument("--sip-bind", default="0.0.0.0", help="local IPv4 bind address")
+    run.add_argument("--sip-advertise", default="0.0.0.0", help="advertised IPv4 address; 0.0.0.0 selects the route address")
     run.add_argument(
         "--sip-target",
         default="",

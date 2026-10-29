@@ -95,6 +95,8 @@ def main() -> int:
     parser.add_argument("--dsp-batch", type=_number, default=256)
     parser.add_argument("--daa-line", choices=DAA_LINE_STATES)
     parser.add_argument("--sip-server")
+    parser.add_argument("--sip-bind", default="0.0.0.0")
+    parser.add_argument("--sip-advertise", default="0.0.0.0")
     parser.add_argument("--sip-target", default="")
     parser.add_argument("--sip-username", default="courier")
     parser.add_argument("--sip-password", default="")
@@ -193,6 +195,8 @@ def main() -> int:
         sip = SipSession(
             SipConfig(
                 server=args.sip_server,
+                bind=args.sip_bind,
+                advertise=args.sip_advertise,
                 username=args.sip_username,
                 password=args.sip_password or os.environ.get(args.sip_password_env, ""),
                 target=args.sip_target,

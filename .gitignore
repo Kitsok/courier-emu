@@ -83,6 +83,7 @@ artifacts/quad-c50-*/stream.bin
 *.sdl
 *.SDL
 nvram.sav
+/artifacts/courier-emu.*
 
 # Scratch working directory.
 tmp/
