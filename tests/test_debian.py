@@ -31,6 +31,7 @@ def test_package_loads_prebuilt_cores_and_operates_without_sources(tmp_path):
     assert '/etc/courier-emu/config.ini' in (root/'DEBIAN/conffiles').read_text()
     config=(root/'etc/courier-emu/config.ini').read_text()
     assert 'nvram = /var/lib/courier-emu/settings.nvram' in config
+    assert 'enabled = false' in config  # service has no desktop audio session
     path=tmp_path/'modem.ini'
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as sip, socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as rtp:
         sip.bind(('127.0.0.1',0));rtp.bind(('127.0.0.1',0))

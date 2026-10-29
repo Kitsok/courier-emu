@@ -42,6 +42,8 @@ def stage(destination: Path, version: str, architecture: str, libraries) -> None
     config.read(ROOT/'courier-emu.ini')
     config['modem']['tty']='/run/courier-emu/tty'
     config['modem']['nvram']='/var/lib/courier-emu/settings.nvram'
+    # A system service has no desktop audio session by default.
+    config['audio']['enabled']='false'
     path = destination/'etc/courier-emu/config.ini'
     path.parent.mkdir(parents=True)
     with path.open('w') as output:

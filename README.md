@@ -1530,11 +1530,13 @@ selected; `--diagnostic-report PATH` saves the shutdown report in that mode.
 
 ### Optional connection audio
 
-Set `[audio] enabled = true` in `courier-emu.ini` to play the modem's transmit
-and receive audio through `paplay` (Debian package `pulseaudio-utils`, with a
-working PulseAudio or compatible PipeWire server). Playback is disabled by
-default. `volume = 0.25` is a monitor gain between 0 and 1; it does not change
-the signal sent to the other modem.
+The source `courier-emu.ini` enables playback of the modem's transmit and
+receive audio through `paplay` (Debian package `pulseaudio-utils`, with a
+working PulseAudio or compatible PipeWire server). Set `[audio] enabled = false`
+to disable it, and restart `run.sh` after changing this setting. The
+Debian package keeps playback disabled by default for its system service.
+`volume = 0.25` is a monitor gain between 0 and 1; it does not change the
+signal sent to the other modem.
 
 The monitor follows the resident firmware's active-low speaker gate, rather
 than parsing AT commands itself. Use `ATM1` for setup audio, `ATM2` to keep the

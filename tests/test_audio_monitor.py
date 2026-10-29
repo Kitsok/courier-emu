@@ -1,4 +1,5 @@
 import struct
+import re
 import time
 from pathlib import Path
 
@@ -58,18 +59,22 @@ def test_missing_player_disables_monitor_without_stopping_producer(tmp_path):
 def test_audio_configuration_is_validated(tmp_path, setting):
     root = Path(__file__).resolve().parent.parent
     text = (root/'courier-emu.ini').read_text()
-    text = text.replace('volume = 0.25', setting) if setting.startswith('volume') else text.replace('enabled = false', setting)
+    text = text.replace('volume = 0.25', setting) if setting.startswith('volume') else re.sub(r'(?m)^enabled = (?:true|false)$', setting, text)
     path = tmp_path/'modem.ini';path.write_text(text)
     with pytest.raises(ValueError):
         read_config(path)
 
 
-def test_audio_settings_reach_worker(tmp_path):
+@pytest.mark.parametrize('enabled', [True, False])
+def test_audio_settings_reach_worker(tmp_path, enabled):
     root = Path(__file__).resolve().parent.parent
     path = tmp_path/'modem.ini'
-    path.write_text((root/'courier-emu.ini').read_text().replace('enabled = false', 'enabled = true'))
+    text = (root/'courier-emu.ini').read_text()
+    path.write_text(re.sub(r'(?m)^enabled = (?:true|false)$',
+                           'enabled = '+str(enabled).lower(), text))
     arguments, _ = read_config(path)
     args = cli.build_parser().parse_args(arguments)
     command = cli._worker_command(args)
-    assert '--audio-monitor' in command
-    assert command[command.index('--audio-volume')+1] == '0.25'
+    assert ('--audio-monitor' in command) is enabled
+    if enabled:
+        assert command[command.index('--audio-volume')+1] == '0.25'
