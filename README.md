@@ -1507,6 +1507,25 @@ paths are resolved beside the configuration. The parent directory must exist.
 Direct diagnostic CLI runs retain their JSON output unless `--log-level` is
 selected; `--diagnostic-report PATH` saves the shutdown report in that mode.
 
+### Optional connection audio
+
+Set `[audio] enabled = true` in `courier-emu.ini` to play the modem's transmit
+and receive audio through `paplay` (Debian package `pulseaudio-utils`, with a
+working PulseAudio or compatible PipeWire server). Playback is disabled by
+default. `volume = 0.25` is a monitor gain between 0 and 1; it does not change
+the signal sent to the other modem.
+
+The monitor follows the resident firmware's active-low speaker gate, rather
+than parsing AT commands itself. Use `ATM1` for setup audio, `ATM2` to keep the
+speaker on, and `ATM0` to mute it. External-Courier `ATL` behavior is not
+replaced with host volume control; use the configuration gain for that.
+Direct diagnostic launches can select `--audio-monitor --audio-volume 0.25`.
+
+A separate playback thread mixes the two directions and writes to the player.
+Its queue holds at most 200 ms; a slow or unavailable audio server cannot
+block the modem, and muting invalidates queued audio. Missing `paplay` or a
+failed player produces a warning and leaves the modem running.
+
 ### Incoming analog calls
 
 The same running instance accepts incoming UDP SIP calls on its configured

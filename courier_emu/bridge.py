@@ -528,6 +528,8 @@ class CourierDspBridge:
         self._last_snapshots: dict[str, Any] = {}
         self.bootstrap = bytearray()
         self.active = False
+        self.audio_monitor = None
+        self.speaker_enabled = lambda: False
         self.bootstrap_match: bool | None = None
         self._last_bootstrap_bytes = 0
         self._last_bootstrap_match: bool | None = None
@@ -3436,6 +3438,8 @@ class CourierDspBridge:
             incoming = self._sip_line.service(off_hook, samples, LINE_FRAME_SAMPLES)
         else:
             incoming = self.exchange.service(off_hook, samples, LINE_FRAME_SAMPLES)
+        if self.audio_monitor is not None:
+            self.audio_monitor.feed(samples, incoming, enabled=self.speaker_enabled())
         if incoming:
             self._line_rx_peak = max(self._line_rx_peak, _peak(incoming))
             if (
@@ -4165,6 +4169,8 @@ class CourierDspBridge:
             out.write(json.dumps(self.core.register_trace()) + "\n")
 
     def close(self) -> None:
+        if self.audio_monitor is not None:
+            self.audio_monitor.close()
         self._dump_register_trace()
         if self._sip_line is not None:
             self._sip_line.close()      # closes self.sip too

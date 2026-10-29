@@ -157,6 +157,8 @@ def main() -> int:
         type=int,
         help="inherited descriptor the front-panel lamp line is written to",
     )
+    parser.add_argument("--audio-monitor", action="store_true")
+    parser.add_argument("--audio-volume", type=float, default=.25)
     parser.add_argument("--log-level", choices=("quiet", "normal", "debug"))
     parser.add_argument("--diagnostic-report")
     args = parser.parse_args()
@@ -314,6 +316,10 @@ def main() -> int:
         console=console,
         cpu_engine=args.cpu_engine,
     )
+    if args.audio_monitor and machine.dsp_bridge is not None:
+        from .audio_monitor import AudioMonitor
+        machine.dsp_bridge.audio_monitor = AudioMonitor(args.audio_volume)
+        machine.dsp_bridge.speaker_enabled = lambda: not (machine.panel.latches.get(0x12, 0xff) & 0x10)
     if args.line_frames is not None and machine.dsp_bridge is not None:
         # Both ends stop at the same point in call time rather than at the
         # same instruction count, which they reach at different moments.

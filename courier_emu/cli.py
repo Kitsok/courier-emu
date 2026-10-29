@@ -210,6 +210,12 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
         raise ValueError("--diagnostic-report requires --log-level")
     if getattr(args, "diagnostic_report", None):
         command.extend(("--diagnostic-report", str(Path(args.diagnostic_report).resolve())))
+    if getattr(args, "audio_monitor", False):
+        if not args.with_dsp or not args.sip_server:
+            raise ValueError("--audio-monitor requires DSP and SIP")
+        if not 0 <= args.audio_volume <= 1:
+            raise ValueError("audio volume must be between 0 and 1")
+        command.extend(("--audio-monitor", "--audio-volume", str(args.audio_volume)))
     if args.cpu_engine != "interpreter":
         command.extend(("--cpu-engine", args.cpu_engine))
     for assignment in args.port:
@@ -1025,6 +1031,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="expose the DTE port as a pty device instead, for screen, "
         "minicom, or anything else that drives a serial modem",
     )
+    run.add_argument("--audio-monitor", action="store_true",
+                     help="play the firmware speaker locally using paplay")
+    run.add_argument("--audio-volume", type=float, default=.25,
+                     help="speaker monitor gain from 0 to 1 (default .25)")
     run.add_argument("--log-level", choices=("quiet", "normal", "debug"),
                      help="live operational logs instead of the diagnostic JSON report")
     run.add_argument("--diagnostic-report", metavar="PATH",

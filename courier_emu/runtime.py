@@ -25,8 +25,8 @@ def read_config(path: Path) -> tuple[list[str], Path]:
         config.read_file(source)
     if config.defaults():
         raise ValueError("configuration must not contain DEFAULT values")
-    if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging"}:
-        raise ValueError("configuration requires [modem] and [sip], with optional [logging]")
+    if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging", "audio"}:
+        raise ValueError("configuration requires [modem] and [sip], with optional [logging] and [audio]")
     for section, keys in KEYS.items():
         if set(config[section]) != keys:
             raise ValueError(f"[{section}] requires these keys: {', '.join(sorted(keys))}")
@@ -72,6 +72,15 @@ def read_config(path: Path) -> tuple[list[str], Path]:
         if not report.is_absolute():
             report = path.parent / report
         arguments.extend(("--diagnostic-report", str(report)))
+    if config.has_section("audio"):
+        audio = config["audio"]
+        if set(audio) - {"enabled", "volume"}:
+            raise ValueError("[audio] accepts only enabled and volume")
+        volume = audio.getfloat("volume", fallback=.25)
+        if not 0 <= volume <= 1:
+            raise ValueError("audio volume must be between 0 and 1")
+        if audio.getboolean("enabled", fallback=False):
+            arguments.extend(("--audio-monitor", "--audio-volume", str(volume)))
     return arguments, paths["nvram"]
 
 
