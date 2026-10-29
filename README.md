@@ -1557,6 +1557,9 @@ configuration, service and tmpfiles definitions. It contains no native compiler
 inputs and performs no pip installation, virtualenv setup or compilation at
 runtime. Build for the destination architecture and Python minor version; the
 package constrains that Python version and checks its ABI marker at startup.
+The installed launcher and firmware worker resolve packaged modules from any
+working directory, including systemd's default `/`; neither requires a source
+checkout or a user-supplied `PYTHONPATH`.
 
 On a Debian host selected for installation:
 

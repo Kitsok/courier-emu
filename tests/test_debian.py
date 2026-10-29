@@ -39,10 +39,11 @@ def test_package_loads_prebuilt_cores_and_operates_without_sources(tmp_path):
     path.write_text(config)
     command=[str(root/'usr/bin/courier-emu'),'--config',str(path)]
     env=dict(os.environ,PATH='/nonexistent')
-    subprocess.run(command+['--check-config'],env=env,check=True,capture_output=True)
+    env.pop('PYTHONPATH',None)
+    subprocess.run(command+['--check-config'],env=env,cwd=tmp_path,check=True,capture_output=True)
     assert not (tmp_path/'settings.nvram').exists()
     log=(tmp_path/'log').open('w')
-    process=subprocess.Popen(command,env=env,stdout=subprocess.DEVNULL,stderr=log)
+    process=subprocess.Popen(command,env=env,cwd=tmp_path,stdout=subprocess.DEVNULL,stderr=log)
     fd=None;data=b''
     try:
         deadline=time.monotonic()+35
@@ -66,7 +67,7 @@ def test_package_loads_prebuilt_cores_and_operates_without_sources(tmp_path):
     # Fail clearly on an incompatible Python ABI instead of compiling.
     marker=root/'usr/lib/courier-emu/runtime.json'
     marker.write_text('{"python_abi":"wrong"}')
-    result=subprocess.run(command+['--check-config'],env=env,capture_output=True,text=True)
+    result=subprocess.run(command+['--check-config'],env=env,cwd=tmp_path,capture_output=True,text=True)
     assert result.returncode==1
     assert 'different Python ABI' in result.stderr
 

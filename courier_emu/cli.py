@@ -385,6 +385,11 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
 
 def _worker_environment(args: argparse.Namespace) -> dict[str, str]:
     environment = os.environ.copy()
+    # A launcher can import this package through sys.path without changing
+    # cwd. The exec-ed worker needs that same package root in its environment.
+    root = str(Path(__file__).resolve().parent.parent)
+    inherited = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = root + (os.pathsep + inherited if inherited else "")
     if args.libunicorn:
         environment["LIBUNICORN_PATH"] = str(Path(args.libunicorn).resolve())
     return environment
