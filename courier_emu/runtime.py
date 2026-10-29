@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import configparser
 import ipaddress
+import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -103,8 +104,11 @@ def main(argv: list[str] | None = None) -> int:
         # Resolve and verify firmware without booting the emulator.
         cli._worker_command(cli.build_parser().parse_args(arguments))
         os.environ["COURIER_EMU_NO_BUILD"] = "1"
-        x86_native.build_library()
-        dsp.build_library()
+        library = x86_native.build_library()
+        spec = importlib.util.spec_from_file_location("_x86_native", library)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        dsp.load_library()
         if args.check_config:
             if nvram.exists():
                 CourierNvram.load(nvram)
@@ -112,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         seed_nvram(nvram)
         return cli.main(arguments)
-    except (OSError, ValueError, RuntimeError, configparser.Error) as exc:
+    except (OSError, ValueError, RuntimeError, ImportError, configparser.Error) as exc:
         print(f"courier-emu: {exc}", file=sys.stderr)
         return 1
 

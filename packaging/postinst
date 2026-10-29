@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+    if ! getent passwd courier-emu >/dev/null; then
+        adduser --system --ingroup dialout --home /var/lib/courier-emu \
+            --no-create-home --disabled-login courier-emu
+    fi
+    if command -v systemd-tmpfiles >/dev/null; then
+        systemd-tmpfiles --create /usr/lib/tmpfiles.d/courier-emu.conf
+    fi
+    deb-systemd-helper unmask courier-emu.service >/dev/null || true
+    if deb-systemd-helper --quiet was-enabled courier-emu.service; then
+        deb-systemd-helper enable courier-emu.service >/dev/null || true
+    else
+        deb-systemd-helper update-state courier-emu.service >/dev/null || true
+    fi
+    if [ -d /run/systemd/system ]; then
+        systemctl daemon-reload
+        action=start
+        if [ -n "${2:-}" ]; then action=restart; fi
+        deb-systemd-invoke "$action" courier-emu.service || true
+    fi
+fi

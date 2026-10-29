@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 from .x86_interpreter import UC_X86_REG_AX, UC_X86_REG_CS, UC_X86_REG_IP
-from .build import require_build_allowed
+from .build import require_build_allowed, packaged_library
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "native" / "x86_interpreter.cpp"
@@ -18,6 +18,9 @@ LIBRARY = ROOT / ".build" / ("_x86_native" + sysconfig.get_config_var("EXT_SUFFI
 
 
 def build_library():
+    installed = packaged_library(LIBRARY.name)
+    if installed is not None:
+        return installed
     if not LIBRARY.exists() or LIBRARY.stat().st_mtime_ns < SOURCE.stat().st_mtime_ns:
         require_build_allowed(LIBRARY)
         LIBRARY.parent.mkdir(exist_ok=True)

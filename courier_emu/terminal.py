@@ -42,6 +42,9 @@ def _pty_channel() -> tuple[int, int, str]:
 
     master, slave = pty.openpty()
     tty.setraw(slave)
+    # The service primary group is dialout; publish the PTY with that group.
+    os.fchown(slave, -1, os.getgid())
+    os.fchmod(slave, 0o660)
     return master, slave, os.ttyname(slave)
 
 

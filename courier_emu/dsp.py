@@ -10,7 +10,7 @@ from typing import Any
 
 from .xmf import XmfImage
 from .timebase import ASIC_DSP_CLOCK_HZ
-from .build import require_build_allowed
+from .build import require_build_allowed, packaged_library
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -57,6 +57,11 @@ def build_runner(*, force: bool = False) -> Path:
 
 
 def build_library(*, force: bool = False) -> Path:
+    installed = packaged_library(LIBRARY.name)
+    if installed is not None:
+        if force:
+            raise RuntimeError("installed native components must be rebuilt in the source tree")
+        return installed
     # A prebuilt library can be named outright, which is how builds are
     # compared against each other.
     override = os.environ.get("COURIER_C5X_LIBRARY")

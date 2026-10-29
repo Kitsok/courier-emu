@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+case "$1" in
+    remove|purge)
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload
+        fi
+        ;;
+esac
+if [ "$1" = remove ]; then
+    deb-systemd-helper mask courier-emu.service >/dev/null || true
+fi
+if [ "$1" = purge ]; then
+    deb-systemd-helper purge courier-emu.service >/dev/null || true
+    deb-systemd-helper unmask courier-emu.service >/dev/null || true
+fi
+case "$1" in
+ remove|purge)
+    if [ -L /dev/courier-emu ] && [ "$(readlink /dev/courier-emu)" = /run/courier-emu/tty ]; then
+        rm /dev/courier-emu
+    fi
+    ;;
+esac

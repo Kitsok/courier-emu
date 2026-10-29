@@ -1526,6 +1526,68 @@ Its queue holds at most 200 ms; a slow or unavailable audio server cannot
 block the modem, and muting invalidates queued audio. Missing `paplay` or a
 failed player produces a warning and leaves the modem running.
 
+### Debian package and systemd
+
+Build a package without installing it:
+
+```sh
+./build-deb.sh --version 0.1.0
+```
+
+Packaging additionally requires Debian's `dpkg-dev`. It explicitly builds the
+native cores and derives shared-library dependencies from their ELF metadata.
+The resulting `dist/courier-emu_0.1.0_<architecture>.deb` contains the Python
+runtime, prebuilt 80186 and C5x cores, the analog403 board and DSP mask ROMs,
+configuration, service and tmpfiles definitions. It contains no native compiler
+inputs and performs no pip installation, virtualenv setup or compilation at
+runtime. Build for the destination architecture and Python minor version; the
+package constrains that Python version and checks its ABI marker at startup.
+
+On a Debian host selected for installation:
+
+```sh
+sudo apt install ./dist/courier-emu_0.1.0_amd64.deb
+sudo systemctl status courier-emu
+journalctl -u courier-emu -f
+tio /dev/courier-emu
+```
+
+Installation creates the `courier-emu` system account with primary service
+group `dialout`, enables the service on first installation and starts it on a
+running systemd host. Upgrades preserve an administrator's disabled state.
+The foreground/source workflow does not install a service.
+
+| Installed component | Path |
+|---|---|
+| Launcher | `/usr/bin/courier-emu` |
+| Python modules, native cores and analog ROMs | `/usr/lib/courier-emu/` |
+| Configuration, preserved on upgrades | `/etc/courier-emu/config.ini` |
+| Persistent firmware settings | `/var/lib/courier-emu/settings.nvram` |
+| Service-owned stable PTY link | `/run/courier-emu/tty` |
+| Public device link, created by tmpfiles | `/dev/courier-emu` |
+| Unit | `/usr/lib/systemd/system/courier-emu.service` |
+
+The PTY is mode 0660 with the service's primary group, `dialout`. The user
+running `tio` needs membership in that group (re-login after adding membership).
+The modem process runs without root. Systemd creates its runtime and persistent
+state directories, while package installation/tmpfiles creates the `/dev`
+symlink; the service does not create a new kernel character-device driver.
+The runtime link is removed on shutdown and recreated for the next PTY.
+
+Edit the configuration for the destination SIP network, then validate and
+restart:
+
+```sh
+sudo /usr/bin/courier-emu --config /etc/courier-emu/config.ini --check-config
+sudo systemctl restart courier-emu
+systemctl is-enabled courier-emu
+```
+
+The service uses normal journal logging and disables local speaker playback
+by default. Firmware settings remain in `/var/lib/courier-emu` when the package
+is removed, including on purge; they are not silently discarded. Package and
+service checks do not imply that the unresolved incoming data tests pass.
+
 ### Incoming analog calls
 
 The same running instance accepts incoming UDP SIP calls on its configured

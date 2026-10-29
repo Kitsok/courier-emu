@@ -1,0 +1,27 @@
+[Unit]
+Description=Analog Courier SIP modem emulator
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=courier-emu
+Group=dialout
+RuntimeDirectory=courier-emu
+RuntimeDirectoryMode=0750
+StateDirectory=courier-emu
+StateDirectoryMode=0770
+UMask=0007
+ExecStartPre=/usr/bin/courier-emu --config /etc/courier-emu/config.ini --check-config
+ExecStart=/usr/bin/courier-emu --config /etc/courier-emu/config.ini
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

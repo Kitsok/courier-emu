@@ -3,12 +3,28 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import sysconfig
+
+
+def packaged_library(filename: str) -> Path | None:
+    """Installed packages contain prebuilt cores, never compiler inputs."""
+    root = Path(__file__).resolve().parent.parent
+    marker = root / "runtime.json"
+    if not marker.exists():
+        return None
+    metadata = json.loads(marker.read_text())
+    if metadata.get("python_abi") != sys.implementation.cache_tag:
+        raise RuntimeError("packaged runtime uses a different Python ABI; rebuild the Debian package")
+    library = root / "lib" / filename
+    if not library.is_file():
+        raise RuntimeError(f"packaged native component is missing: {library}; reinstall the package")
+    return library
 
 
 def require_build_allowed(path: Path) -> None:
