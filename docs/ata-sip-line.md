@@ -73,6 +73,27 @@ call instead of tearing down its sockets.
 Audio crosses at `peer_audio`, resampled both ways. The modem learns none of
 it: it seizes a loop, hears dial tone, dials, and hears ringback.
 
+## In-call media updates
+
+`SipSession` accepts SDP-bearing re-INVITEs within an established inbound or
+outbound dialog. A supported IPv4 G.711 `sendrecv` offer updates the RTP
+destination and returns 200 OK with local SDP, without ringing again or
+resetting the modem, audio queues or RTP counters. This supports a PBX moving
+media directly between endpoints and later moving it back through the PBX.
+
+Dialog tags and the remote CSeq distinguish these updates from separate calls,
+which still receive 486 Busy Here. Unsupported offers, including hold and
+offers without SDP, receive 488 without changing the current media settings.
+Responses are cached for duplicate requests; successful responses are
+retransmitted until ACK, with the call released after 32 seconds without ACK.
+Late RTP from a retired destination is ignored until that destination is
+selected again. Media changes are logged as `[sip] re-INVITE: RTP -> ...`.
+
+`tests/test_sip_reinvite.py` covers target changes, replay, ACK, return to the
+bridge, rejected offers, dialog matching, busy calls and stale CSeq values.
+These new tests and live PBX direct-media calls have not been run for this
+change.
+
 ## Verified
 
 `tests/test_ata.py` runs the whole chain over real UDP sockets against a mock

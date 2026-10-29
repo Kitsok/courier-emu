@@ -299,6 +299,8 @@ class SipSession:
         self.rtp_socket.setblocking(False)
         self.rtp_port = self.rtp_socket.getsockname()[1]
         self.remote_rtp: tuple[str, int] | None = None
+        self._sdp_session_id = random.getrandbits(63)
+        self._sdp_version = 0
 
         token = random.getrandbits(64)
         self.call_id = f"{token:016x}@{self.local_ip}"
@@ -332,6 +334,9 @@ class SipSession:
         self._incoming_final_at = 0.0
         self._incoming_next_response_at = 0.0
         self._incoming_retransmit_after = 0.5
+        self._remote_cseq = -1
+        self._media_update = None
+        self._retired_rtp_peers = set()
         self.registered = False
         self._register_call_id = f"{random.getrandbits(64):016x}@{self.local_ip}"
         self._register_cseq = 0
@@ -408,6 +413,11 @@ class SipSession:
         self.number = number
         self._dialog_peer = self.server_address
         self.direction = "outbound"
+        self._sdp_session_id = random.getrandbits(63)
+        self._sdp_version = 0
+        self._remote_cseq = -1
+        self._media_update = None
+        self._retired_rtp_peers = set()
         self.incoming_from = ""
         self.incoming_to = ""
         self._incoming_headers = {}
@@ -434,10 +444,10 @@ class SipSession:
         self._send_invite()
 
     def _sdp(self) -> bytes:
-        session_id = random.getrandbits(31)
+        session_id = self._sdp_session_id
         lines = (
             "v=0",
-            f"o=- {session_id} {session_id} IN IP4 {self.local_ip}",
+            f"o=- {session_id} {self._sdp_version} IN IP4 {self.local_ip}",
             "s=Courier Emulator",
             f"c=IN IP4 {self.local_ip}",
             "t=0 0",
@@ -644,30 +654,36 @@ class SipSession:
             self.error = f"REGISTER failed with SIP {status}"
 
     def _parse_sdp(self, body: bytes, source_host: str) -> None:
-        host = source_host
-        port = 0
-        payloads: list[str] = []
-        for raw in body.decode("ascii", "ignore").splitlines():
-            line = raw.strip()
-            if line.startswith("c=IN IP4 "):
-                host = line.split()[-1]
-            elif line.startswith("m=audio "):
-                fields = line.split()
-                port = int(fields[1])
-                payloads = fields[3:]
-            elif line.startswith("a=rtpmap:"):
-                # A dynamic payload type is whatever number the peer gave it.
-                number, _, mapping = line[len("a=rtpmap:"):].partition(" ")
-                if (mapping.split("/")[0].upper() == self.encoding
-                        and number in payloads):
-                    self.payload_type = int(number)
-        if port and str(self.payload_type) in payloads:
-            self.remote_rtp = (host, port)
-        elif port:
-            raise ValueError(f"SIP peer did not accept {self.encoding} "
-                             f"payload {self.payload_type}")
-        else:
-            raise ValueError("SIP peer did not offer an audio RTP port")
+        # Parse into locals: rejecting a new offer must not change live media.
+        sections = re.split(r'(?m)^m=', body.decode('ascii', 'ignore'))
+        session = sections[0]
+        audio = next((part for part in sections[1:] if part.startswith('audio ')), '')
+        fields = audio.splitlines()[0].split() if audio else []
+        if len(fields) < 4 or fields[2] != 'RTP/AVP':
+            raise ValueError('SIP peer did not offer G.711 RTP audio')
+        port = int(fields[1])
+        connection = re.search(r'(?im)^c=IN IP4\s+([^\s]+)', audio)
+        if connection is None:
+            connection = re.search(r'(?im)^c=IN IP4\s+([^\s]+)', session)
+        host = connection.group(1) if connection else source_host
+        socket.inet_pton(socket.AF_INET, host)
+        direction = re.findall(r'(?im)^a=(sendrecv|sendonly|recvonly|inactive)\s*$', audio)
+        if not direction:
+            direction = re.findall(r'(?im)^a=(sendrecv|sendonly|recvonly|inactive)\s*$', session)
+        if not 0 < port <= 65535 or host == '0.0.0.0' or (direction and direction[-1].lower() != 'sendrecv'):
+            raise ValueError('Modem calls require active sendrecv audio')
+        mappings = dict(re.findall(r'(?im)^a=rtpmap:(\d+)\s+([^\s]+)', audio))
+        default = CODECS[self.config.codec][0]
+        payload_type = next((int(number) for number in fields[3:]
+                             if number.isdigit() and 0 <= int(number) <= 127
+                             and mappings.get(number, f'{self.encoding}/8000' if number == str(default) else '').upper()
+                             in (f'{self.encoding}/8000', f'{self.encoding}/8000/1')), None)
+        if payload_type is None:
+            raise ValueError(f'SIP peer did not accept {self.encoding}/8000')
+        if payload_type != self.payload_type:
+            self._sdp_version += 1
+        self.payload_type = payload_type
+        self.remote_rtp = (host, port)
 
     @staticmethod
     def _header_user(value: str) -> str:
@@ -836,6 +852,13 @@ class SipSession:
         method = fields[0].upper()
         headers = _header_map(lines[1:])
 
+        if method == "ACK" and self._media_update:
+            update = self._media_update
+            if (self._matches_dialog(headers, source)
+                    and headers.get("cseq", "").split() == [str(update['cseq']), "ACK"]):
+                update['acked'] = True
+                return
+
         if method in ("OPTIONS", "NOTIFY"):
             # Asterisk qualifies registered contacts with OPTIONS and sends an
             # unsolicited message-summary NOTIFY immediately after REGISTER.
@@ -858,9 +881,16 @@ class SipSession:
                 and source == self._incoming_peer
                 and headers.get("call-id") == self.call_id
                 and headers.get("cseq") == self._incoming_headers.get("cseq")
+                and headers.get("via") == self._incoming_headers.get("via")
             ):
                 if self._incoming_response:
                     self._send_response(self._incoming_response, "tx response retransmit")
+                return
+            if self.state == "connected" and headers.get("call-id") == self.call_id:
+                self._reinvite(headers, body, source)
+                return
+            if re.search(r";\s*tag=", headers.get("to", ""), re.I):
+                self._send_response(self._response(481, "Call/Transaction Does Not Exist", headers), "tx 481", source)
                 return
             if self.state not in ("idle", "closed", "failed"):
                 self._send_response(
@@ -875,6 +905,11 @@ class SipSession:
                 )
                 return
             self.direction = "inbound"
+            self._sdp_session_id = random.getrandbits(63)
+            self._sdp_version = 0
+            self._remote_cseq = int(sequence[0])
+            self._media_update = None
+            self._retired_rtp_peers = set()
             self._dialog_peer = self._incoming_peer = source
             self._incoming_acked = False
             self.last_status = 0
@@ -972,6 +1007,60 @@ class SipSession:
         self.state = "closed"
         self.events.append("rx BYE")
 
+    @staticmethod
+    def _tag(header: str) -> str:
+        match = re.search(r'(?:^|;)\s*tag=([^;\s>]+)', header, re.I)
+        return match.group(1) if match else ''
+
+    def _matches_dialog(self, headers, source) -> bool:
+        remote = (self._incoming_headers.get('from', '')
+                  if self.direction == 'inbound' else self.to_header)
+        return (source == self._dialog_peer
+                and headers.get('call-id') == self.call_id
+                and self._tag(headers.get('to', '')) == self.from_tag
+                and bool(self._tag(remote))
+                and self._tag(headers.get('from', '')) == self._tag(remote))
+
+    def _reinvite(self, headers, body, source) -> None:
+        """Refresh only the RTP endpoint; keep the running modem and queues."""
+        if not self._matches_dialog(headers, source):
+            self._send_response(self._response(481, 'Call/Transaction Does Not Exist', headers), 'tx 481', source)
+            return
+        cseq = int(headers['cseq'].split()[0])
+        update = self._media_update
+        if update and cseq == update['cseq'] and headers.get('via') == update['via']:
+            self._send_response(update['response'], 'tx re-INVITE retransmit', source)
+            return
+        if cseq <= self._remote_cseq:
+            self._send_response(self._response(500, 'CSeq Out of Order', headers), 'tx 500', source)
+            return
+        if update and not update['acked'] and update['success']:
+            self._send_response(self._response(491, 'Request Pending', headers), 'tx 491', source)
+            return
+        self._remote_cseq = cseq
+        old = self.remote_rtp
+        try:
+            self._parse_sdp(body, source[0])
+        except (ValueError, OSError, IndexError):
+            response = self._response(488, 'Not Acceptable Here', headers)
+            success = False
+        else:
+            self._retired_rtp_peers.discard(self.remote_rtp)
+            if old and old != self.remote_rtp:
+                self._retired_rtp_peers.add(old)
+            contact = headers.get('contact', '')
+            match = re.search(r'<([^>]+)>', contact) or re.search(r'(sip:\S+)', contact)
+            if match:
+                self.remote_target = match.group(1)
+            response = self._response(200, 'OK', headers, body=self._sdp())
+            success = True
+            LOG.info('[sip] re-INVITE: RTP -> %s:%s', *self.remote_rtp)
+        now = time.monotonic()
+        self._media_update = dict(cseq=cseq, via=headers.get('via'), response=response,
+                                  success=success, acked=False, started=now,
+                                  next=now + .5, interval=.5)
+        self._send_response(response, 'tx re-INVITE response', source)
+
     def poll(self) -> None:
         if self.closed:
             return
@@ -994,6 +1083,8 @@ class SipSession:
                 packet, _source = self.rtp_socket.recvfrom(2_048)
             except BlockingIOError:
                 break
+            if _source in self._retired_rtp_peers:
+                continue
             if len(packet) < 12 or packet[1] & 0x7F != self.payload_type:
                 continue
             if self.codewords:
@@ -1004,6 +1095,16 @@ class SipSession:
             self.rtp_packets_received += 1
             self.rtp_octets_received += len(packet) - 12
         now = time.monotonic()
+        update = self._media_update
+        if (self.state == 'connected' and update and update['success']
+                and not update['acked']):
+            if now - update['started'] >= 32:
+                self.hangup()
+                self.error = 'SIP media update was not acknowledged'
+            elif now >= update['next']:
+                self._send_response(update['response'], 'tx re-INVITE 200 retransmit', self._dialog_peer)
+                update['interval'] = min(update['interval'] * 2, 4)
+                update['next'] = now + update['interval']
         if (getattr(self, "direction", "") == "inbound" and self.state == "connected"
                 and not self._incoming_acked):
             if now - self._incoming_final_at >= 32:
