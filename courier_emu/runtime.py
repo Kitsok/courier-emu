@@ -25,8 +25,8 @@ def read_config(path: Path) -> tuple[list[str], Path]:
         config.read_file(source)
     if config.defaults():
         raise ValueError("configuration must not contain DEFAULT values")
-    if set(config.sections()) != set(KEYS):
-        raise ValueError("configuration requires exactly [modem] and [sip] sections")
+    if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging"}:
+        raise ValueError("configuration requires [modem] and [sip], with optional [logging]")
     for section, keys in KEYS.items():
         if set(config[section]) != keys:
             raise ValueError(f"[{section}] requires these keys: {', '.join(sorted(keys))}")
@@ -60,6 +60,18 @@ def read_config(path: Path) -> tuple[list[str], Path]:
                       ("port", "--sip-local-port"), ("rtp_port", "--rtp-local-port"),
                       ("codec", "--sip-codec")):
         arguments.extend((flag, sip[key]))
+    logging = config["logging"] if config.has_section("logging") else {}
+    if set(logging) - {"level", "report"}:
+        raise ValueError("[logging] accepts only level and report")
+    level = logging.get("level", "normal")
+    if level not in ("quiet", "normal", "debug"):
+        raise ValueError("logging level must be quiet, normal or debug")
+    arguments.extend(("--log-level", level))
+    if logging.get("report", "").strip():
+        report = Path(logging["report"]).expanduser()
+        if not report.is_absolute():
+            report = path.parent / report
+        arguments.extend(("--diagnostic-report", str(report)))
     return arguments, paths["nvram"]
 
 

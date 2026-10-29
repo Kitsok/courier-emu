@@ -98,3 +98,23 @@ def test_bind_and_advertise_are_independent():
         assert b"c=IN IP4 192.0.2.10" in session._sdp()
     finally:
         session.close()
+
+
+@pytest.mark.parametrize("old,new", [
+    ("level = normal", "level = verbose"),
+    ("level = normal", "level = normal\nunknown = yes"),
+])
+def test_invalid_logging_configuration_is_rejected(tmp_path, old, new):
+    with pytest.raises(ValueError):
+        read_config(config_file(tmp_path, old, new))
+
+
+def test_optional_report_path_and_legacy_config(tmp_path):
+    path = config_file(tmp_path, "report =", "report = diagnostic.json")
+    arguments, _ = read_config(path)
+    args = cli.build_parser().parse_args(arguments)
+    assert args.log_level == "normal"
+    assert args.diagnostic_report == str(tmp_path / "diagnostic.json")
+    path.write_text(path.read_text().split("[logging]")[0])
+    arguments, _ = read_config(path)
+    assert cli.build_parser().parse_args(arguments).log_level == "normal"

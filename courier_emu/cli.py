@@ -204,6 +204,12 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
         "--instructions",
         str(instruction_limit(args)),
     ]
+    if getattr(args, "log_level", None):
+        command.extend(("--log-level", args.log_level))
+    if getattr(args, "diagnostic_report", None) and not getattr(args, "log_level", None):
+        raise ValueError("--diagnostic-report requires --log-level")
+    if getattr(args, "diagnostic_report", None):
+        command.extend(("--diagnostic-report", str(Path(args.diagnostic_report).resolve())))
     if args.cpu_engine != "interpreter":
         command.extend(("--cpu-engine", args.cpu_engine))
     for assignment in args.port:
@@ -378,6 +384,9 @@ def _run_isolated(args: argparse.Namespace) -> int:
     environment = _worker_environment(args)
     if args.console or args.serial_pty:
         return run_console(args, command, environment)
+    if getattr(args, "log_level", None):
+        process = subprocess.run(command, stdout=subprocess.DEVNULL, env=environment)
+        return 0 if process.returncode == 0 else 2
     process = subprocess.run(command, text=True, capture_output=True, env=environment)
     if process.returncode != 0:
         if process.returncode < 0:
@@ -1016,6 +1025,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="expose the DTE port as a pty device instead, for screen, "
         "minicom, or anything else that drives a serial modem",
     )
+    run.add_argument("--log-level", choices=("quiet", "normal", "debug"),
+                     help="live operational logs instead of the diagnostic JSON report")
+    run.add_argument("--diagnostic-report", metavar="PATH",
+                     help="save shutdown diagnostic JSON with operational logging")
     run.add_argument(
         "--serial-link", metavar="PATH",
         help="publish a stable symlink to the serial PTY; requires --serial-pty",

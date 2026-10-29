@@ -11,6 +11,8 @@ import threading
 import time
 
 
+from .operational import LOG, EventLog
+
 SIP_PORT = 5060
 PCMU_RATE = 8_000
 RTP_PACKET_SAMPLES = 160
@@ -316,7 +318,7 @@ class SipSession:
         self.state = "idle"
         self.last_status = 0
         self.error = ""
-        self.events: deque[str] = deque(maxlen=64)
+        self.events: deque[str] = EventLog(maxlen=64)
         self._invite = b""
         self._invite_branch = ""
         self._invite_cseq = 0
@@ -427,6 +429,7 @@ class SipSession:
             self._rtp_tx_primed = False
         self._auth_attempted = False
         self._invite_deadline = time.monotonic() + 32.0
+        LOG.info("[call] dialing %s", self.target_uri)
         self._send_invite()
 
     def _sdp(self) -> bytes:

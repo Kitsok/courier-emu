@@ -76,11 +76,12 @@ def _run_console(args, command, environment, publication) -> int:
     if lamps_write is not None:
         extra += ["--lamps-fd", str(lamps_write)]
         passed.append(lamps_write)
+    operational = bool(getattr(args, "log_level", None))
     process = subprocess.Popen(
         command + extra,
         pass_fds=tuple(passed),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL if operational else subprocess.PIPE,
+        stderr=None if operational else subprocess.PIPE,
         text=True,
         env=environment,
     )
@@ -118,6 +119,15 @@ def _run_console(args, command, environment, publication) -> int:
             os.close(keep_open)
         if lamps_read is not None:
             os.close(lamps_read)
+
+    if operational:
+        if process.poll() is None:
+            try:
+                process.wait(timeout=SHUTDOWN_SECONDS)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        return 0 if process.returncode == 0 else 2
 
     # In a terminal session stdout is the modem, so the run's own report goes
     # to stderr and `--console > session.txt` captures exactly what the

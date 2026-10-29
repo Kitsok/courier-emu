@@ -1490,8 +1490,22 @@ Interactive runs use a 63-bit instruction ceiling instead of the previous
 roughly four-hour budget.
 
 This profile does not establish physical-modem interoperability by itself.
-Normal operational logging is a separate implementation stage. The legacy
-diagnostic report is still printed when the worker stops.
+The source launcher defaults to live normal logging on stderr. `[logging]`
+accepts `level = quiet`, `normal`, or `debug`: quiet retains warnings and errors;
+normal records command-mode AT input, firmware result lines (including the
+CONNECT speed/protocol/compression string), and SIP call events; debug also
+records media counters and retransmissions. Application payload is excluded
+from AT logs. Result logging observes the firmware's emitted text, so `ATQ1`
+suppresses result logs too and numeric result codes are not decoded.
+
+Log delivery uses a bounded queue outside the modem thread. A slow journal or
+pipe drops queued log messages instead of blocking modem timing. The launcher
+inherits stderr directly, so logs appear while the modem runs rather than
+being buffered until exit. It does not print a diagnostic JSON report on
+shutdown. Set `[logging] report = PATH` to save that report explicitly; relative
+paths are resolved beside the configuration. The parent directory must exist.
+Direct diagnostic CLI runs retain their JSON output unless `--log-level` is
+selected; `--diagnostic-report PATH` saves the shutdown report in that mode.
 
 ### Incoming analog calls
 

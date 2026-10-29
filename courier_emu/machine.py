@@ -9,6 +9,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Callable
 
+from .operational import AtEvents
 from .xmf import FLASH_PHYSICAL_BASE, XmfImage
 from .bridge import (
     C51_ROM_LOADER_LOOP, DSP_RUNTIME_PORTS, HOST_STATUS_CELL, HOST_WORD_CELL, LANE_BANKS,
@@ -611,6 +612,8 @@ class CourierMachine:
         self.io_counts: Counter[tuple[str, int, int]] = Counter()
         self.mmio_counts: Counter[tuple[str, int, int]] = Counter()
         self.serial = bytearray()
+        self._serial_recent = deque(maxlen=12)
+        self.at_events = AtEvents()
         self.serial_truncated = False
         self.data_rx_bytes = 0
         self.data_tx_bytes = 0
@@ -864,8 +867,17 @@ class CourierMachine:
         vector = bytes(uc.mem_read(INT0_VECTOR * 4, 4))
         return any(vector)
 
+    def _firmware_command_mode(self) -> bool:
+        layout = self._rom_serial
+        if layout is None or not hasattr(self, "uc"):
+            return not self.online_mode
+        callback = int.from_bytes(self.uc.mem_read(layout.callbacks + 4, 2), "little")
+        return callback in (layout.command_idle, layout.command_collecting, layout.online_idle)
+
     def _capture_serial(self, value: int) -> None:
         value &= 0xFF
+        self.at_events.transmitted(value, command_mode=(not self.online_mode or self._firmware_command_mode()))
+        self._serial_recent.append(value)
         if len(self.serial) < MAX_SERIAL_BYTES:
             self.serial.append(value)
         else:
@@ -885,7 +897,7 @@ class CourierMachine:
         # line. ATI6 prints "No Connection", which a case-blind search took for
         # one, and the console then passed the parity bit through on
         # everything after it.
-        recent = bytes(byte & 0x7F for byte in self.serial[-8:])
+        recent = bytes(byte & 0x7F for byte in list(self._serial_recent)[-8:])
         if (not self.online_mode and recent[1:] == b"CONNECT"
                 and recent[:1] in (b"\r", b"\n")):
             self.online_mode = True
@@ -893,7 +905,7 @@ class CourierMachine:
         # And NO CARRIER is the way back: the firmware has dropped the call and
         # its command parser owns the port again. The whole line, CR included,
         # so payload that merely mentions it does not end the session early.
-        tail = bytes(byte & 0x7F for byte in self.serial[-12:])
+        tail = bytes(byte & 0x7F for byte in self._serial_recent)
         if self.online_mode and tail == b"\nNO CARRIER\r":
             self.online_mode = False
             self.serial_trace.append("left-data-mode")
@@ -1880,13 +1892,17 @@ class CourierMachine:
                     # firmware, which parses it for itself. Nothing is
                     # intercepted; the line model needs the text only to
                     # know whether this end was told to answer or to call.
-                    if byte in (10, 13):
+                    command_mode = self._firmware_command_mode()
+                    self.at_events.received(byte, command_mode=command_mode)
+                    if not command_mode:
+                        self._rom_command_line.clear()
+                    elif byte in (10, 13):
                         self._online_attention_armed = False
                         typed = attention_body(bytes(self._rom_command_line))
                         self._rom_command_line.clear()
                         if typed is not None and self.dsp_bridge is not None:
                             self.dsp_bridge.note_dte_command(typed)
-                    else:
+                    elif len(self._rom_command_line) < 1024:
                         self._rom_command_line.append(byte)
                     self.uart.deliver(byte)
                     _uc.emu_stop()

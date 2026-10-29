@@ -33,6 +33,7 @@ import time
 import wave
 from typing import Any
 
+from .operational import LOG
 from .daa import DAA_SAMPLE_RATE
 from .exchange import LineExchange
 from .sip import (PCMU_RATE, RTP_PACKET_SAMPLES, PolyphaseResampler,
@@ -163,6 +164,10 @@ class SipLine:
         self.late_seconds += late
         self.peak_late_seconds = max(self.peak_late_seconds, late)
         self.frames += 1
+        if self.frames % 100 == 0:
+            LOG.debug("[media] frames=%d state=%s underrun_samples=%d pending=%d late_ms=%.1f",
+                      self.frames, self.exchange.state, self.underrun_samples,
+                      len(self._pending), self.peak_late_seconds * 1000)
         if late > RTP_PACKET_SAMPLES / PCMU_RATE:
             self.late_frames += 1
             if len(self.late_spikes) < 64:
@@ -216,6 +221,10 @@ class SipLine:
     def _follow_sip(self) -> None:
         """Turn what the network did into what the loop should hear."""
         state = self.sip.state
+        if state != self._sip_state:
+            LOG.info("[call] SIP %s -> %s (%s), peer=%s, error=%s",
+                     self._sip_state, state, self.sip.direction,
+                     self.sip.remote_rtp, self.sip.error or "none")
         if state == "incoming" and self.sip.direction == "inbound":
             if self.exchange.off_hook or self.exchange.state not in ("idle", "released"):
                 self.sip.reject_incoming(486, "Busy Here")

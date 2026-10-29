@@ -8,6 +8,7 @@ import signal
 
 from .codec import DAA_REVISION, CodecBringUp, SiliconDaa, nearest_sample_rate
 from .console import SerialConsole
+from .operational import LOG, OperationalLog
 from .daa import CourierDaa, DAA_LINE_STATES, RingSource
 from .flash import ParameterFlash
 from .images import load_image
@@ -156,7 +157,10 @@ def main() -> int:
         type=int,
         help="inherited descriptor the front-panel lamp line is written to",
     )
+    parser.add_argument("--log-level", choices=("quiet", "normal", "debug"))
+    parser.add_argument("--diagnostic-report")
     args = parser.parse_args()
+    operational = OperationalLog(args.log_level) if args.log_level else None
 
     console = (
         SerialConsole(args.serial_fd, lamps_fd=args.lamps_fd)
@@ -321,8 +325,21 @@ def main() -> int:
     # peer at the end of its call), so either way the run still reports itself.
     for number in (signal.SIGINT, signal.SIGTERM):
         signal.signal(number, lambda *_: machine.request_stop())
-    print(json.dumps(machine.run(args.instructions).to_dict(), sort_keys=True))
-    return 0
+    try:
+        LOG.info("[runtime] analog Courier starting")
+        result = machine.run(args.instructions)
+        if operational is None:
+            print(json.dumps(result.to_dict(), sort_keys=True))
+        elif args.diagnostic_report:
+            Path(args.diagnostic_report).write_text(json.dumps(result.to_dict(), sort_keys=True) + "\n")
+        if result.error:
+            LOG.error("[runtime] %s: %s", result.status, result.error)
+        else:
+            LOG.info("[runtime] stopped: %s", result.status)
+    finally:
+        if operational is not None:
+            operational.close()
+    return 1 if operational is not None and result.error else 0
 
 
 if __name__ == "__main__":

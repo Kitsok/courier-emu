@@ -30,7 +30,7 @@ def test_firmware_dials_and_keypress_cancels(tmp_path):
         config = config.replace("port = 5074", f"port = {local_sip}")
         config = config.replace("rtp_port = 4014", f"rtp_port = {local_rtp}")
         location = tmp_path / "modem.ini"
-        location.write_text(config)
+        location.write_text(config.replace("report =", "report = diagnostics.json"))
         terminal = tmp_path / "artifacts/courier-emu.tty"
         with (tmp_path / "worker.json").open("w") as report, \
                 (tmp_path / "stderr").open("w") as errors:
@@ -77,6 +77,13 @@ def test_firmware_dials_and_keypress_cancels(tmp_path):
                     process.kill()
                     process.wait()
             assert process.returncode == 0
+            log = (tmp_path / "stderr").read_text()
+            assert "[at] command:" in log
+            assert "[sip]" in log
+            assert not (tmp_path / "worker.json").read_text()
+            import json
+            diagnostic = json.loads((tmp_path / "diagnostics.json").read_text())
+            assert diagnostic["status"] == "stop-requested"
             assert not terminal.is_symlink()
 
 
@@ -97,7 +104,7 @@ def test_firmware_rings_and_answers_incoming_call(tmp_path, auto_answer):
         config = config.replace("port = 5074", f"port = {sip_port}")
         config = config.replace("rtp_port = 4014", f"rtp_port = {rtp_port}")
         location = tmp_path / "modem.ini"
-        location.write_text(config)
+        location.write_text(config.replace("report =", "report = diagnostics.json"))
         terminal = tmp_path / "artifacts/courier-emu.tty"
         body = b"v=0\r\nc=IN IP4 127.0.0.1\r\nm=audio 19000 RTP/AVP 0\r\na=rtpmap:0 PCMU/8000\r\n"
         def request(method, to="<sip:courier@127.0.0.1>"):
@@ -148,4 +155,11 @@ def test_firmware_rings_and_answers_incoming_call(tmp_path, auto_answer):
                     process.kill()
                     process.wait()
             assert process.returncode == 0
+            log = (tmp_path / "stderr").read_text()
+            assert "[at] command:" in log
+            assert "[sip]" in log
+            assert not (tmp_path / "worker.json").read_text()
+            import json
+            diagnostic = json.loads((tmp_path / "diagnostics.json").read_text())
+            assert diagnostic["status"] == "stop-requested"
             assert not terminal.is_symlink()

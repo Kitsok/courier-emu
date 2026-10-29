@@ -66,6 +66,17 @@ notebook. These temporary paths are operational evidence, not package inputs.
 
 Native firmware tests also exercised incoming INVITE, RING, manual ATA,
 ATS0=1 autoanswer, and outgoing keypress cancellation against loopback SIP.
-A physical Courier-originated call to this notebook remains untested.
+A physical Courier-originated test reached SIP, firmware RING and answer,
+but did not establish a data connection. Other attempts failed before SIP
+with NO DIAL TONE; a hardware-to-hardware control call through `tio` connected
+at 31200/V34/LAPM/V42bis. Temporary ATA routes were removed and the original
+dial plans verified afterward.
+
+A direct loopback test with `modem-dsp-emu` originating to the analog Courier
+also reached SIP answer and V.34 training but failed LAPM establishment and
+exact bidirectional marker checks. A temporary transmit-level diagnostic
+allowed an uncorrected CONNECT, followed by unreadable data; that diagnostic
+is not a production change or a successful interoperability result. Incoming
+analog data interoperability remains unresolved.
 The physical data checks were short marker transfers; they do not establish
 long-duration stability or the maximum reliable transfer rate.
