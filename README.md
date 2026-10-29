@@ -1490,16 +1490,36 @@ Incoming call integration and normal operational logging are separate
 implementation stages. The legacy diagnostic report is still printed when
 the worker stops.
 
+### Outgoing analog calls
+
+In `tio`, type `ATDT100` and press Return. The firmware generates dialing
+audio, the modeled exchange decodes its digits, and the SIP adapter places
+the INVITE. Ringback and busy are line conditions heard by the firmware;
+SIP `200 OK` connects the audio path and does not synthesize a modem CONNECT.
+Type a character to abort dialing or training. After a modem connection,
+use the firmware's guarded `+++` escape sequence and `ATH` to hang up.
+
+The SIP adapter matches outgoing responses to the active Call-ID and INVITE
+sequence, bounds setup without provisional ringback to 32 seconds, and sends
+CANCEL when the loop returns on-hook. A late answer to a cancelled INVITE is
+ACKed and ended with BYE without reviving the call or changing a newer call.
+Rejected INVITEs are ACKed on their original transaction branch. Shutdown
+cancels a pending outgoing call or sends BYE for an established SIP dialog.
+
+The native firmware test in `tests/test_analog_call_control.py` uses a loopback
+SIP peer to verify dialing and keypress cancellation through the PTY, CPU,
+DSP, and analog exchange. It does not test a physical modem or carrier/data
+interoperability.
+
 ## Minimal SIP dial-out
 
-`--sip-server` attaches the DAA to a small UDP SIP user agent and enables both
-the DAA and DSP automatically. Parsed `ATD` digits become the destination URI;
-the client supports an unauthenticated INVITE or one MD5 Digest retry after
-`401`/`407`, SDP with PCMU payload 0, ACK/BYE, and bidirectional RTP. The modem's
-9.6 kHz line stream is converted to/from 8 kHz PCMU. The current DTMF assist is
-inserted at the recovered C51 DAC write, so it travels as ordinary in-band
-audio; it is not yet evidence that the firmware datapump entered originate
-mode.
+The explicit-image diagnostic path also accepts `--sip-server`, enabling
+the DAA and DSP automatically. Without `--exchange`, parsed `ATD` digits
+become the destination URI directly. The named analog403 profile instead
+uses the modeled exchange and real dialing audio described above. The SIP
+stack supports unauthenticated INVITE or one MD5 Digest retry after
+`401`/`407`, SDP with PCMU or PCMA, ACK/BYE/CANCEL, and bidirectional RTP.
+Analog line samples are converted to and from the 8 kHz G.711 stream.
 
 Keep the password out of command history by putting it in the environment:
 
@@ -1512,9 +1532,10 @@ export COURIER_SIP_PASSWORD='your-password'
 
 `dsp_bridge.sip` reports the target, response status, dialog state, RTP
 endpoints/counters, and a bounded event trace; it never includes the password.
-This deliberately minimal client is UDP/IPv4 and PCMU-only. It does not yet
-REGISTER, use SIP/TLS, negotiate other codecs, send RFC 2833 events, or turn
-SIP failure responses into Courier `BUSY`/`NO ANSWER` result codes.
+The client is UDP/IPv4. It does not use SIP/TLS, negotiate codecs beyond
+PCMU/PCMA, or send RFC 2833 events. The stack has registration support, but
+the analog launcher does not register. The analog exchange maps busy and
+failure responses into line tones; the firmware determines the result code.
 
 A live 6000-to-7800 validation completed Digest authentication, received
 `200 OK`, and carried 1,152 inbound and 507 outbound RTP packets, while the

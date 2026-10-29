@@ -322,6 +322,8 @@ class SipSession:
         self._invite_sent_at = 0.0
         self._retransmit_after = 0.5
         self._auth_attempted = False
+        self._invite_deadline = 0.0
+        self._cancelled_invites: dict[str, tuple[float, bytes]] = {}
         self.registered = False
         self._register_call_id = f"{random.getrandbits(64):016x}@{self.local_ip}"
         self._register_cseq = 0
@@ -406,7 +408,16 @@ class SipSession:
         self.to_header = f"<{self.target_uri}>"
         self.state = "inviting"
         self.error = ""
+        self.last_status = 0
+        self.remote_rtp = None
+        self._rx_audio.clear()
+        self._rx_codewords.clear()
+        with self._rtp_lock:
+            self._tx_audio.clear()
+            self._tx_codewords.clear()
+            self._rtp_tx_primed = False
         self._auth_attempted = False
+        self._invite_deadline = time.monotonic() + 32.0
         self._send_invite()
 
     def _sdp(self) -> bytes:
@@ -477,14 +488,54 @@ class SipSession:
         self._retransmit_after = 0.5
         self.events.append(f"tx INVITE cseq={self.cseq}")
 
-    def _send_ack(self, response_headers: dict[str, str]) -> None:
+    def _send_ack(self, response_headers: dict[str, str], *, success: bool = True) -> None:
         to_value = response_headers.get("to", self.to_header)
         previous = self.to_header
         self.to_header = to_value
-        message = self._request("ACK")
+        message = self._request("ACK", branch="" if success else self._invite_branch,
+                                cseq=self._invite_cseq)
         self.to_header = previous
         self.socket.send(message)
         self.events.append(f"tx ACK cseq={self.cseq}")
+
+    def _finish_cancelled_invite(self, status: int, headers: dict[str, str]) -> bool:
+        """ACK a cancelled INVITE's final response without reviving its call.
+
+        A 2xx can cross a CANCEL on the wire. Terminate that accepted dialog
+        with BYE, even if a new call already owns the session's live state.
+        """
+        entry = self._cancelled_invites.get(headers.get("call-id", ""))
+        if entry is None:
+            return False
+        _, invite = entry
+        lines = invite.split(b"\r\n\r\n", 1)[0].decode("latin-1").split("\r\n")
+        original = _header_map(lines[1:])
+        sequence = original["cseq"].split()[0]
+        if headers.get("cseq", "").split() != [sequence, "INVITE"]:
+            return True
+        if status < 200:
+            return True
+        target = lines[0].split()[1]
+        if status < 300:
+            contact = headers.get("contact", "")
+            match = re.search(r"<([^>]+)>", contact) or re.search(r"(sip:\S+)", contact)
+            if match:
+                target = match.group(1)
+        def send(method, cseq):
+            via = original["via"]
+            if status < 300:
+                via = re.sub(r"branch=[^;\s]+", f"branch=z9hG4bK{random.getrandbits(48):012x}", via)
+            packet = (f"{method} {target} SIP/2.0\r\nVia: {via}\r\n"
+                      f"Max-Forwards: 70\r\nFrom: {original['from']}\r\n"
+                      f"To: {headers.get('to', original['to'])}\r\n"
+                      f"Call-ID: {original['call-id']}\r\nCSeq: {cseq} {method}\r\n"
+                      "Content-Length: 0\r\n\r\n").encode("latin-1")
+            self.socket.send(packet)
+        send("ACK", sequence)
+        if status < 300:
+            send("BYE", int(sequence) + 1)
+        self.events.append(f"closed cancelled INVITE after {status}")
+        return True
 
     def _authorization(
         self, challenge: str, method: str = "INVITE", uri: str | None = None
@@ -693,8 +744,20 @@ class SipSession:
         if len(cseq) > 1 and cseq[1].upper() == "REGISTER":
             self._handle_register_response(status, headers)
             return
+        if self._finish_cancelled_invite(status, headers):
+            return
+        if headers.get("call-id") != self.call_id:
+            return
         if len(cseq) > 1 and cseq[1].upper() in ("BYE", "CANCEL"):
             self.events.append(f"rx {status} {cseq[1].upper()}")
+            return
+        if (self.direction != "outbound" or headers.get("call-id") != self.call_id
+                or cseq != [str(self._invite_cseq), "INVITE"]
+                or self.state not in ("inviting", "trying", "ringing", "connected")):
+            return
+        if self.state == "connected":
+            if 200 <= status < 300:
+                self._send_ack(headers)
             return
         self.last_status = status
         self.events.append(f"rx {status}")
@@ -707,7 +770,7 @@ class SipSession:
             self.state = "ringing" if status == 180 else "trying"
             return
         if status in (401, 407) and not self._auth_attempted:
-            self._send_ack(headers)
+            self._send_ack(headers, success=False)
             challenge_name = "proxy-authenticate" if status == 407 else "www-authenticate"
             header_name = "Proxy-Authorization" if status == 407 else "Authorization"
             try:
@@ -724,6 +787,8 @@ class SipSession:
             try:
                 self._parse_sdp(body, source[0])
             except (ValueError, OSError) as exc:
+                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite)
+                self._finish_cancelled_invite(status, headers)
                 self.state = "failed"
                 self.error = str(exc)
                 return
@@ -740,7 +805,7 @@ class SipSession:
             self.state = "connected"
             self._next_rtp_at = time.monotonic()
             return
-        self._send_ack(headers)
+        self._send_ack(headers, success=False)
         self.state = "failed"
         self.error = lines[0]
 
@@ -875,6 +940,11 @@ class SipSession:
                 data, source = self.socket.recvfrom(65_535)
             except BlockingIOError:
                 break
+            except ConnectionRefusedError:
+                self.state = "failed"
+                self.last_status = 503
+                self.error = "SIP destination refused the datagram"
+                break
             if data.startswith(b"SIP/2.0 "):
                 self._handle_response(data, source)
             else:
@@ -894,6 +964,13 @@ class SipSession:
             self.rtp_packets_received += 1
             self.rtp_octets_received += len(packet) - 12
         now = time.monotonic()
+        self._cancelled_invites = {key: value for key, value in getattr(self, "_cancelled_invites", {}).items()
+                                   if value[0] > now}
+        if self.state in ("inviting", "trying") and now >= self._invite_deadline:
+            self.hangup()
+            self.state = "failed"
+            self.last_status = 408
+            self.error = "SIP call setup timed out"
         refresh_at = getattr(self, "_register_refresh_at", None)
         if refresh_at is not None and now >= refresh_at:
             self.register()
@@ -1058,6 +1135,9 @@ class SipSession:
                 self.socket.send(self._request("BYE"))
                 self.events.append(f"tx BYE cseq={self.cseq}")
             elif self.state in ("inviting", "trying", "ringing"):
+                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite)
+                while len(self._cancelled_invites) > 16:
+                    self._cancelled_invites.pop(next(iter(self._cancelled_invites)))
                 self.socket.send(
                     self._request(
                         "CANCEL", branch=self._invite_branch, cseq=self._invite_cseq
@@ -1083,13 +1163,8 @@ class SipSession:
     def close(self) -> None:
         if self.closed:
             return
-        if self.state == "connected":
-            self.cseq += 1
-            try:
-                self.socket.send(self._request("BYE"))
-                self.events.append(f"tx BYE cseq={self.cseq}")
-            except OSError:
-                pass
+        if self.state in ("connected", "inviting", "trying", "ringing"):
+            self.hangup()
         self.closed = True
         self._rtp_clock_stop.set()
         self._rtp_clock_wake.set()

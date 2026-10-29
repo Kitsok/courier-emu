@@ -1776,6 +1776,13 @@ class CourierMachine:
                     # this test read as "still busy" and never typed
                     # another character into a connected session.
                     or self.online_mode
+                    # A live character during dialing or training is an
+                    # abort request to the firmware's current RX handler.
+                    # Holding it until command-idle made a keypress wait
+                    # behind the very call it was intended to cancel.
+                    or (self.dsp_bridge is not None
+                        and self.dsp_bridge.daa is not None
+                        and self.dsp_bridge.daa.off_hook)
                     # Let the parser finish its command/result before
                     # starting the next queued byte. Its busy RX handler
                     # deliberately discards input during this interval.
