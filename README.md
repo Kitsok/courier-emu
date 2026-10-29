@@ -1442,9 +1442,11 @@ running supervisor 7.4.16 / DSP 3.1.2. It checks the image's SHA-256 before
 starting, enables the DSP and modeled analog exchange, and selects board ID 7,
 a 5 ms timer tick, the default DIP switches, and the matching `idsdl403-lapm`
 settings EEPROM. This retains the captured calibration with S27 changed from
-48 to 0 for normal V.42 negotiation. The original `idsdl403` diagnostic fixture
-remains unchanged. Paths are resolved relative to the installed source tree,
-so the command does not depend on the working directory:
+48 to 0 for normal V.42 negotiation and S54 from 64 to 96 to disable the
+3429-baud symbol rate. This training workaround leaves all lower symbol rates
+available; it does not set a fixed bit rate. The original `idsdl403` diagnostic
+fixture remains unchanged. Paths are resolved relative to the installed source
+tree, so the command does not depend on the working directory:
 
 ```sh
 ./courier run --profile analog403 --serial-pty \
@@ -1499,11 +1501,13 @@ are applied before board construction. They do not force carrier, alter modem
 protocol replies or replace the firmware's error correction/compression.
 
 The launcher seeds the persistent EEPROM from the captured 403 settings with
-S27=0 on first use and preserves it on later launches. If an earlier launch
-created settings with S27=48, type `ATS27=0&W` once; the launcher does not
-overwrite an existing EEPROM. Invalid existing EEPROM files
-are rejected without replacement. `--check-config` verifies configuration,
-firmware, and the native build without creating the EEPROM or opening a tty.
+S27=0 and S54=96 on first use and preserves it on later launches. For an older
+profile with S54=64, type `ATS27=0S54=96&W` once while offline.
+For a customized S54, preserve its other bits and add bit 32 to disable 3429
+baud. The launcher does not overwrite an existing EEPROM. Invalid existing
+EEPROM files are rejected without replacement. `--check-config` verifies
+configuration, firmware, and the native build without creating the EEPROM or
+opening a tty.
 The stable tty symlink is locked for the process lifetime and removed on
 shutdown; reconnect `tio` to that same name after a restart. The modem keeps
 running when `tio` disconnects. Stop the foreground launcher with Ctrl-C.

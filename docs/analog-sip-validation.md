@@ -18,10 +18,14 @@ the original timeout and three-ring answering.
 
 Running `ATS27=0&W` in the original firmware changes exactly byte 0x29 from
 0x30 to 0x00 and its checksum at 0x1ff from 0xbd to 0x8d. The
-`idsdl403-lapm` fixture matches those firmware-written bytes exactly. It
-preserves the remaining provisioning and is used only to create new settings;
-existing EEPROM files are never replaced. The raw `idsdl403` fixture remains
-available for historical diagnostic runs.
+original `idsdl403-lapm` fixture matched those firmware-written bytes exactly.
+The current fixture additionally changes S54 at byte 0x3c from 64 to 96,
+disabling 3429 baud while retaining lower symbol rates. Running
+`ATS27=0S54=96&W` in the original firmware produces those two settings and a
+checksum of 0xad at 0x1ff. The fixture preserves the remaining provisioning
+and is used only to create new settings; existing EEPROM files are never
+replaced. The raw `idsdl403` fixture remains available for historical diagnostic
+runs.
 
 ## Physical data tests
 

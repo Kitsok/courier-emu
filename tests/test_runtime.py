@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from courier_emu import cli
-from courier_emu.nvram import CourierNvram, IDSDL403_NVRAM
+from courier_emu.nvram import CourierNvram, IDSDL403_NVRAM, settings_checksum
 from courier_emu.pty_device import PtyDevice
 from courier_emu.runtime import read_config, seed_nvram
 from courier_emu.sip import SipConfig, SipSession
@@ -48,7 +48,8 @@ def test_nvram_is_seeded_once_and_invalid_existing_data_is_preserved(tmp_path):
     path = tmp_path / "state/settings"
     seed_nvram(path)
     assert path.read_bytes() == bytes(CourierNvram.idsl403_lapm_fixture().data)
-    changed = bytes([0]) * len(IDSDL403_NVRAM)
+    # Existing profiles keep their settings even with 3429 baud enabled.
+    changed = IDSDL403_NVRAM
     path.write_bytes(changed)
     seed_nvram(path)
     assert path.read_bytes() == changed
@@ -56,6 +57,19 @@ def test_nvram_is_seeded_once_and_invalid_existing_data_is_preserved(tmp_path):
     with pytest.raises(ValueError):
         seed_nvram(path)
     assert path.read_bytes() == b"bad"
+
+
+def test_new_profile_preserves_capture_except_verified_operational_settings(tmp_path):
+    path = tmp_path / "settings.nvram"
+    seed_nvram(path)
+    actual = path.read_bytes()
+    # ATS27=0S54=96 followed by AT&W in the original 403 firmware produces
+    # these EEPROM bytes, including the firmware's stored checksum.
+    differences = {i: (old, new) for i, (old, new)
+                   in enumerate(zip(IDSDL403_NVRAM, actual)) if old != new}
+    assert differences == {0x29: (48, 0), 0x3C: (64, 96), 0x1FF: (0xBD, 0xAD)}
+    assert actual[-1] == settings_checksum(actual)
+    assert bytes(CourierNvram.idsl403_fixture().data) == IDSDL403_NVRAM
 
 
 def test_stable_terminal_cannot_be_stolen_and_reopens_with_new_target(tmp_path):
