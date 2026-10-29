@@ -12,6 +12,9 @@ class Socket:
     def send(self, packet):
         self.sent.append(packet)
 
+    def sendto(self, packet, peer):
+        self.sent.append(packet)
+
     def recvfrom(self, size):
         raise BlockingIOError
 
@@ -22,6 +25,7 @@ def session():
     value.state = 'idle'
     value.config = SimpleNamespace(username='2904')
     value.server_host = 'pbx.test'
+    value.server_address = value._dialog_peer = ('127.0.0.1', 5060)
     value.local_ip = '127.0.0.1'
     value.local_port = 5062
     value.from_tag = 'tag'

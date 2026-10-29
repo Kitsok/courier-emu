@@ -89,6 +89,7 @@ class SipLine:
         self._from_network = PolyphaseResampler(PCMU_RATE, self.line_rate)
         self._pending: list[int] = []
         self._sip_state = self.sip.state
+        self._incoming_active = False
         self.placed = 0
         self.answered = 0
         self._next_frame_at: float | None = None
@@ -133,6 +134,9 @@ class SipLine:
         self._pace(count)
         self.sip.poll()
         self._follow_sip()
+        if (self._incoming_active and off_hook and self.exchange.state == "ringing"
+                and self.sip.state in ("incoming", "ringing")):
+            self.sip.answer_incoming()
         samples = self.exchange.service(off_hook, transmitted, count)
         self._follow_loop()
         return samples
@@ -212,7 +216,17 @@ class SipLine:
     def _follow_sip(self) -> None:
         """Turn what the network did into what the loop should hear."""
         state = self.sip.state
-        if state == "ringing":
+        if state == "incoming" and self.sip.direction == "inbound":
+            if self.exchange.off_hook or self.exchange.state not in ("idle", "released"):
+                self.sip.reject_incoming(486, "Busy Here")
+                return
+            self.exchange.ring(self.sip.incoming_from)
+            self._incoming_active = True
+            self.sip.ring_incoming()
+        elif self._incoming_active and state in ("closed", "failed"):
+            self.exchange.release()
+            self._incoming_active = False
+        elif state == "ringing" and self.sip.direction != "inbound":
             self.exchange.set_outcome("no-answer")
         elif state == "connected":
             if self._sip_state != "connected":
@@ -232,7 +246,14 @@ class SipLine:
 
     def _follow_loop(self) -> None:
         """Turn what the subscriber did into what the network should see."""
-        if self.exchange.state == "idle" and self.sip.state not in ("idle", "closed"):
+        if self._incoming_active and self.exchange.state == "idle":
+            if self.sip.state in ("incoming", "ringing"):
+                self.sip.reject_incoming()
+            else:
+                self.sip.hangup()
+            self._incoming_active = False
+            return
+        if self.exchange.state == "idle" and self.sip.state not in ("idle", "closed", "failed", "incoming"):
             # On-hook with a call still up or still being set up.
             self.sip.hangup()
             self._sip_state = self.sip.state
@@ -287,6 +308,7 @@ class LinePeerSession:
     """
 
     realtime = False
+    direction = "outbound"
 
     def __init__(self, path: str, *, listen: bool = False) -> None:
         from .line import LineLink

@@ -18,7 +18,7 @@ from .bridge import (
 )
 from .codec import CodecBringUp
 from .console import SerialConsole
-from .daa import INSTRUCTIONS_PER_MS, CourierDaa, RingSource
+from .daa import INSTRUCTIONS_PER_MS, CourierDaa, RingSource, ring_detector_level
 from .flash import FLASH_SIZE, SERVICE_ERASE, SERVICE_WRITE, ParameterFlash
 from .exchange import LineExchange
 from .line import (
@@ -2622,9 +2622,10 @@ class CourierMachine:
                 if port == RING_DETECT_PORT and size == 1:
                     # The answer machine polls the ring detector here with a
                     # direct `in al, 0x14` at 0x70fb4 and 0x70fc1. An idle
-                    # subscriber line is not ringing, and leaving the bit
-                    # floating high reads as a ring that never ends, which
-                    # parks that state machine in its first state forever.
+                    # XMF subscriber line is not ringing, and leaving its
+                    # input floating high parks its sampler. The resident
+                    # 302/403 sampler instead starts at idle-high and measures
+                    # the optocoupler's transitions within each ring burst.
                     peer_ringing = bool(
                         self.dsp_bridge is not None
                         and self.dsp_bridge.line is not None
@@ -2635,20 +2636,24 @@ class CourierMachine:
                         and self.dsp_bridge.exchange is not None
                         and self.dsp_bridge.exchange.ringing
                     )
-                    if (
+                    ring_present = (
                         peer_ringing
                         or exchange_ringing
                         or (self.ring is not None and self.ring.present(self.instructions))
-                    ):
+                    )
+                    level = (ring_detector_level(self.instructions, bool(ring_present))
+                             if self._rom_serial is not None else ring_present)
+                    if level:
                         value |= RING_DETECT_BIT
+                    else:
+                        value &= ~RING_DETECT_BIT
+                    if ring_present:
                         if self._serial_input_pending:
                             # The line is ringing: the host may answer now.
                             self.serial_rx.extend(self._serial_input_pending)
                             self._serial_input_pending.clear()
                             self._terminal_connected = True
                             self._trace_serial("ring: released held AT input")
-                    else:
-                        value &= ~RING_DETECT_BIT
                 if self.nvram is not None and port == 0x10 and size == 1:
                     # Board latch 0 reads back the settings EEPROM's ready and
                     # data-out pins; every other bit keeps its floating level.
@@ -3645,7 +3650,10 @@ class CourierMachine:
                     else:
                         value &= ~STRAP_SENSE_BIT
                 value = value | 0x01 if connected else value & ~0x01
-                return value & ~RING_DETECT_BIT & 0xFF
+                # The resident 302/403 detector is idle-high; its ring
+                # sampler qualifies the falling edges within a burst.
+                return ((value | RING_DETECT_BIT) if self._rom_serial is not None
+                        else (value & ~RING_DETECT_BIT)) & 0xFF
 
             def refresh_fixed_inputs(force: bool = False) -> None:
                 answer = None

@@ -276,9 +276,10 @@ class SipSession:
             self.server_host, self.server_port, socket.AF_INET, socket.SOCK_DGRAM
         )
         self.server_address = addresses[0][4]
+        self._dialog_peer = self.server_address
+        self._incoming_peer = self.server_address
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((config.bind, config.local_port))
-        self.socket.connect(self.server_address)
         self.socket.setblocking(False)
         self.local_ip, self.local_port = self.socket.getsockname()
         if self.local_ip == "0.0.0.0":
@@ -323,7 +324,11 @@ class SipSession:
         self._retransmit_after = 0.5
         self._auth_attempted = False
         self._invite_deadline = 0.0
-        self._cancelled_invites: dict[str, tuple[float, bytes]] = {}
+        self._cancelled_invites: dict[str, tuple[float, bytes, tuple[str, int]]] = {}
+        self._incoming_acked = False
+        self._incoming_final_at = 0.0
+        self._incoming_next_response_at = 0.0
+        self._incoming_retransmit_after = 0.5
         self.registered = False
         self._register_call_id = f"{random.getrandbits(64):016x}@{self.local_ip}"
         self._register_cseq = 0
@@ -352,6 +357,9 @@ class SipSession:
         self._rtp_clock_wake = threading.Event()
         self._rtp_tx_primed = False
         self._rtp_tx_buffer_samples = 480
+
+    def _send_sip(self, packet: bytes, peer: tuple[str, int] | None = None) -> None:
+        self.socket.sendto(packet, peer or self._dialog_peer)
 
     def enable_media_clock(self, *, buffer_samples: int = 480) -> None:
         """Send B-channel RTP independently of emulator scheduler passes."""
@@ -395,6 +403,7 @@ class SipSession:
         self.call_id = f"{random.getrandbits(64):016x}@{self.local_ip}"
         self.from_tag = f"{random.getrandbits(32):08x}"
         self.number = number
+        self._dialog_peer = self.server_address
         self.direction = "outbound"
         self.incoming_from = ""
         self.incoming_to = ""
@@ -483,7 +492,7 @@ class SipSession:
         self._invite = self._request("INVITE", authorization=authorization, body=self._sdp())
         self._invite_branch = self.branch
         self._invite_cseq = self.cseq
-        self.socket.send(self._invite)
+        self._send_sip(self._invite)
         self._invite_sent_at = time.monotonic()
         self._retransmit_after = 0.5
         self.events.append(f"tx INVITE cseq={self.cseq}")
@@ -495,7 +504,7 @@ class SipSession:
         message = self._request("ACK", branch="" if success else self._invite_branch,
                                 cseq=self._invite_cseq)
         self.to_header = previous
-        self.socket.send(message)
+        self._send_sip(message)
         self.events.append(f"tx ACK cseq={self.cseq}")
 
     def _finish_cancelled_invite(self, status: int, headers: dict[str, str]) -> bool:
@@ -507,7 +516,7 @@ class SipSession:
         entry = self._cancelled_invites.get(headers.get("call-id", ""))
         if entry is None:
             return False
-        _, invite = entry
+        _, invite, peer = entry
         lines = invite.split(b"\r\n\r\n", 1)[0].decode("latin-1").split("\r\n")
         original = _header_map(lines[1:])
         sequence = original["cseq"].split()[0]
@@ -530,7 +539,7 @@ class SipSession:
                       f"To: {headers.get('to', original['to'])}\r\n"
                       f"Call-ID: {original['call-id']}\r\nCSeq: {cseq} {method}\r\n"
                       "Content-Length: 0\r\n\r\n").encode("latin-1")
-            self.socket.send(packet)
+            self._send_sip(packet, peer)
         send("ACK", sequence)
         if status < 300:
             send("BYE", int(sequence) + 1)
@@ -592,7 +601,7 @@ class SipSession:
         if authorization:
             lines.append(f"Authorization: {authorization}")
         lines.append("Content-Length: 0")
-        self.socket.send(("\r\n".join(lines) + "\r\n\r\n").encode("ascii"))
+        self._send_sip(("\r\n".join(lines) + "\r\n\r\n").encode("ascii"), self.server_address)
         self.events.append(f"tx REGISTER cseq={self._register_cseq}")
 
     def _handle_register_response(
@@ -690,9 +699,9 @@ class SipSession:
         lines.append(f"Content-Length: {len(body)}")
         return ("\r\n".join(lines) + "\r\n\r\n").encode("ascii", "replace") + body
 
-    def _send_response(self, response: bytes, event: str) -> None:
+    def _send_response(self, response: bytes, event: str, peer=None) -> None:
         try:
-            self.socket.send(response)
+            self._send_sip(response, peer or self._incoming_peer)
         except OSError:
             return
         if event:
@@ -709,7 +718,7 @@ class SipSession:
         self._send_response(response, "tx 180")
 
     def answer_incoming(self) -> None:
-        """Accept an inbound call once the ISDN terminal has connected it."""
+        """Accept an inbound call once the emulated terminal answers it."""
         if self.direction != "inbound" or self.state not in ("incoming", "ringing"):
             return
         response = self._response(
@@ -718,6 +727,9 @@ class SipSession:
         self._incoming_response = response
         self.state = "connected"
         self._next_rtp_at = time.monotonic()
+        self._incoming_final_at = self._next_rtp_at
+        self._incoming_next_response_at = self._next_rtp_at + .5
+        self._incoming_retransmit_after = .5
         self._send_response(response, "tx 200")
 
     def reject_incoming(
@@ -733,6 +745,8 @@ class SipSession:
         self._send_response(response, f"tx {status}")
 
     def _handle_response(self, data: bytes, source: tuple[str, int]) -> None:
+        if source not in (self.server_address, self._dialog_peer):
+            return
         head, _, body = data.partition(b"\r\n\r\n")
         lines = head.decode("latin-1", "replace").split("\r\n")
         fields = lines[0].split(None, 2)
@@ -787,7 +801,7 @@ class SipSession:
             try:
                 self._parse_sdp(body, source[0])
             except (ValueError, OSError) as exc:
-                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite)
+                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite, self._dialog_peer)
                 self._finish_cancelled_invite(status, headers)
                 self.state = "failed"
                 self.error = str(exc)
@@ -823,15 +837,21 @@ class SipSession:
             # unsolicited message-summary NOTIFY immediately after REGISTER.
             # Ignoring either makes it retransmit; ignoring OPTIONS also marks
             # the contact unavailable, so subsequent calls never get INVITEd.
-            self._send_response(self._response(200, "OK", headers), "")
+            self._send_response(self._response(200, "OK", headers), "", source)
             return
 
         if method == "INVITE":
+            sequence = headers.get("cseq", "").split()
+            if (not headers.get("call-id") or len(sequence) != 2
+                    or not sequence[0].isdigit() or sequence[1] != "INVITE"):
+                self._send_response(self._response(400, "Bad Request", headers), "tx 400", source)
+                return
             # UDP retransmissions of the same server transaction get the last
             # response again. They must not create a second BRI call or a new
             # To tag.
             if (
                 self.direction == "inbound"
+                and source == self._incoming_peer
                 and headers.get("call-id") == self.call_id
                 and headers.get("cseq") == self._incoming_headers.get("cseq")
             ):
@@ -840,17 +860,26 @@ class SipSession:
                 return
             if self.state not in ("idle", "closed", "failed"):
                 self._send_response(
-                    self._response(486, "Busy Here", headers), "tx 486"
+                    self._response(486, "Busy Here", headers), "tx 486", source
                 )
                 return
             try:
                 self._parse_sdp(body, source[0])
             except (ValueError, OSError):
                 self._send_response(
-                    self._response(488, "Not Acceptable Here", headers), "tx 488"
+                    self._response(488, "Not Acceptable Here", headers), "tx 488", source
                 )
                 return
             self.direction = "inbound"
+            self._dialog_peer = self._incoming_peer = source
+            self._incoming_acked = False
+            self.last_status = 0
+            with self._rtp_lock:
+                self._tx_audio.clear()
+                self._tx_codewords.clear()
+                self._rtp_tx_primed = False
+            self._rx_audio.clear()
+            self._rx_codewords.clear()
             self.from_tag = f"{random.getrandbits(32):08x}"
             self.call_id = headers.get("call-id", self.call_id)
             self._incoming_headers = headers
@@ -890,27 +919,37 @@ class SipSession:
                 self.direction == "inbound"
                 and headers.get("call-id") == self.call_id
                 and self.state == "connected"
+                and source == self._incoming_peer
+                and headers.get("cseq", "").split() == [self._incoming_headers["cseq"].split()[0], "ACK"]
             ):
+                self._incoming_acked = True
                 self.events.append("rx ACK")
             return
 
         if method == "CANCEL":
-            self._send_response(self._response(200, "OK", headers), "tx 200 CANCEL")
+            incoming_sequence = self._incoming_headers.get("cseq", "").split()
+            cancel_sequence = headers.get("cseq", "").split()
+            if (self.direction != "inbound" or source != self._incoming_peer
+                    or headers.get("call-id") != self.call_id
+                    or not incoming_sequence or not cancel_sequence
+                    or incoming_sequence[0] != cancel_sequence[0]
+                    or headers.get("via") != self._incoming_headers.get("via")):
+                self._send_response(self._response(481, "Call/Transaction Does Not Exist", headers), "tx 481", source)
+                return
+            self._send_response(self._response(200, "OK", headers), "tx 200 CANCEL", source)
             if self.direction == "inbound" and self.state in ("incoming", "ringing"):
-                self._send_response(
-                    self._response(487, "Request Terminated", self._incoming_headers),
-                    "tx 487 INVITE",
-                )
+                self._incoming_response = self._response(487, "Request Terminated", self._incoming_headers)
+                self._send_response(self._incoming_response, "tx 487 INVITE")
                 self.state = "closed"
                 self.events.append("rx CANCEL")
             return
 
         if method != "BYE":
             return
-        if headers.get("call-id") != self.call_id:
+        if headers.get("call-id") != self.call_id or source != self._dialog_peer:
             self._send_response(
                 self._response(481, "Call/Transaction Does Not Exist", headers),
-                "tx 481",
+                "tx 481", source,
             )
             return
         response = (
@@ -922,11 +961,8 @@ class SipSession:
             f"CSeq: {headers.get('cseq', '')}\r\n"
             "Content-Length: 0\r\n\r\n"
         ).encode("ascii", "replace")
-        # The signalling socket is connected to the server, so a reply goes
-        # back with send. sendto raises EISCONN on a connected UDP socket,
-        # which left every inbound BYE unanswered.
         try:
-            self.socket.send(response)
+            self._send_sip(response, source)
         except OSError:
             pass
         self.state = "closed"
@@ -964,6 +1000,16 @@ class SipSession:
             self.rtp_packets_received += 1
             self.rtp_octets_received += len(packet) - 12
         now = time.monotonic()
+        if (getattr(self, "direction", "") == "inbound" and self.state == "connected"
+                and not self._incoming_acked):
+            if now - self._incoming_final_at >= 32:
+                self.hangup()
+                self.state = "failed"
+                self.error = "SIP answer was not acknowledged"
+            elif now >= self._incoming_next_response_at:
+                self._send_response(self._incoming_response, "tx 200 retransmit")
+                self._incoming_retransmit_after = min(self._incoming_retransmit_after * 2, 4)
+                self._incoming_next_response_at = now + self._incoming_retransmit_after
         self._cancelled_invites = {key: value for key, value in getattr(self, "_cancelled_invites", {}).items()
                                    if value[0] > now}
         if self.state in ("inviting", "trying") and now >= self._invite_deadline:
@@ -979,7 +1025,7 @@ class SipSession:
         # through a long ringback sent the proxy one INVITE a second.
         if self.state == "inviting" and self._invite:
             if now - self._invite_sent_at >= self._retransmit_after:
-                self.socket.send(self._invite)
+                self._send_sip(self._invite)
                 self._invite_sent_at = now
                 self._retransmit_after = min(self._retransmit_after * 2, 4.0)
                 self.events.append("tx INVITE retransmit")
@@ -1129,16 +1175,19 @@ class SipSession:
         """
         if self.closed:
             return
+        if self.direction == "inbound" and self.state in ("incoming", "ringing"):
+            self.reject_incoming()
+            return
         try:
             if self.state == "connected":
                 self.cseq += 1
-                self.socket.send(self._request("BYE"))
+                self._send_sip(self._request("BYE"))
                 self.events.append(f"tx BYE cseq={self.cseq}")
             elif self.state in ("inviting", "trying", "ringing"):
-                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite)
+                self._cancelled_invites[self.call_id] = (time.monotonic() + 64, self._invite, self._dialog_peer)
                 while len(self._cancelled_invites) > 16:
                     self._cancelled_invites.pop(next(iter(self._cancelled_invites)))
-                self.socket.send(
+                self._send_sip(
                     self._request(
                         "CANCEL", branch=self._invite_branch, cseq=self._invite_cseq
                     )
@@ -1163,7 +1212,7 @@ class SipSession:
     def close(self) -> None:
         if self.closed:
             return
-        if self.state in ("connected", "inviting", "trying", "ringing"):
+        if self.state in ("connected", "inviting", "trying", "ringing", "incoming"):
             self.hangup()
         self.closed = True
         self._rtp_clock_stop.set()

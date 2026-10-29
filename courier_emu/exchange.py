@@ -359,7 +359,11 @@ class LineExchange:
 
     def release(self) -> None:
         """Take the call down from the far end."""
-        if self.state in ("idle", "ringing"):
+        if self.state == "ringing":
+            self.inbound_number = None
+            self._enter("idle")
+            return
+        if self.state == "idle":
             return
         self._enter("released")
 

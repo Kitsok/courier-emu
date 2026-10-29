@@ -1486,9 +1486,30 @@ Interactive runs use a 63-bit instruction ceiling instead of the previous
 roughly four-hour budget.
 
 This profile does not establish physical-modem interoperability by itself.
-Incoming call integration and normal operational logging are separate
-implementation stages. The legacy diagnostic report is still printed when
-the worker stops.
+Normal operational logging is a separate implementation stage. The legacy
+diagnostic report is still printed when the worker stops.
+
+### Incoming analog calls
+
+The same running instance accepts incoming UDP SIP calls on its configured
+SIP port. Route the caller to `sip:courier@<emulator-IP>:5074` for the source
+configuration. The emulated analog line rings and the firmware emits `RING`.
+Type `ATA` to answer, or set `ATS0=1` to answer the first ring. Use `AT&W` to
+save the firmware settings in the persistent EEPROM for later launches.
+One call can be active at a time; another INVITE receives `486 Busy Here`.
+
+Incoming signalling is addressed to the actual caller rather than restricted
+to the configured outgoing server. SIP answer follows the firmware's
+off-hook action; a SIP answer still does not imply modem carrier. CANCEL
+stops ringing, an unanswered call is rejected after the line's ring budget,
+and remote BYE releases the loop. Accepted answers are retransmitted until
+ACK, with a 32-second limit if no valid acknowledgement arrives.
+
+The resident 302/403 ring detector uses an idle-high optocoupler input with
+20 Hz transitions during each ring burst. Its GPIO model differs from the
+older XMF envelope input. Native firmware tests cover both `ATA` and
+`ATS0=1` through the stable PTY and a loopback SIP peer; physical modem
+carrier and data validation remain a separate stage.
 
 ### Outgoing analog calls
 

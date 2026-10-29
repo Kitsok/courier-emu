@@ -54,6 +54,16 @@ RING_OFF_MS = 4_000
 RING_START_MS = 2_000
 
 
+def ring_detector_level(instructions: int, burst: bool) -> bool:
+    """Optocoupler level within a generated 20 Hz analog ring burst.
+
+    The 302/403 resident waits for a falling edge from idle-high and measures
+    successive high and low widths on port 0x14, not just the multi-second
+    burst envelope. Keep the optocoupler high between bursts.
+    """
+    return not burst or instructions % (50 * INSTRUCTIONS_PER_MS) < 25 * INSTRUCTIONS_PER_MS
+
+
 @dataclass
 class RingSource:
     """Ring cadence presented to the ring detector on input port 0x14.
