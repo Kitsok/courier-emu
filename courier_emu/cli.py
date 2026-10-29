@@ -24,6 +24,7 @@ from .panel import (
     USABLE_BOARD_IDS,
 )
 from .images import load_image
+from .profiles import PROFILE_NAMES, resolve_run_profile
 from . import imodem_config
 from .isdn import IsdnMachine
 from .bri import (
@@ -181,6 +182,7 @@ def daa_codec_wanted(args: argparse.Namespace, image: object) -> bool:
 
 
 def _worker_command(args: argparse.Namespace) -> list[str]:
+    resolve_run_profile(args)
     if args.line_audio_only:
         if not args.line_link:
             raise ValueError("--line-audio-only requires --line-link")
@@ -978,7 +980,11 @@ def build_parser() -> argparse.ArgumentParser:
     extract.add_argument("directory")
 
     run = subparsers.add_parser("run", help="execute the 80186 application entry")
-    run.add_argument("image")
+    run.add_argument("image", nargs="?", help="firmware image (omit with --profile)")
+    run.add_argument(
+        "--profile", choices=PROFILE_NAMES,
+        help="use a captured analog board with matching firmware and settings",
+    )
     run.add_argument(
         "--cpu-engine", choices=("interpreter", "unicorn"), default="interpreter",
         help="x86 execution backend (interpreter uses the 80186EB profile)",
@@ -1204,7 +1210,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--board-id",
         type=_board_id,
-        default=str(DEFAULT_BOARD_ID),
+        default=None,
         metavar="CODE",
         help="drive the four board identification straps with this 0-15 code, "
         f"or 'none' to leave them floating (default: {DEFAULT_BOARD_ID})",
@@ -1213,7 +1219,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--tick-ms",
         type=_number,
         metavar="MS",
-        default=SUGGESTED_TICK_MS,
+        default=None,
         help="drive the board's periodic edge on vector 0x0f with this period "
         "in milliseconds. The supervisor's countdown chain hangs off it, so "
         "without it every firmware timeout waits forever, ATI10 and ATI11 never "

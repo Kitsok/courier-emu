@@ -1416,6 +1416,31 @@ reserved windows**, and they are the frame-block cells `[0x00ca]`–`[0x00cd]`,
 including the line-DAC source and the gate above. On silicon those addresses
 hold no storage. `courier_firmware_analysis.md` has the rest.
 
+## Named analog board profile
+
+`run --profile analog403` selects the captured 20.16 MHz analog Courier
+running supervisor 7.4.16 / DSP 3.1.2. It checks the image's SHA-256 before
+starting, enables the DSP and modeled analog exchange, and selects board ID 7,
+a 5 ms timer tick, the default DIP switches, and the matching `idsdl403`
+settings EEPROM. Paths are resolved relative to the installed source tree,
+so the command does not depend on the working directory:
+
+```sh
+./courier run --profile analog403 --serial-pty \
+  --sip-server 192.168.196.29:5060 --sip-target 'sip:{number}@192.168.196.29'
+```
+
+The profile uses firmware-driven modem operation and rejects `--force-online`
+and `--dsp-acquisition-assist`. It also rejects mismatched firmware, board,
+timer, DIP, or EEPROM fixture selections. An explicit `--nvram PATH` replaces
+the in-memory EEPROM fixture; that file must contain settings appropriate for
+this board. The fixture is otherwise reset on each launch, so `AT&W` changes
+are not persistent. Explicit-image diagnostic runs keep their existing defaults.
+
+This profile does not establish physical-modem interoperability by itself.
+Incoming call integration, a stable terminal name, normal operational logging,
+and a build/start workflow are separate implementation stages.
+
 ## Minimal SIP dial-out
 
 `--sip-server` attaches the DAA to a small UDP SIP user agent and enables both
