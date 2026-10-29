@@ -157,6 +157,8 @@ def main() -> int:
         type=int,
         help="inherited descriptor the front-panel lamp line is written to",
     )
+    parser.add_argument("--sip-line-gain", type=float, default=1.0)
+    parser.add_argument("--sip-local-echo", choices=("on", "off"), default="on")
     parser.add_argument("--audio-monitor", action="store_true")
     parser.add_argument("--audio-volume", type=float, default=.25)
     parser.add_argument("--log-level", choices=("quiet", "normal", "debug"))
@@ -267,6 +269,13 @@ def main() -> int:
         else None
     )
 
+    if sip is not None:
+        sip.transmit_gain = args.sip_line_gain
+    # Each worker owns one board. Set its line model before constructing
+    # the board and native paths, as with the other hardware straps.
+    from .bridge import CourierDspBridge
+    CourierDspBridge.HYBRID_RETURN_OFF_HOOK = 26 if args.sip_local_echo == "on" else 0
+
     machine = CourierMachine(
         load_image(args.image),
         port_values=ports,
@@ -316,6 +325,8 @@ def main() -> int:
         console=console,
         cpu_engine=args.cpu_engine,
     )
+    if sip is not None and machine.dsp_bridge is not None:
+        LOG.info("[line] SIP transmit gain=%g synthetic local echo=%s", args.sip_line_gain, args.sip_local_echo)
     if args.audio_monitor and machine.dsp_bridge is not None:
         from .audio_monitor import AudioMonitor
         machine.dsp_bridge.audio_monitor = AudioMonitor(args.audio_volume)

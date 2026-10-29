@@ -38,3 +38,24 @@ def test_answer_starts_with_current_audio_instead_of_ring_time_backlog(monkeypat
     assert packets[0][12:] == expected
     assert session.preanswer_samples_discarded == 8000
     assert not session._tx_codewords and not session._tx_audio
+
+
+def test_transmit_gain_is_applied_at_the_common_sip_pcm_boundary():
+    import socket
+    import time
+    from courier_emu.sip import SipConfig, SipSession, linear_to_ulaw
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+        peer.bind(('127.0.0.1',0));peer.settimeout(1)
+        session=SipSession(SipConfig(server='127.0.0.1:9',bind='127.0.0.1'))
+        try:
+            session.state='connected'
+            session.remote_rtp=peer.getsockname()
+            session.transmit_gain=.25
+            original=[1000]*160
+            session.send_audio(original)
+            session._flush_rtp(time.monotonic())
+            packet=peer.recvfrom(2048)[0]
+            assert packet[12:]==bytes([linear_to_ulaw(250)])*160
+            assert original==[1000]*160
+        finally:
+            session.close()

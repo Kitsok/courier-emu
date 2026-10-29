@@ -316,6 +316,7 @@ class SipSession:
         self._incoming_response = b""
         self._incoming_ringing = False
         self.state = "idle"
+        self.transmit_gain = 1.0
         self.last_status = 0
         self.error = ""
         self.events: deque[str] = EventLog(maxlen=64)
@@ -1035,6 +1036,9 @@ class SipSession:
         self._flush_rtp(now)
 
     def send_audio(self, samples: list[int]) -> None:
+        gain = getattr(self, "transmit_gain", 1.0)
+        if gain != 1.0:
+            samples = [round(sample * gain) for sample in samples]
         with self._rtp_lock:
             if self.state == "connected":
                 self._tx_audio.extend(samples)
@@ -1145,6 +1149,7 @@ class SipSession:
         value.pop("password", None)
         value.update(
             state=self.state,
+            transmit_gain=getattr(self, "transmit_gain", 1.0),
             direction=self.direction,
             registered=self.registered,
             number=self.number,

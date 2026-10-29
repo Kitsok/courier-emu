@@ -216,6 +216,11 @@ def _worker_command(args: argparse.Namespace) -> list[str]:
         if not 0 <= args.audio_volume <= 1:
             raise ValueError("audio volume must be between 0 and 1")
         command.extend(("--audio-monitor", "--audio-volume", str(args.audio_volume)))
+    gain = getattr(args, "sip_line_gain", 1.0)
+    if not 0 < gain <= 1:
+        raise ValueError("SIP line gain must be greater than 0 and at most 1")
+    command.extend(("--sip-line-gain", str(gain), "--sip-local-echo",
+                    getattr(args, "sip_local_echo", "on")))
     if args.cpu_engine != "interpreter":
         command.extend(("--cpu-engine", args.cpu_engine))
     for assignment in args.port:
@@ -1031,6 +1036,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="expose the DTE port as a pty device instead, for screen, "
         "minicom, or anything else that drives a serial modem",
     )
+    run.add_argument("--sip-line-gain", type=float, default=1.0,
+                     help="linear transmit gain at the SIP boundary, greater than 0 and at most 1")
+    run.add_argument("--sip-local-echo", choices=("on", "off"), default="on",
+                     help="enable or disable synthetic local hybrid return for SIP")
     run.add_argument("--audio-monitor", action="store_true",
                      help="play the firmware speaker locally using paplay")
     run.add_argument("--audio-volume", type=float, default=.25,

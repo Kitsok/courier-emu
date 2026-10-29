@@ -57,6 +57,46 @@ emulator received both physical strings exactly. Mgetty was restored after
 this test as well. The Python launcher did not implement the AT parser,
 error correction, or compression; payloads traversed the original firmware.
 
+## Normal SIP line profile and incoming data
+
+The normal launcher now uses transmit gain 0.25 at the SIP PCM boundary and
+no synthetic local hybrid return. These settings are applied before board
+construction; they do not force carrier or replace firmware protocols. They
+are an empirically tested virtual-line profile, not a measurement of physical
+board transfer gain. Direct diagnostic CLI defaults remain unchanged.
+
+Two native Courier instances negotiated
+`CONNECT 33600/ARQ/V34/LAPM/V42BIS` and exchanged complete
+`CALLER-DATA-MARKER\r\n` / `ANSWERER-DATA-MARKER\r\n` strings in both
+directions. The opt-in automated regression repeats this with unmodified
+workers and temporary loopback SIP/RTP endpoints. An intermediate placement
+of the production controls failed this regression; applying the controls at
+board initialization and the shared PCM transmit boundary passed twice. The
+full focused suite, including the data regression, passed 77 tests.
+
+A physical incoming call used the temporary dial string 9095551030 from
+`nanovax:/dev/ttyUSB0` to the notebook's SIP port 5074. Both terminals reported
+`CONNECT 31200/ARQ/V34/LAPM/V42BIS`. The physical Courier received
+`EMU-INCOMING-READY\r\n`; the emulator received
+`PHYSICAL-INCOMING-TEST\r\n`, including the full line ending. The original
+ATA dial plans were restored and verified after the test.
+
+The final outgoing check dialed 100 from the normal launcher. The emulator
+reported `CONNECT 12000/ARQ/V34/LAPM/V42BIS`; the physical Courier reported
+`CONNECT 21600/ARQ/V34/LAPM/V42BIS`. Both received the complete opposite-end
+`EMU-OUTGOING-TEST\r\n` and `PHYSICAL-OUTGOING-TEST\r\n` markers. Physical
+ATI6 confirmed asymmetric speed 21600/12000, LAPM SREJ 244/15 and V42BIS
+2048/32, with no resends, retrains or BLERs in the short data interval. ATI11
+reported a 424 ms roundtrip delay and timing offset -6688 ppm; these results
+do not establish clock-model accuracy or sustained-transfer reliability.
+
+Not every physical attempt passed. One outgoing fixture failed to establish
+verified autoanswer; the corrected fixture waits for fresh acknowledgements
+and checks `ATS0?` before dialing. Another outgoing call soon after restoring
+the ATA plan ended with NO CARRIER. A retry after a settling interval passed.
+These failures are retained as operational observations, not hidden by the
+successful marker checks.
+
 ## Evidence and limits
 
 Local captures are under `/tmp/courier-physical-stage6`,
@@ -66,17 +106,24 @@ notebook. These temporary paths are operational evidence, not package inputs.
 
 Native firmware tests also exercised incoming INVITE, RING, manual ATA,
 ATS0=1 autoanswer, and outgoing keypress cancellation against loopback SIP.
-A physical Courier-originated test reached SIP, firmware RING and answer,
-but did not establish a data connection. Other attempts failed before SIP
+Before the quiet line profile, a physical Courier-originated test reached SIP,
+firmware RING and answer, but did not establish a data connection. Other attempts failed before SIP
 with NO DIAL TONE; a hardware-to-hardware control call through `tio` connected
 at 31200/V34/LAPM/V42bis. Temporary ATA routes were removed and the original
 dial plans verified afterward.
 
-A direct loopback test with `modem-dsp-emu` originating to the analog Courier
-also reached SIP answer and V.34 training but failed LAPM establishment and
-exact bidirectional marker checks. A temporary transmit-level diagnostic
-allowed an uncorrected CONNECT, followed by unreadable data; that diagnostic
-is not a production change or a successful interoperability result. Incoming
-analog data interoperability remains unresolved.
+Direct loopback tests with `modem-dsp-emu` originating to the analog Courier
+reached SIP answer and V.34 training but failed LAPM establishment and exact
+bidirectional marker checks. The final normal-profile test reported
+`CONNECT 31200/V34/NONE` followed by unreadable data. This is not a successful
+interoperability result. Interoperability with the Eicon emulator remains
+unresolved; the physical and native Courier tests above are separate
+successful cases.
 The physical data checks were short marker transfers; they do not establish
 long-duration stability or the maximum reliable transfer rate.
+
+Later local evidence is under `/tmp/courier-pair-level-echo-long`,
+`/tmp/courier-native-data-regression`, `/tmp/courier-physical-normal-incoming`,
+and `/tmp/courier-physical-final-outgoing-settled`. Failed cases include
+`/tmp/courier-eicon-incoming-2`, `/tmp/courier-eicon-final-incoming`, and
+`/tmp/courier-physical-final-outgoing`. All are temporary local captures.

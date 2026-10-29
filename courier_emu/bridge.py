@@ -3963,6 +3963,7 @@ class CourierDspBridge:
                 "connected_event_queued": self._connected_event_queued,
                 "carrier_source": self._carrier_source,
                 "legacy_carrier_fallback": self.legacy_carrier_fallback,
+                "hybrid_return_off_hook": self.HYBRID_RETURN_OFF_HOOK,
                 "carrier_probe_frames": self._carrier_probe_frames,
                 "carrier_best_score": round(self._carrier_best_score),
                 "codec_clock_events": (

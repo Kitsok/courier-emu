@@ -118,3 +118,26 @@ def test_optional_report_path_and_legacy_config(tmp_path):
     path.write_text(path.read_text().split("[logging]")[0])
     arguments, _ = read_config(path)
     assert cli.build_parser().parse_args(arguments).log_level == "normal"
+
+
+@pytest.mark.parametrize('old,new', [
+    ('tx_gain = 0.25','tx_gain = 0'),
+    ('tx_gain = 0.25','tx_gain = 1.5'),
+    ('tx_gain = 0.25','tx_gain = nan'),
+    ('local_echo = false','local_echo = invalid'),
+])
+def test_invalid_line_model_configuration_is_rejected(tmp_path, old, new):
+    with pytest.raises(ValueError):
+        read_config(config_file(tmp_path, old, new))
+
+
+def test_normal_sip_line_settings_are_explicit_and_legacy_cli_is_preserved(tmp_path):
+    arguments,_ = read_config(config_file(tmp_path))
+    args = cli.build_parser().parse_args(arguments)
+    command = cli._worker_command(args)
+    assert command[command.index('--sip-line-gain')+1] == '0.25'
+    assert command[command.index('--sip-local-echo')+1] == 'off'
+    args = cli.build_parser().parse_args(['run','--profile','analog403'])
+    command = cli._worker_command(args)
+    assert command[command.index('--sip-line-gain')+1] == '1.0'
+    assert command[command.index('--sip-local-echo')+1] == 'on'

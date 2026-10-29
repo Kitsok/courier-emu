@@ -26,8 +26,8 @@ def read_config(path: Path) -> tuple[list[str], Path]:
         config.read_file(source)
     if config.defaults():
         raise ValueError("configuration must not contain DEFAULT values")
-    if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging", "audio"}:
-        raise ValueError("configuration requires [modem] and [sip], with optional [logging] and [audio]")
+    if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging", "audio", "line"}:
+        raise ValueError("configuration requires [modem] and [sip], with optional [logging], [audio] and [line]")
     for section, keys in KEYS.items():
         if set(config[section]) != keys:
             raise ValueError(f"[{section}] requires these keys: {', '.join(sorted(keys))}")
@@ -82,6 +82,17 @@ def read_config(path: Path) -> tuple[list[str], Path]:
             raise ValueError("audio volume must be between 0 and 1")
         if audio.getboolean("enabled", fallback=False):
             arguments.extend(("--audio-monitor", "--audio-volume", str(volume)))
+    line = config["line"] if config.has_section("line") else {}
+    if set(line) - {"tx_gain", "local_echo"}:
+        raise ValueError("[line] accepts only tx_gain and local_echo")
+    gain = float(line.get("tx_gain", ".25"))
+    if not 0 < gain <= 1:
+        raise ValueError("line tx_gain must be greater than 0 and at most 1")
+    echo_text = line.get("local_echo", "false").lower()
+    if echo_text not in configparser.ConfigParser.BOOLEAN_STATES:
+        raise ValueError("line local_echo must be a boolean")
+    echo = configparser.ConfigParser.BOOLEAN_STATES[echo_text]
+    arguments.extend(("--sip-line-gain", str(gain), "--sip-local-echo", "on" if echo else "off"))
     return arguments, paths["nvram"]
 
 

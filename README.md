@@ -1477,6 +1477,21 @@ another installation. Passwords are read from the named environment variable.
 TTY and EEPROM paths are relative to the configuration file, not the caller's
 working directory; `--config PATH` selects another configuration file.
 
+The normal source/service configuration uses `[line] tx_gain = 0.25` and
+`local_echo = false`. The transmit gain applies at the common SIP PCM boundary
+before G.711 encoding, including every DSP transmit path; it does not scale
+received RTP samples. `local_echo` controls only the synthetic near-end hybrid
+return in the board model. The previous unity-gain/synthetic-echo combination
+failed incoming data tests; the quiet line profile has been checked with native
+Courier and physical Courier calls. These are operational settings rather than
+a measurement of the physical board's analog transfer function.
+
+The gain must be greater than zero and at most one. Raw diagnostic CLI runs
+retain their previous unity gain and synthetic echo; use `--sip-line-gain 0.25
+--sip-local-echo off` to reproduce the normal line profile there. Line settings
+are applied before board construction. They do not force carrier, alter modem
+protocol replies or replace the firmware's error correction/compression.
+
 The launcher seeds the persistent EEPROM from the captured 403 settings with
 S27=0 on first use and preserves it on later launches. If an earlier launch
 created settings with S27=48, type `ATS27=0&W` once; the launcher does not
@@ -1586,7 +1601,20 @@ systemctl is-enabled courier-emu
 The service uses normal journal logging and disables local speaker playback
 by default. Firmware settings remain in `/var/lib/courier-emu` when the package
 is removed, including on purge; they are not silently discarded. Package and
-service checks do not imply that the unresolved incoming data tests pass.
+service checks are separate from the short modem-data interoperability tests.
+
+### Native SIP data regression
+
+To run the slower test that boots two analog Courier instances, negotiates
+V.34/LAPM/V.42bis and checks complete marker lines in both directions:
+
+```sh
+COURIER_TEST_SIP_DATA=1 python3 -m pytest -q tests/test_analog_sip_data.py
+```
+
+This test uses loopback SIP/RTP and temporary settings/PTYs. It does not edit
+an ATA or call hardware. The profile rejects forced carrier and acquisition
+assistance; the original CPU and DSP firmware establish the data connection.
 
 ### Incoming analog calls
 
