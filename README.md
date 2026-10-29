@@ -1418,6 +1418,25 @@ hold no storage. `courier_firmware_analysis.md` has the rest.
 
 ## Named analog board profile
 
+Build the analog runtime explicitly before launching it:
+
+```sh
+./build.sh --check-only
+./build.sh
+```
+
+The build checks for Python 3.10+, a C++17 compiler, the selected Python's
+development headers, and the captured board and DSP mask ROMs. On Debian the
+build packages are `python3`, `python3-dev`, and `g++` (or `build-essential`).
+It does not install packages, create a virtual environment, or require the
+optional Unicorn and Capstone backends. Set `PYTHON` to build for another
+interpreter. Both native libraries are loaded to check the resulting build.
+
+For direct source-tree execution without the legacy `./courier` launcher's
+automatic virtualenv setup, use `python3 -m courier_emu` from the repository
+root. Set `COURIER_EMU_NO_BUILD=1` to reject missing or stale native components
+instead of invoking a compiler during startup; rebuild with `./build.sh`.
+
 `run --profile analog403` selects the captured 20.16 MHz analog Courier
 running supervisor 7.4.16 / DSP 3.1.2. It checks the image's SHA-256 before
 starting, enables the DSP and modeled analog exchange, and selects board ID 7,

@@ -10,6 +10,7 @@ from typing import Any
 
 from .xmf import XmfImage
 from .timebase import ASIC_DSP_CLOCK_HZ
+from .build import require_build_allowed
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +36,7 @@ def build_runner(*, force: bool = False) -> Path:
         runner_time = RUNNER.stat().st_mtime_ns
         if all(source.stat().st_mtime_ns <= runner_time for source in SOURCES):
             return RUNNER
+    require_build_allowed(RUNNER)
     BUILD_DIRECTORY.mkdir(parents=True, exist_ok=True)
     command = [
         "c++",
@@ -64,6 +66,7 @@ def build_library(*, force: bool = False) -> Path:
         library_time = LIBRARY.stat().st_mtime_ns
         if all(source.stat().st_mtime_ns <= library_time for source in LIBRARY_SOURCES):
             return LIBRARY
+    require_build_allowed(LIBRARY)
     BUILD_DIRECTORY.mkdir(parents=True, exist_ok=True)
     link_flags = ["-dynamiclib"] if sys.platform == "darwin" else ["-shared", "-fPIC"]
     command = [
