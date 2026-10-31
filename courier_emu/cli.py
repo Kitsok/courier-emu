@@ -122,7 +122,7 @@ def instruction_limit(args: argparse.Namespace) -> int:
     """Resolve --instructions, which defaults by how the run is driven."""
     if args.instructions is not None:
         return args.instructions
-    if getattr(args, "console", False) or getattr(args, "serial_pty", False):
+    if getattr(args, "console", False) or getattr(args, "serial_pty", False) or getattr(args, "serialsim", None):
         return CONSOLE_INSTRUCTIONS
     return DEFAULT_RUN_INSTRUCTIONS
 
@@ -182,6 +182,8 @@ def daa_codec_wanted(args: argparse.Namespace, image: object) -> bool:
 
 def _worker_command(args: argparse.Namespace) -> list[str]:
     resolve_run_profile(args)
+    if sum(bool(value) for value in (args.console, args.serial_pty, getattr(args, "serialsim", None))) > 1:
+        raise ValueError("choose one of --console, --serial-pty or --serialsim")
     if args.serial_link and not args.serial_pty:
         raise ValueError("--serial-link requires --serial-pty")
     if args.line_audio_only:
@@ -400,7 +402,7 @@ def _worker_environment(args: argparse.Namespace) -> dict[str, str]:
 def _run_isolated(args: argparse.Namespace) -> int:
     command = _worker_command(args)
     environment = _worker_environment(args)
-    if args.console or args.serial_pty:
+    if args.console or args.serial_pty or getattr(args, "serialsim", None):
         return run_console(args, command, environment)
     if getattr(args, "log_level", None):
         process = subprocess.run(command, stdout=subprocess.DEVNULL, env=environment)
@@ -1043,6 +1045,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="expose the DTE port as a pty device instead, for screen, "
         "minicom, or anything else that drives a serial modem",
     )
+    run.add_argument("--serialsim", metavar="DEVICE",
+                     help="attach the modem to an existing serialsim pipe-B TTY, with DTR/DSR")
     run.add_argument("--sip-line-gain", type=float, default=1.0,
                      help="linear transmit gain at the SIP boundary, greater than 0 and at most 1")
     run.add_argument("--sip-local-echo", choices=("on", "off"), default="on",

@@ -62,7 +62,13 @@ def _run_console(args, command, environment, publication) -> int:
     keep_open: int | None = None
     lamps_read: int | None = None
     lamps_write: int | None = None
-    if args.serial_pty:
+    serialsim = getattr(args, "serialsim", None)
+    device_mode = bool(args.serial_pty or serialsim)
+    if serialsim:
+        worker_end = os.open(serialsim, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+        device = serialsim
+        terminal = None
+    elif args.serial_pty:
         worker_end, keep_open, device = _pty_channel()
         publication.publish(device)
         terminal: socket.socket | None = None
@@ -75,6 +81,8 @@ def _run_console(args, command, environment, publication) -> int:
             lamps_read, lamps_write = os.pipe()
 
     extra = ["--serial-fd", str(worker_end)]
+    if serialsim:
+        extra.append("--serialsim")
     passed = [worker_end]
     if lamps_write is not None:
         extra += ["--lamps-fd", str(lamps_write)]
@@ -90,7 +98,7 @@ def _run_console(args, command, environment, publication) -> int:
     )
     # The worker owns its end now; holding a second copy open here would keep
     # the channel from ever reporting that the far side has gone.
-    if args.serial_pty:
+    if device_mode:
         os.close(worker_end)
     else:
         right.close()
@@ -99,9 +107,10 @@ def _run_console(args, command, environment, publication) -> int:
 
     captured: tuple[str, str] | None = None
     try:
-        if args.serial_pty:
+        if device_mode:
             print(f"serial console on {device}", file=sys.stderr)
-            print(f"attach with: tio {publication.path or device}", file=sys.stderr)
+            if not serialsim:
+                print(f"attach with: tio {publication.path or device}", file=sys.stderr)
             print("stop with: Ctrl-C here", file=sys.stderr, flush=True)
             _forward_termination(process)
             # communicate() rather than wait(): the worker's result can be
@@ -138,7 +147,7 @@ def _run_console(args, command, environment, publication) -> int:
     return _finish(
         process,
         summary=args.summary,
-        stream=sys.stdout if args.serial_pty else sys.stderr,
+        stream=sys.stdout if device_mode else sys.stderr,
         captured=captured,
     )
 

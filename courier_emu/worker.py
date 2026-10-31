@@ -158,6 +158,7 @@ def main() -> int:
         type=int,
         help="inherited descriptor the front-panel lamp line is written to",
     )
+    parser.add_argument("--serialsim", action="store_true")
     parser.add_argument("--sip-line-gain", type=float, default=1.0)
     parser.add_argument("--sip-local-echo", choices=("on", "off"), default="on")
     parser.add_argument("--audio-monitor", action="store_true")
@@ -167,8 +168,9 @@ def main() -> int:
     args = parser.parse_args()
     operational = OperationalLog(args.log_level) if args.log_level else None
 
+    from .serialsim import SerialSimConsole
     console = (
-        SerialConsole(args.serial_fd, lamps_fd=args.lamps_fd)
+        (SerialSimConsole if args.serialsim else SerialConsole)(args.serial_fd, lamps_fd=args.lamps_fd)
         if args.serial_fd is not None else None
     )
 

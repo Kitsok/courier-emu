@@ -942,6 +942,12 @@ class CourierMachine:
             self.console.write(value if self.online_mode else value & 0x7F)
 
     @property
+    def _dte_dtr_asserted(self) -> bool:
+        if self.console is not None and getattr(self.console, "serialsim", False):
+            return self.console.dtr
+        return self._terminal_attached
+
+    @property
     def _terminal_attached(self) -> bool:
         """Whether the firmware should come up expecting terminal input.
 
@@ -2614,7 +2620,7 @@ class CourierMachine:
                     # 0x12. Bit 6 is the active-low DTE DTR input: an
                     # attached terminal pulls it low, which opens the normal
                     # receive path instead of installing the discard callback.
-                    if self._terminal_attached:
+                    if self._dte_dtr_asserted:
                         value &= ~0x40
                     else:
                         value |= 0x40
@@ -2631,7 +2637,7 @@ class CourierMachine:
                     # looks for a high-to-low strobe followed by RX-ready in
                     # a narrow counter window; do not manufacture that Win95
                     # enumeration sequence for plain queued AT input.
-                    if self._terminal_attached:
+                    if self._dte_dtr_asserted:
                         value |= 0x01
                     else:
                         value &= ~0x01
@@ -3635,6 +3641,7 @@ class CourierMachine:
             # through a Python callback that publishes it again.
             panel_inputs_native = (
                 self.quad_c50 is None and self.quad_board is None
+                and not getattr(self.console, "serialsim", False)
                 and self.quad_usart is None and self.ring is None
                 and 0x14 not in (command_port, LANE_RX_ACK_PORT, 0x1C, 0x1E, *lane_ports)
                 and not bridge.handles(0x14)

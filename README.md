@@ -1,5 +1,42 @@
 # Courier XMF emulator harness
 
+## Serialsim TTY backend
+
+The optional `--serialsim /dev/ttyPipeB0` argument attaches the analog modem
+to an existing serialsim pipe instead of creating a PTY. It is independent
+of terminal interactivity and is mutually exclusive with `--console` and
+`--serial-pty`:
+
+```sh
+./courier run --profile analog403 --serialsim /dev/ttyPipeB0
+```
+
+For `run.sh` or the packaged service, set `serialsim = /dev/ttyPipeB0` in
+`[modem]`. An empty or absent value preserves PTY mode and its existing `tty`
+symlink setting. When serialsim is set, `tty` publication is unused. The
+DECserver peer opens `/dev/ttyPipeA0`, for example:
+
+```sh
+./run.sh --interactive --serialsim 2=/dev/ttyPipeA0
+```
+
+The second command belongs to the DECserver repository. Its port 1 stays a
+management PTY. Use distinct pair numbers for additional modems.
+
+Both endpoints use raw binary TTY mode with a 115200-baud kernel transport.
+Courier reads the peer's DTR through serialsim's remote-control ioctl and
+feeds the existing firmware input pins. Dynamic DTR disables the cached native
+panel-input optimization so pin changes remain visible to firmware.
+
+DSR currently reports **endpoint readiness**, asserted while the Courier worker
+owns its device, not carrier detection or a decoded board ASIC DSR output.
+The backend uses its local host DTR as the kernel's null-modem source for the
+peer's DSR; HUPCL drops it on descriptor close. This is a transport mapping,
+not a change to the emulated DTR signal. Normal shutdown explicitly drops DSR.
+The exact firmware-driven ASIC DSR output remains unmodeled. No side socket or
+relay process is needed. A serialsim kernel module and device permissions are
+required; ordinary PTYs are rejected by the backend-specific ioctl probe.
+
 The I-modem's AT interface answers. `isdn-run` now models the 386EX SIO's
 receive side - RBR, IIR, MSR and the IRQ3 line its own ISR at `0xb2aa2`
 names - so commands can be typed at the firmware and its replies read back:

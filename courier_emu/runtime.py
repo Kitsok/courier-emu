@@ -29,7 +29,8 @@ def read_config(path: Path) -> tuple[list[str], Path]:
     if not set(KEYS) <= set(config.sections()) or set(config.sections()) - set(KEYS) - {"logging", "audio", "line"}:
         raise ValueError("configuration requires [modem] and [sip], with optional [logging], [audio] and [line]")
     for section, keys in KEYS.items():
-        if set(config[section]) != keys:
+        actual = set(config[section]) - ({"serialsim"} if section == "modem" else set())
+        if actual != keys:
             raise ValueError(f"[{section}] requires these keys: {', '.join(sorted(keys))}")
     modem, sip = config["modem"], config["sip"]
     if modem["profile"] != "analog403":
@@ -55,6 +56,12 @@ def read_config(path: Path) -> tuple[list[str], Path]:
         raise ValueError("tty and nvram must be different paths")
     arguments = ["run", "--profile", modem["profile"], "--serial-pty",
                  "--serial-link", str(paths["tty"]), "--nvram", str(paths["nvram"])]
+    if modem.get("serialsim", "").strip():
+        device = Path(modem["serialsim"]).expanduser()
+        if not device.is_absolute():
+            device = path.parent / device
+        arguments = ["run", "--profile", modem["profile"], "--serialsim", str(device),
+                     "--nvram", str(paths["nvram"])]
     for key, flag in (("server", "--sip-server"), ("target", "--sip-target"),
                       ("username", "--sip-username"), ("password_env", "--sip-password-env"),
                       ("bind", "--sip-bind"), ("advertise", "--sip-advertise"),
