@@ -327,6 +327,14 @@ handlers. `COURIER_NATIVE_EXCHANGE=0` disables this path while keeping native
 clock-only services. Diagnostic reports expose native poll and DSP batch
 counts under `scheduler`.
 
+SIP dialing remains eligible for native DSP services while the other guards
+hold. The linked-peer originate fallback requires a socket line, so its
+absence on a SIP exchange does not require a Python service. Qualified
+answer handling and pending originate work for a linked peer still yield.
+The exchange regression test checks that dialing executes native DSP batches
+and preserves guest memory, registers and diagnostic state against Python
+services.
+
 Clock-only snapshots contain only the service clocks and interrupt state
 they use. Exchange DSP snapshots also carry their resampler and buffer
 state, with room for an 800-sample SIP frame independently of the paired

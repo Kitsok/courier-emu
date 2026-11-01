@@ -116,11 +116,18 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
             self.previous_large = False
             self.last_native_polls = 0
             self.native_polls_with_large_buffers = 0
+            self.last_dsp_batches = 0
+            self.native_dialing_batches = 0
 
         def poll(self, limit):
             self.polls += 1
             poll = getattr(self.owner, "_worker_poll", None)
             count = poll.state.polls if poll is not None else 0
+            batches = poll.state.dsp_batches if poll is not None else 0
+            bridge = self.owner.dsp_bridge
+            if bridge.daa.operation == "dialing" and not bridge._v8_armed:
+                self.native_dialing_batches += batches - self.last_dsp_batches
+            self.last_dsp_batches = batches
             large = len(self.owner.dsp_bridge._exchange_line_buffer) > 512
             if large and self.previous_large:
                 self.native_polls_with_large_buffers += count - self.last_native_polls
@@ -161,6 +168,8 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
     assert fast._worker_poll.state.polls > 0
     assert fast._worker_poll.state.dsp_batches > 0
     assert fast.console.native_polls_with_large_buffers > 0
+    if serial_input == b"ATDT100\r":
+        assert fast.console.native_dialing_batches > 0
     assert slow.uc.memory == fast.uc.memory
     assert slow.uc.regs == fast.uc.regs
     assert results[0] == results[1]

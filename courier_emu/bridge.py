@@ -3332,11 +3332,13 @@ class CourierDspBridge:
                 or not daa.detector_qualified):
             if daa.operation == "answer":
                 return False
-            if daa.operation == "dialing":
-                if self.line is None or self.line.peer_off_hook:
+            # Originate's fallback only handles socket-linked peers. A SIP
+            # exchange has no self.line, so neither operation can arm it.
+            if self.line is not None:
+                if daa.operation == "dialing" and self.line.peer_off_hook:
                     return False
-            elif daa.operation == "originate" and self._commanded_role != "originate":
-                return False
+                if daa.operation == "originate" and self._commanded_role != "originate":
+                    return False
         return True
 
     def finish_fast_clock(self, writes: int, tdm_active: bool) -> None:
