@@ -5,6 +5,7 @@ max count stay in Python. Ordinary count/compare reads update the same lazy
 timer view and diagnostics before any Python handler sees the next access.
 """
 import ctypes as c
+from struct import Struct
 
 from .timers import TIMER_REGISTERS
 
@@ -20,6 +21,10 @@ class ReadState(c.Structure):
                 ("read_mask", c.c_uint64)]
 
 
+_SLOT_PACK = Struct("=6Q")
+assert _SLOT_PACK.size == c.sizeof(Slot)
+
+
 class NativeTimerReads:
     def __init__(self, timers, counts):
         self.timers, self.counts = timers, counts
@@ -27,6 +32,8 @@ class NativeTimerReads:
         self.state = ReadState.from_buffer(self.buffer)
         self.entries = sorted(TIMER_REGISTERS)
         self.timer_indexes = tuple(TIMER_REGISTERS[a][0] for a in self.entries)
+        self.slot_offsets = tuple(ReadState.slots.offset + i * c.sizeof(Slot)
+                                  for i in range(3))
         self.revision = -1
 
     def prepare(self, base):
@@ -34,11 +41,12 @@ class NativeTimerReads:
         s.instruction_base = base
         if self.revision != self.timers.revision:
             s.ratio = self.timers.timebase.ticks_per_instruction
-            for slot, timer in zip(s.slots, self.timers.timers):
-                slot.origin = slot.last_tick = timer.origin
-                slot.count = timer.count
-                slot.compare_a, slot.compare_b = timer.compare_a, timer.compare_b
-                slot.control = timer.control
+            # Write the six native-endian uint64 fields in one call instead
+            # of allocating ctypes slot views and assigning each descriptor.
+            for offset, timer in zip(self.slot_offsets, self.timers.timers):
+                _SLOT_PACK.pack_into(
+                    self.buffer, offset, timer.origin, timer.origin,
+                    timer.count, timer.compare_a, timer.compare_b, timer.control)
             self.revision = self.timers.revision
 
     def finish(self):

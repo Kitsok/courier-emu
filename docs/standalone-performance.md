@@ -56,4 +56,75 @@ coverage alone therefore does not mean low Python overhead.
 Next: measure snapshot packing as a bounded optimization of the frequent
 Python/native boundary, compare exact timer behavior and firmware state,
 then measure longer steady operation and active SIP media before selecting
-larger structural changes. A53 results remain unmeasured.
+larger structural changes. Follow-up A53 results appear below.
+
+## Nanovax inventory and live CPU sample
+
+Read-only inspection through `ssh nanovax` found a FriendlyElec NanoPi R2S,
+four Cortex-A53 r0p4 cores, little-endian aarch64, 408-1296 MHz with the
+`ondemand` governor. Python is 3.11.2 and GCC is 12.2.0 on Debian, Linux
+6.1.63. The clean checkout was at 25c2aa9. Python's FIR accumulation differs
+from notebook Python 3.14, so compare each implementation against its local
+baseline, not against cross-version guest hashes.
+
+The machine already ran a Courier serialsim/SIP worker from a separate
+`/dev/shm` deployment, plus a DECserver emulator taking another core and a
+VAX process. Temperature was 83.8 C; thermal trip points are 70/85/95 C.
+Sampled frequency varied between 600 and 1008 MHz during inspection. No
+services, governor settings or deployment files were changed.
+
+Unlike the notebook, nanovax permits user hardware counters. A 10-second,
+99-Hz `perf record -g -p 5375 -- sleep 10` sample collected 1015 samples
+without losses. Flat DSO shares of user cycles:
+
+| Component | Share |
+| --- | ---: |
+| CPython 3.11 | 67.44% |
+| Native x86 engine | 17.24% |
+| DSP library (including resampler and native polls) | 10.38% |
+| ctypes | 2.84% |
+| libc / libffi | 2.10% |
+
+`_PyEval_EvalFrameDefault` alone is 28.38%, `run_batch` is 13.88%, and
+`resample::Timed::run` is 2.41%. This samples the existing worker's current
+state, not a controlled connected modem data call. It supports investigating
+Python/native boundaries first; it does not establish data-call capacity.
+Raw data remains at `/tmp/courier-opt-live.data` on nanovax. Thermal/load
+conditions prevent treating a single remote wall-time sample as a stable
+maximum-throughput result.
+
+## Timer snapshot packing
+
+Replace six ctypes field assignments per timer with one native-endian
+`Struct('=6Q').pack_into` call. Derive offsets from the ctypes layout and
+check the slot size; preserve invalidation and read publication behavior.
+No native ABI or guest timing changes.
+
+Forced-refresh microbenchmarks on the notebook take about 0.32 s per 100k
+refreshes with ctypes versus 0.13-0.16 s with packing. On nanovax, alternating
+30k-refresh runs take 1.16/1.57 s with ctypes and 0.64/0.80 s with packing.
+The operation itself is roughly twice as fast on the target.
+
+Full-workload notebook measurements initially suggested a gain, but a
+reverse run and alternating fresh-process runs did not reproduce it.
+Alternating cold dialing medians: original 8.264 CPU seconds, packed 8.336
+CPU seconds (0.9% slower, too small to establish a regression here). Do not
+claim a notebook end-to-end speedup from this change.
+
+Nanovax's first original/packed runs take 96.35/91.66 CPU seconds and
+96.95/92.51 wall seconds for 30M instructions. The observed CPU reduction
+is 4.9%, but thermal/load drift means one pair cannot attribute all of it
+to packing. This remains far below real time (0.092/0.096 times modeled
+instruction rate) for boot/dialing under the sampled conditions.
+
+All final memory hashes, registers, native batch and scheduler counts match
+between implementations on each host. The firmware hash also happens to
+match across hosts for this workload, but that is not assumed generally.
+Notebook regression: 14 tests passed in `test_native_timer_reads.py` and
+`test_worker_deadlines.py`, including random timer modes, rollback, register
+programming, idle, commands and dialing versus Python services.
+
+Retain this as a bounded reduction in target snapshot overhead, without
+claiming that it solves the larger Python scheduling bottleneck. Remote
+candidate modules and benchmarks live only in `/tmp`; the deployed modem
+and remote checkout remain unchanged.
