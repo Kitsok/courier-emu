@@ -103,3 +103,55 @@ def test_native_retuned_loop_matches_the_python_one(monkeypatch):
     assert run(True) == reference
     # It really was the native loop that ran.
     assert resample._NATIVE
+
+
+@pytest.mark.parametrize("precise", [False, True])
+@pytest.mark.parametrize("input_rate,output_rate", [
+    (7200, 8000), (8000, 9600), (9600, 8000), (7578.95, 8000),
+    (10266.666, 8000), (8000, 8000),
+])
+def test_native_fixed_fir_matches_reference_samples_and_phase(
+        monkeypatch, precise, input_rate, output_rate):
+    import random
+    from operator import mul
+    from courier_emu import resample
+
+    if precise and not hasattr(math, "sumprod"):
+        pytest.skip("math.sumprod requires Python 3.12")
+    monkeypatch.setattr(resample, "_DOT_PRECISE", precise)
+    monkeypatch.setattr(resample, "_dot", math.sumprod if precise else
+                        lambda a, b: sum(map(mul, a, b)))
+    rng = random.Random(312)
+    samples = [rng.randint(-32768, 32767) for _ in range(2400)]
+    samples[:12] = [0, 32767, -32768, 1, -1, 0] * 2
+    states = []
+    for enabled in ("0", "1"):
+        monkeypatch.setenv("COURIER_NATIVE_RESAMPLE", enabled)
+        monkeypatch.setattr(resample, "_NATIVE", None)
+        converter = BandLimitedResampler()
+        output = []
+        position = 0
+        for size in [1, 7, 127, 1024, 31, 1000, 210]:
+            output.extend(converter.convert(samples[position:position + size],
+                                            input_rate, output_rate))
+            position += size
+        states.append((output, converter._position, converter._history,
+                       converter._recent_input, converter.converted))
+    assert states[0] == states[1]
+
+
+def test_fixed_native_conversion_seeds_the_same_clock_retune(monkeypatch):
+    import random
+    from courier_emu import resample
+    rng = random.Random(403)
+    chunks = [[rng.randrange(-20000, 20000) for _ in range(211)] for _ in range(9)]
+    outputs = []
+    for enabled in ("0", "1"):
+        monkeypatch.setenv("COURIER_NATIVE_RESAMPLE", enabled)
+        monkeypatch.setattr(resample, "_NATIVE", None)
+        converter = BandLimitedResampler()
+        out = []
+        for index, chunk in enumerate(chunks):
+            out.extend(converter.convert(chunk, 7200 if index < 5 else 9600, 8000))
+        outputs.append(out)
+    assert outputs[0] == outputs[1]

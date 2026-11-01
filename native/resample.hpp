@@ -1,5 +1,5 @@
-// The part of resample.BandLimitedResampler._convert_retuned that is the same
-// for every output sample: pick the window around the output instant, take the
+// BandLimitedResampler's fixed-grid and retuned FIR loops: pick the window
+// around the output instant, take the
 // kernel phase nearest it and dot the two. Done the way the Python is, so the
 // answers are the same bit for bit - including the dot product, which is
 // CPython's math.sumprod for floats (a triple-length accumulation), not a
@@ -48,6 +48,38 @@ inline double sumprod(const double *a, const double *b, long count)
     TripleLength total{0.0, 0.0, 0.0};
     for (long index = 0; index < count; ++index) total = tl_fma(a[index], b[index], total);
     return tl_to_d(total);
+}
+
+// BandLimitedResampler.convert's regular-grid loop. Preserve the reference's
+// phase carry and residual position, including a carry beyond the last input
+// window. Python 3.11's fallback sums rounded products in order; 3.12+ uses
+// math.sumprod, whose wider accumulation is implemented above.
+inline std::size_t fixed(const double *history, std::size_t length,
+    const double *kernel, double step, double position, bool precise,
+    int16_t *out, std::size_t capacity, double *next)
+{
+    const double limit = double(length) - TAPS;
+    std::size_t written = 0;
+    while (position <= limit && written < capacity) {
+        long base = long(position);
+        long phase = long((position - double(base)) * PHASES + 0.5);
+        if (phase == PHASES) {
+            ++base; phase = 0;
+            if (double(base) > limit) break;
+        }
+        const double *weights = kernel + phase * TAPS;
+        double value = 0.0;
+        if (precise) value = sumprod(weights, history + base, TAPS);
+        else for (long k = 0; k < TAPS; ++k) {
+            volatile double product = weights[k] * history[base + k];
+            value += product;
+        }
+        const double rounded = std::nearbyint(value);
+        out[written++] = int16_t(std::max(-32768.0, std::min(32767.0, rounded)));
+        position += step;
+    }
+    *next = position;
+    return written;
 }
 
 constexpr double KAISER_BETA = 8.0;

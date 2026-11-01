@@ -227,6 +227,11 @@ results (`tools/probe_imodem_analog_pair.py`, bit for bit):
   against it on 200k random vectors), the Kaiser series uses libm's `pow` as
   `float ** int` does. `tests/test_resample_rate_changes.py` runs both on random
   streams with rate changes and compares every sample.
+  The fixed-grid path before the first codec retune is native too, retaining
+  its phase carry, clipping, rounding and history used to seed later retunes.
+  It selects the ordered rounded-product sum on Python 3.11 and the wider
+  `math.sumprod` accumulation on Python 3.12 and later. The existing
+  `COURIER_NATIVE_RESAMPLE=0` switch retains the Python FIR loops.
 - **The C5x step.** A third of the worker's DSP steps are inside RPTB bodies and
   went through the rare path for the block-repeat edge; that edge is on the fast
   path now, and XC's condition sample is one register.

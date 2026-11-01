@@ -45,6 +45,7 @@ PHASES = 1024
 # C-implemented dot product where the interpreter has one (3.12+); the FIR
 # below runs it once per output sample.
 _dot = getattr(math, "sumprod", None) or (lambda a, b: sum(map(mul, a, b)))
+_DOT_PRECISE = hasattr(math, "sumprod")
 
 
 def _bessel_i0(x: float) -> float:
@@ -127,6 +128,26 @@ def _flat_kernel_for(cutoff: float) -> array:
 
 
 _NATIVE = None
+_FIXED_NATIVE = None
+
+
+def _native_fixed():
+    global _FIXED_NATIVE
+    if not _native_retuned():
+        return False
+    if _FIXED_NATIVE is None:
+        from .dsp import load_library
+        try:
+            fn = load_library().courier_resample_fixed
+        except AttributeError:  # an older library selected for comparison
+            _FIXED_NATIVE = False
+            return False
+        fn.restype = ctypes.c_size_t
+        fn.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p,
+                       ctypes.c_double, ctypes.c_double, ctypes.c_int,
+                       ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
+        _FIXED_NATIVE = fn
+    return _FIXED_NATIVE
 
 
 def _native_retuned():
@@ -370,7 +391,20 @@ class BandLimitedResampler:
         result: list[int] = []
         position = self._position
         limit = len(history) - TAPS
-        while position <= limit:
+        native = _native_fixed()
+        if native and position <= limit:
+            cutoff = CUTOFF * min(input_rate, output_rate) / 2 / input_rate
+            flat = _flat_kernel_for(cutoff)
+            values = array("d", history)
+            capacity = max(1, math.ceil(max(0.0, limit - position) / step) + 2)
+            output = array("h", bytes(2 * capacity))
+            next_position = ctypes.c_double()
+            count = native(values.buffer_info()[0], len(values), flat.buffer_info()[0],
+                           step, position, _DOT_PRECISE, output.buffer_info()[0],
+                           capacity, ctypes.addressof(next_position))
+            result = output[:count].tolist()
+            position = next_position.value
+        while not native and position <= limit:
             base = int(position)
             phase = int((position - base) * PHASES + 0.5)
             if phase == PHASES:

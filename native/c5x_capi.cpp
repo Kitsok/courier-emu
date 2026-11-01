@@ -1464,6 +1464,14 @@ int courier_c5x_step_cycles(void *handle, uint64_t count,
 }
 
 // BandLimitedResampler's retuned state in native memory (resample.Timed).
+std::size_t courier_resample_fixed(const double *history, std::size_t length,
+    const double *kernel, double step, double position, int precise,
+    int16_t *out, std::size_t capacity, double *next)
+{
+    return courier::resample::fixed(history, length, kernel, step, position,
+                                   precise != 0, out, capacity, next);
+}
+
 void *courier_timed_create(double norm)
 {
     auto *timed = new courier::resample::Timed();
