@@ -3324,6 +3324,21 @@ class CourierMachine:
                         or (scheduled and not scheduled_static())
                         or not timer_poll_static()):
                     return
+                next_service = instruction_base + uc._clock_next
+                elapsed = next_service - self._last_service
+                dsp_active = bool(bridge.active and not bridge.error
+                                  and (not bridge.boot_rom_enabled or bridge.launched))
+                if scheduled and (
+                    (self.console is not None and self._console_owed <= elapsed)
+                    or (bridge.exchange is not None
+                        and bridge._exchange_instructions + elapsed >= bridge.batch)
+                    or (dsp_active and bridge._x86_ticks + elapsed >= bridge.batch)
+                    or (bridge.codec is not None
+                        and bridge._codec_instructions + elapsed >= LINE_FRAME_INSTRUCTIONS)
+                ):
+                    # This batch cannot elide even its first service. Avoid
+                    # constructing a native snapshot that immediately yields.
+                    return
                 deadlines = [instruction_limit - 2 * interpreter_period]
                 if idle_pacer is not None:
                     deadlines.append(idle_pacer.next_check)
@@ -3341,16 +3356,18 @@ class CourierMachine:
                     remaining = timer.ticks_to_max_count()
                     if remaining is not None:
                         deadlines.append(first_instruction_at(timer.origin + remaining))
+                deadline = max(0, min(deadlines))
+                if next_service >= deadline:
+                    return
                 state.core = core.handle
                 state.scheduled = scheduled
-                state.dsp_active = bool(bridge.active and not bridge.error
-                                        and (not bridge.boot_rom_enabled or bridge.launched))
+                state.dsp_active = dsp_active
                 state.exchange_present = bridge.exchange is not None
                 state.exchange_ticks = bridge._exchange_instructions
                 state.console_present = self.console is not None
                 state.console_owed = self._console_owed
                 state.instruction_base = instruction_base
-                state.elide_until = max(0, min(deadlines))
+                state.elide_until = deadline
                 state.last_service = self._last_service
                 state.timer_poll_owed = self._timer_poll_owed
                 state.timer_poll_period = TIMER_POLL_INSTRUCTIONS
@@ -3369,6 +3386,18 @@ class CourierMachine:
                 state.line_frame_instructions = LINE_FRAME_INSTRUCTIONS
                 state.x86_ticks = bridge._x86_ticks
                 state.batch = bridge.batch
+                latch = self.panel.latches.get(0x14)
+                state.panel_latch = NO_LATCH if latch is None else latch
+                state.io_cursor = state.mmio_cursor = 0
+                state.dirty = 0
+                seen[0] = state.polls
+                if scheduled:
+                    # SIP/exchange services use no socket frame, resampler or
+                    # line buffer state. In particular a 100 ms SIP buffer
+                    # may exceed the paired-line buffer's 512-sample limit.
+                    state.line_calls = state.frame_ok = 0
+                    state.armed = 1
+                    return
                 state.debt = bridge._dsp_cycle_debt
                 state.cpi = bridge._dsp_cpi
                 state.cycles_per_x86 = bridge.dsp_cycles_per_x86
@@ -3383,8 +3412,6 @@ class CourierMachine:
                 state.loader_in_loop = core.pc() in C51_ROM_LOADER_LOOP
                 state.loader_first = C51_ROM_LOADER_LOOP.start
                 state.loader_end = C51_ROM_LOADER_LOOP.stop
-                latch = self.panel.latches.get(0x14)
-                state.panel_latch = NO_LATCH if latch is None else latch
                 # The line service: the resampler's native state once it has
                 # retuned, and where the exchange buffer and its counts stand.
                 timed = getattr(bridge._codec_to_line, "_timed", None)
@@ -3407,9 +3434,6 @@ class CourierMachine:
                 # unless one is near: within about three line services.
                 if native_frames and len(buffer) >= LINE_FRAME_SAMPLES - FRAME_ARM_MARGIN:
                     arm_frames(bridge)
-                state.io_cursor = state.mmio_cursor = 0
-                state.dirty = 0
-                seen[0] = state.polls
                 state.armed = 1
 
             def scheduled_static() -> bool:
@@ -3564,10 +3588,11 @@ class CourierMachine:
                 bridge._instructions = state.bridge_instructions
                 bridge._codec_instructions = state.codec_instructions
                 bridge._x86_ticks = state.x86_ticks
-                bridge._dsp_cycle_debt = state.debt
-                bridge._dsp_cpi = state.cpi
-                bridge._line_service_skipped = state.line_skipped
-                bridge._dsp_mailbox_writes = state.mailbox_writes
+                if not state.scheduled:
+                    bridge._dsp_cycle_debt = state.debt
+                    bridge._dsp_cpi = state.cpi
+                    bridge._line_service_skipped = state.line_skipped
+                    bridge._dsp_mailbox_writes = state.mailbox_writes
                 if state.line_calls:
                     service = bridge._line_service
                     service["calls"] += state.line_calls

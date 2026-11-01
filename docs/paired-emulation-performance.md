@@ -317,6 +317,13 @@ yields before changing a service that needs those handlers, and publishes
 its counters before Python sees them.
 `COURIER_WORKER_POLL=0` retains the Python service path for comparison.
 
+The interactive snapshot contains only the service clocks and interrupt
+state it uses. It does not copy socket-line resampler or frame state, so the
+socket path's 512-sample limit does not disable polling as an 800-sample SIP
+frame fills. Arming also checks whether the next service already requires
+Python before preparing the snapshot. Only fields owned by the selected
+native path are restored on return.
+
 After the initial MMIO trace is full, ordinary timer count and compare reads
 also run inside the x86 engine. Their values use the memory callback's exact
 instruction timestamp; lazy counts and read tallies are published before the

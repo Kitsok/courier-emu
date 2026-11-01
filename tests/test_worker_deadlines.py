@@ -111,9 +111,19 @@ def test_interactive_exchange_matches_python_services(monkeypatch):
         def __init__(self):
             self.polls = 0
             self.output = []
+            self.owner = None
+            self.previous_large = False
+            self.last_native_polls = 0
+            self.native_polls_with_large_buffers = 0
 
         def poll(self, limit):
             self.polls += 1
+            poll = getattr(self.owner, "_worker_poll", None)
+            count = poll.state.polls if poll is not None else 0
+            large = len(self.owner.dsp_bridge._exchange_line_buffer) > 512
+            if large and self.previous_large:
+                self.native_polls_with_large_buffers += count - self.last_native_polls
+            self.previous_large, self.last_native_polls = large, count
             return b""
 
         def write(self, byte):
@@ -138,10 +148,12 @@ def test_interactive_exchange_matches_python_services(monkeypatch):
             daa=CourierDaa("quiet"), exchange=LineExchange(),
             codec=CodecBringUp(SiliconDaa(1)), dsp_batch=4096,
             console=Console(), tick_source="dsp")
-        results.append(machine.run(8_000_000).to_dict())
+        machine.console.owner = machine
+        results.append(machine.run(20_000_000).to_dict())
         machines.append(machine)
     slow, fast = machines
     assert fast._worker_poll.state.polls > 0
+    assert fast.console.native_polls_with_large_buffers > 0
     assert slow.uc.memory == fast.uc.memory
     assert slow.uc.regs == fast.uc.regs
     assert results[0] == results[1]
