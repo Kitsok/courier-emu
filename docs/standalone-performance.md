@@ -188,3 +188,43 @@ The many short native batches and the live Python share justify investigating
 device-access batching and worker snapshot/arming boundaries. Preserve the
 existing device side effects and guest timing; optimizing the DSP alone
 cannot remove the Python share measured in this running state.
+
+## Post-boot measurement windows (2026-11-02)
+
+The benchmark now accepts `--warmup-instructions 30000000` and measures the
+following `--instructions` window through a console with the runtime's 8192
+instruction polling period and cooperative SIP pacing. This is a separate
+workload from the earlier console-free boot measurements. With `--dial`, the
+AT command is scheduled at the warmup boundary. The local SIP sink does not
+answer, so this measures idle or dialing, not modem training/connected data.
+
+`--profile-out PATH --repeat 1` enables cProfile only during that window.
+Both timing and profiling stop at a console poll before the instruction
+limit, excluding final diagnostic-report construction. Start/end boundaries
+are quantized by polling; actual measured instruction counts are reported.
+Counter deltas capture the selected window rather than the full boot.
+
+```sh
+COURIER_X86_PROFILE=1 python3 tools/benchmark_standalone.py \
+  --warmup-instructions 30000000 --instructions 10000000 --repeat 1 \
+  --profile-out /tmp/courier-idle-steady.prof
+```
+
+The corrected idle profile measures 9,986,048 instructions, 9,624 native
+batches, 3,310 native polls, and 6,442 Python service/arming calls. Arming
+costs 0.344 s cumulatively, MMIO replay 0.125 s and interrupt dispatch
+0.152 s, in a 2.713 s instrumented window. Of the window's MMIO traffic,
+8,416 writes are end-of-interrupt at 0xff02; 1,917 other writes and 861 reads
+remain. The expensive boot EEPROM register traffic is absent. UART status
+reads alone (587) would not explain most steady overhead.
+
+An initial profiling attempt included final report building, which lazily
+drains native I/O logs. That falsely put boot I/O counts in the selected
+window and attributed about 0.07 s to DSP diagnostic extraction. The corrected
+console endpoint excludes that work. This is why instruction-window counters
+must be captured before `run()` constructs its final report.
+
+Next measured change: avoid replaying the full generic MMIO/device handler
+for end-of-interrupt writes whose only remaining effects are the interrupt
+stack and access tallies. Native polling already applies some stack effects
+and marks the corresponding log records; replay must honor those marks.
