@@ -128,3 +128,47 @@ Retain this as a bounded reduction in target snapshot overhead, without
 claiming that it solves the larger Python scheduling bottleneck. Remote
 candidate modules and benchmarks live only in `/tmp`; the deployed modem
 and remote checkout remain unchanged.
+
+## Symmetric Kaiser window initialization
+
+The phase table has mirrored pairs: phase `PHASES-p` has the negated tap
+offsets of phase `p` in reverse order. The Kaiser window is even. With the
+current power-of-two phase count, both offsets are represented exactly,
+so reusing reversed rows preserves every floating-point entry.
+
+Compute phases 0 through 512 and fill their partners by reversal. This
+reduces Bessel evaluations from 131072 to 65664 without changing the sinc
+kernel or FIR accumulation. The cache still serves later kernels normally.
+Exhaustive comparison with the old implementation matches all 131072
+entries on both x86_64/Python 3.14 and aarch64/Python 3.11.
+
+Window generation CPU time: notebook 0.433 -> 0.210 s; nanovax
+3.751 -> 1.944 s. These are isolated first-use costs, not steady audio
+throughput gains. Full notebook cold-dialing alternating pairs are noisy:
+optimized/original 9.122/8.969 s, then 8.152/8.410 s. All guest state and
+scheduler counters match; no reliable full-workload percentage is claimed.
+All 20 resampler rate-change, waveform and Python/native comparison tests
+pass. This optimization saves startup work only.
+
+## Parallel services and thermal interference
+
+At the user's request, stopped both user test services on nanovax:
+`courier-serialsim-test.service` and `decserver90tl-test.service`. Both
+report MainPID=0 and have no running worker processes; their final systemd
+state is failed/exit-code after shutdown. They were not restarted. The VAX
+and PBX services continue running. Previous loaded-host timings above are
+retained as observations, not clean capacity measurements.
+
+Before stopping those services, counters on the live Courier worker measured
+0.991 CPUs used, an effective 0.681 GHz, 0.47 host instructions per cycle,
+17.3% branch misses and 2.83% cache misses. Events were multiplexed at about
+83%; these are broad indicators. Thermal/frequency behavior and Python's
+dispatch-heavy work both matter on this in-order CPU. A local microbenchmark
+or a fast notebook result cannot establish that a live SBC call is viable.
+
+Next structural investigation: profile separate post-boot idle, dialing,
+training and connected-media windows, with temperature/frequency recorded.
+The many short native batches and the live Python share justify investigating
+device-access batching and worker snapshot/arming boundaries. Preserve the
+existing device side effects and guest timing; optimizing the DSP alone
+cannot remove the Python share measured in this running state.

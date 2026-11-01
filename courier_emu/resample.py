@@ -69,8 +69,8 @@ def _windows() -> list[tuple[float, ...]]:
     """
     global _WINDOWS
     if _WINDOWS is None:
-        table = []
-        for phase in range(PHASES):
+        table = [None] * PHASES
+        for phase in range(PHASES // 2 + 1):
             fraction = phase / PHASES
             row = []
             for k in range(TAPS):
@@ -78,7 +78,12 @@ def _windows() -> list[tuple[float, ...]]:
                 ratio = t / HALF_TAPS
                 row.append(_bessel_i0(KAISER_BETA * math.sqrt(1 - ratio * ratio))
                            / _NORM if abs(ratio) < 1 else 0.0)
-            table.append(tuple(row))
+            table[phase] = tuple(row)
+            # Phase PHASES-p has exactly the negated tap offsets of phase p
+            # in reverse order. The Kaiser window is even; dyadic phase
+            # offsets make these arguments identical without rounding loss.
+            if 0 < phase < PHASES // 2:
+                table[PHASES - phase] = tuple(reversed(row))
         _WINDOWS = table
     return _WINDOWS
 
