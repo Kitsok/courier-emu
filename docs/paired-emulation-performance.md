@@ -325,6 +325,16 @@ count retain the Python model. Read effects are committed with the guest
 instruction, so a watched destination cannot count a read twice during
 fallback. `COURIER_NATIVE_TIMERS=0` disables this optimization.
 
+An interactive ROM without SIP also bounds native polling by its next idle
+pacing check. Once the receiver is initialized and on hook, an idle service
+waits only for positive lead over the board instruction clock, at most 5 ms
+per wait, and readable terminal input wakes it. Busy command handling and
+workers behind wall time receive no added wait. SIP retains its existing
+absolute media deadlines; during its waits the worker can poll the terminal
+without exceeding the input FIFO limit. A full FIFO uses the bounded sleep
+instead of repeatedly waking on unread data. `COURIER_IDLE_PACING=0` disables
+these additions; batch runs and socket-linked peers are unaffected.
+
 The x86 engine now runs the worker's fast services itself
 (`courier_worker_poll` in `native/c5x_capi.cpp`, mirrored by
 `courier_emu/worker_poll.py`), the way it runs the I-modem's poll. At the start

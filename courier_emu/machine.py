@@ -397,6 +397,7 @@ class RunResult:
     ticks: int = 0
     serial_trace: list[str] = field(default_factory=list)
     console: dict[str, int | bool] | None = None
+    pacing: dict[str, int | float] | None = None
     accelerated_delays: int = 0
     error: str | None = None
     dsp_bridge: dict[str, Any] | None = None
@@ -1752,6 +1753,34 @@ class CourierMachine:
         # armed when the engine next starts a batch.
         worker_arm: list[bool] = [False]
 
+        def poll_console() -> None:
+            typed = self.console.poll(CONSOLE_INPUT_FIFO - len(self.serial_rx))
+            if typed:
+                self.serial_rx.extend(typed)
+                self._serial_cooldown = min(self._serial_cooldown, 64)
+            if self.console.closed:
+                self.stop_requested = True
+            self.console.show_lamps(self.panel.format_leds())
+
+        console_wait = getattr(self.console, "wait", None)
+        idle_pacer = None
+        pacing_enabled = os.environ.get("COURIER_IDLE_PACING", "1") != "0"
+        bridge = self.dsp_bridge
+        if callable(console_wait) and pacing_enabled and self._rom_serial is not None:
+            if bridge is None or (bridge.sip is None and bridge.line is None):
+                from .pacing import InstructionPacer
+                idle_pacer = InstructionPacer()
+            elif bridge._sip_line is not None:
+                def sip_idle_wait(seconds: float) -> None:
+                    # A full FIFO must not turn a readable FD into a spin.
+                    if len(self.serial_rx) < CONSOLE_INPUT_FIFO and not self.stop_requested:
+                        if console_wait(seconds):
+                            poll_console()
+                    else:
+                        import time
+                        time.sleep(seconds)
+                bridge._sip_line.idle_wait = sip_idle_wait
+
         def service_chunk(_uc: Any, elapsed: int) -> None:
             service_chunk_body(_uc, elapsed)
             if fixed_refresh[0] is not None:
@@ -2212,23 +2241,26 @@ class CourierMachine:
                     # modem in two seconds and then time out waiting for an
                     # acknowledgement the 9600-baud line was still minutes
                     # from delivering.
-                    typed = self.console.poll(
-                        CONSOLE_INPUT_FIFO - len(self.serial_rx))
-                    if typed:
-                        self.serial_rx.extend(typed)
-                        # Input that lands mid-cooldown would otherwise wait
-                        # out a transmit-side pause of up to 4096
-                        # instructions.
-                        self._serial_cooldown = min(self._serial_cooldown, 64)
-                    if self.console.closed:
-                        self.stop_requested = True
-                    self.console.show_lamps(self.panel.format_leds())
+                    poll_console()
             while (self._serial_input_schedule
                    and self.instructions >= self._serial_input_schedule[0][0]):
                 _, typed = self._serial_input_schedule.popleft()
                 self.serial_rx.extend(typed)
                 self._serial_cooldown = min(self._serial_cooldown, 64)
                 self.serial_trace.append(f"typed at {self.instructions}")
+            if idle_pacer is not None and self.instructions >= idle_pacer.next_check:
+                ready = self._rom_receive_ready(_uc)
+                off_hook = bool(self.dsp_bridge is not None
+                                and self.dsp_bridge.daa is not None
+                                and self.dsp_bridge.daa.off_hook)
+                idle = (ready and not off_hook and not self.online_mode
+                        and not self.serial_rx and not self.stop_requested
+                        and (self.uart is None or not self.uart.holding and not self.uart.pending)
+                        and int.from_bytes(_uc.mem_read(self._rom_serial.callbacks + 4, 2), "little")
+                        == self._rom_serial.command_idle)
+                if idle_pacer.service(self.instructions, self.timebase.instructions_per_second,
+                                      idle=idle, reset=not ready or off_hook, wait=console_wait):
+                    poll_console()
             if self.stop_requested:
                 _uc.emu_stop()
             if self.dsp_bridge is not None and not self.stop_requested:
@@ -3293,6 +3325,8 @@ class CourierMachine:
                         or not timer_poll_static()):
                     return
                 deadlines = [instruction_limit - 2 * interpreter_period]
+                if idle_pacer is not None:
+                    deadlines.append(idle_pacer.next_check)
                 if scheduled:
                     deadlines.append(self.instructions + 200_000
                                      - (bridge._instructions - getattr(bridge, "_probe_clock_last", 0)))
@@ -4003,6 +4037,7 @@ class CourierMachine:
             ticks=self.ticks,
             serial_trace=serial_trace,
             console=console_result,
+            pacing=idle_pacer.summary() if idle_pacer is not None else None,
             accelerated_delays=self.accelerated_delays,
             error=error,
             dsp_bridge=bridge_result,

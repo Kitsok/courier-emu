@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import errno
 import os
+import select
 
 # The firmware runs at roughly a million instructions a second, so this polls
 # the terminal about a hundred times a second: far below the cost of the
@@ -49,6 +50,18 @@ class SerialConsole:
         os.set_blocking(fd, False)
         if lamps_fd is not None:
             os.set_blocking(lamps_fd, False)
+
+    def wait(self, timeout: float) -> bool:
+        """Wait for terminal input without consuming it or changing clocks."""
+        if self.closed:
+            return True
+        try:
+            return bool(select.select([self.fd], [], [], max(0.0, timeout))[0])
+        except OSError as exc:
+            if exc.errno == errno.EBADF:
+                self.closed = True
+                return True
+            raise
 
     def poll(self, limit: int = 4096) -> bytes:
         """Return what the terminal has typed since the last call, at most `limit`.

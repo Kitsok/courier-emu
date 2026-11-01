@@ -95,6 +95,9 @@ class SipLine:
         self.answered = 0
         self._next_frame_at: float | None = None
         self.paced_seconds = 0.0
+        # The worker may replace this with a terminal-aware wait. SIP still
+        # owns the absolute media deadline and polls signalling every 10 ms.
+        self.idle_wait = time.sleep
         # Each frame's lateness, summed: the area under the lag curve, not the
         # lag. `peak_late_seconds` is the worst a frame started behind its
         # wall-clock slot, and `late_frames` how many started more than one
@@ -157,9 +160,10 @@ class SipLine:
             # and signalling or inbound media never waits for a 100 ms frame.
             self.sip.poll()
             delay = min(0.01, deadline - now)
-            time.sleep(delay)
-            self.paced_seconds += delay
+            before = time.monotonic()
+            self.idle_wait(delay)
             now = time.monotonic()
+            self.paced_seconds += max(0.0, now - before)
         late = max(0.0, now - deadline)
         self.late_seconds += late
         self.peak_late_seconds = max(self.peak_late_seconds, late)
