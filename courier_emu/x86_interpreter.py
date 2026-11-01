@@ -262,6 +262,7 @@ class Uc:
         self.redirect_is_free = False
         self.native_mmio_batch: tuple[tuple[int, int], ...] = ()
         self.native_mmio_callback: Callable[[memoryview, int], None] | None = None
+        self.native_timer_reads = None
         # A watched write can schedule device updates after the instruction
         # commits, before another native batch reads the affected memory.
         self._after_instruction: Callable[[], None] | None = None

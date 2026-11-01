@@ -2191,6 +2191,11 @@ class CourierMachine:
                 mmio_batched[0] = True
                 _uc.native_mmio_batch = ((0xFF02, 0xFF03),)
                 _uc.native_mmio_callback = replay_mmio_writes
+                if (self._rom_tick and self.quad_board is None and self.mem_watch is None
+                        and self.timers.answers_reads
+                        and os.environ.get("COURIER_NATIVE_TIMERS", "1") != "0"):
+                    from .native_timers import NativeTimerReads
+                    _uc.native_timer_reads = NativeTimerReads(self.timers, self.mmio_counts)
             if self.quad_c50 is not None:
                 self.quad_c50.service(elapsed)
             if self.quad_terminal is not None:

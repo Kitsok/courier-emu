@@ -2620,11 +2620,26 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
             || (s.exchange_present && s.exchange_ticks + elapsed >= s.batch)
             || (s.dsp_active && s.x86_ticks + elapsed >= s.batch)
-            || s.bridge_instructions + elapsed - s.probe_last >= 200000
-            || (s.timer_poll_owed - elapsed <= 0 && s.int0_ok
-                && !s.int0_in_service && (flags & WORKER_IF)
-                && total - s.last_frame >= int64_t(s.frame_instructions))) {
+            || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
             s.armed = 0; return 0;
+        }
+        bool frame_edge = false;
+        uint32_t slots[3];
+        uint32_t *r = cpu.regs;
+        if (s.timer_poll_owed - elapsed <= 0 && s.int0_ok
+            && !s.int0_in_service && (flags & WORKER_IF)
+            && total - s.last_frame >= int64_t(s.frame_instructions)) {
+            if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
+            const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
+            if (vector[0] | vector[1] | vector[2] | vector[3]) {
+                for (unsigned k = 0; k < 3; ++k) {
+                    slots[k] = ((r[REG_SS] & 0xffff) * 16
+                        + ((r[REG_SP] - 2 * (k + 1)) & 0xffff)) & 0xfffff;
+                    if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
+                }
+                if (s.stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
+                frame_edge = true;
+            }
         }
         s.dirty = 1;
         s.last_service = uint64_t(total);
@@ -2635,6 +2650,24 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (s.console_present) s.console_owed -= elapsed;
         s.timer_poll_owed -= elapsed;
         if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
+        if (frame_edge) {
+            const uint32_t values[3] = {r[REG_FLAGS] & 0xffff, r[REG_CS] & 0xffff,
+                                        r[REG_IP] & 0xffff};
+            for (unsigned k = 0; k < 3; ++k) {
+                cpu.memory[slots[k]] = uint8_t(values[k]);
+                cpu.memory[slots[k] + 1] = uint8_t(values[k] >> 8);
+            }
+            r[REG_SP] = (r[REG_SP] - 6) & 0xffff;
+            r[REG_FLAGS] &= ~WORKER_IF;
+            const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
+            r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
+            r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
+            s.last_frame += int64_t(s.frame_instructions);
+            if (total - s.last_frame >= int64_t(s.frame_instructions))
+                s.last_frame = total - int64_t(s.frame_instructions);
+            s.int0_in_service = 1;
+            s.stack[s.stack_depth++] = WORKER_INT0;
+        }
         ++s.polls;
         return 1;
     }

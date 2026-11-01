@@ -24,9 +24,10 @@ def scheduled():
     s.line_frame_instructions = 400_000
     s.panel_latch = 256
     cpu = Cpu()
+    poll.cpu = cpu
     fn = c.CFUNCTYPE(c.c_int, c.c_void_p, c.c_uint64, c.c_uint32,
                     c.c_void_p)(poll.function)
-    return poll, lambda now: fn(poll.context, now, 0, c.byref(cpu))
+    return poll, lambda now, flags=0: fn(poll.context, now, flags, c.byref(cpu))
 
 
 def test_services_preserve_clock_debt_and_yield_before_exchange():
@@ -64,6 +65,30 @@ def test_console_and_inactive_dsp_clocks_are_independent():
     assert s.console_owed == 7168
     assert s.codec_instructions == s.exchange_ticks == 1024
     assert s.x86_ticks == 0
+
+
+@pytest.mark.parametrize("watched", [False, True])
+def test_frame_interrupt_entry_respects_stack_guards(watched):
+    poll, run = scheduled()
+    regs = (c.c_uint32 * 14)()
+    memory = (c.c_uint8 * 0x100000)()
+    guard = (c.c_uint8 * 0x100000)(*([3] * 0x100000))
+    regs[4], regs[9], regs[12], regs[13] = 0x800, 0x1234, 0x5678, 0x202
+    memory[48:52] = [0x00, 0x01, 0x00, 0x80]
+    poll.cpu.regs, poll.cpu.memory, poll.cpu.guard = map(c.addressof, (regs, memory, guard))
+    poll.cpu.memory_size = len(memory)
+    s = poll.state
+    s.int0_ok = 1
+    s.frame_instructions = 1000
+    if watched:
+        guard[0x7fe] |= 32
+        assert run(1024, 0x202) == 0
+        assert regs[4] == 0x800 and s.polls == 0
+    else:
+        assert run(1024, 0x202) == 1
+        assert list(memory[0x7fa:0x800]) == [0x78, 0x56, 0x34, 0x12, 0x02, 0x02]
+        assert (regs[4], regs[9], regs[12], regs[13]) == (0x7fa, 0x8000, 0x100, 2)
+        assert s.int0_in_service and s.stack_depth == 1 and s.stack[0] == 12
 
 
 def test_interactive_exchange_matches_python_services(monkeypatch):
@@ -106,6 +131,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch):
     machines, results = [], []
     for enabled in ("0", "1"):
         monkeypatch.setenv("COURIER_WORKER_POLL", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_TIMERS", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,

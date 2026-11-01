@@ -6,6 +6,13 @@
 namespace {
 enum { AX,CX,DX,BX,SP,BP,SI,DI,ES,CS,SS,DS,IP,F };
 constexpr uint32_t CF=1, PF=4, AF=16, ZF=64, SF=128, IF=512, DF=1024, OF=2048;
+struct TimerReadSlot { uint64_t origin, last_tick, count, compare_a, compare_b, control; };
+struct TimerReadState {
+    uint64_t instruction_base;
+    double ratio;
+    TimerReadSlot slots[3];
+    uint64_t reads[11][2];
+};
 struct Core {
     uint32_t r[14], saved[14], done=0, reason=0;
     uint32_t io_direction=0, io_port=0, io_size=0, io_value=0;
@@ -61,6 +68,32 @@ struct Core {
     bool is386=false; int width=2;
     int seg=-1; struct Write { uint32_t address,value; int size; };
     Write writes[8]; int nw=0;
+    TimerReadState *timers=nullptr;
+    struct TimerRead { uint32_t address, value, size, index, timer; uint64_t tick; };
+    TimerRead timer_reads[8]; unsigned nr=0;
+    bool timer_read(uint32_t a, int n, uint32_t &value) {
+        if (!timers || a < 0xff30 || a > 0xff46 || (a & 1) || (n != 1 && n != 2)) return false;
+        const unsigned offset=(a-0xff30)/2, timer=offset/4, field=offset%4;
+        // Control reads may grant a calibrated delay; T2 has no compare B.
+        if (field==3 || offset==10 || timer>2 || nr==8) return false;
+        for(int k=0;k<n;++k) if(!(guard[a+k]&1)) return false;
+        const TimerReadSlot &s=timers->slots[timer];
+        // Memory hooks observe retired instructions before this instruction;
+        // port callbacks use a different, in-flight timestamp convention.
+        const uint64_t tick=uint64_t(double(timers->instruction_base+done)*timers->ratio);
+        uint64_t count=s.count;
+        if ((s.control&0x8000) && !(s.control&0x0c)) {
+            const uint64_t elapsed=tick>s.origin?tick-s.origin:0;
+            uint64_t period=s.compare_a?s.compare_a:65536;
+            if(s.control&2) period+=s.compare_b?s.compare_b:65536;
+            if(count+elapsed>=period) return false;  // latch expiries in Python
+            count+=elapsed;
+        }
+        value=uint32_t(field==0?count:field==1?s.compare_a:s.compare_b)&(n==1?255:65535);
+        const unsigned index=offset>10?offset-1:offset;
+        timer_reads[nr++]={a,value,unsigned(n),index,timer,tick};
+        return true;
+    }
     uint32_t phys(uint32_t s,uint32_t o) { return ((s&65535)*16+(o&65535))&mask; }
     uint32_t fetch(int n=1) { uint32_t v=0; for(int i=0;i<n;++i) {v|=uint32_t(mem[phys(r[CS],r[IP])])<<(i*8); r[IP]=(r[IP]+1)&65535;} return v; }
     void check(uint32_t a,int n,int p) {
@@ -73,7 +106,7 @@ struct Core {
             yield(p==1?3:4);
         }
     }
-    uint32_t load(uint32_t a,int n) {check(a,n,1); uint32_t v=mem[a]; if(n>=2)v|=uint32_t(mem[a+1])<<8; if(n==4)v|=uint32_t(mem[a+2])<<16|uint32_t(mem[a+3])<<24; return v;}
+    uint32_t load(uint32_t a,int n) {uint32_t v;if(timer_read(a,n,v))return v;check(a,n,1); v=mem[a]; if(n>=2)v|=uint32_t(mem[a+1])<<8; if(n==4)v|=uint32_t(mem[a+2])<<16|uint32_t(mem[a+3])<<24; return v;}
     void store(uint32_t a,int n,uint32_t v) {check(a,n,2); if(nw==8)yield(); writes[nw++]={a,v,n};}
     uint32_t get(int k,int n) {return n==1?(r[k&3]>>((k&4)?8:0))&255:r[k];}
     void put(int k,int n,uint32_t v) {if(n==1){int sh=(k&4)?8:0; r[k&3]=(r[k&3]&~(255u<<sh))|((v&255)<<sh);}else r[k]=n==4?v:v&65535;}
@@ -108,7 +141,7 @@ struct Core {
         reason=8;
     }
     void step(){
-        uint32_t start=r[IP];int op=fetch(),rep=0;seg=-1;nw=0;width=2;
+        uint32_t start=r[IP];int op=fetch(),rep=0;seg=-1;nw=0;nr=0;width=2;
         for(int prefixes=0;;++prefixes){
             if(prefixes==15)yield();
             if(op==0x26)seg=r[ES];else if(op==0x2e)seg=r[CS];else if(op==0x36)seg=r[SS];else if(op==0x3e)seg=r[DS];else if(op==0x66&&is386)width=4;else if(op==0xf2||op==0xf3)rep=op;else if(op!=0xf0)break;op=fetch();
@@ -300,6 +333,11 @@ static uint32_t run_batch(Core &c, uint32_t count) {
         } else if(opcode==0xcd||opcode==0x0f||opcode==0xf4){c.reason=7;break;}
         std::memcpy(c.saved,c.r,sizeof(c.r));
         c.step();
+        for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];
+            c.timers->slots[read.timer].last_tick=read.tick;
+            ++c.timers->reads[read.index][read.size-1];
+            for(unsigned k=0;k<read.size;++k)c.mem[read.address+k]=uint8_t(read.value>>(8*k));
+        }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
             if(c.mmio_events&&(c.guard[w.address]&64)){
                 uint8_t *event=c.mmio_events+8*c.mmio_count++;
@@ -323,11 +361,12 @@ static PyObject *run_python(PyObject *, PyObject *args) {
     PyObject *host_base = Py_None;
     PyObject *poll_fn = Py_None, *poll_context = Py_None, *poll_state = Py_None;
     PyObject *mmio_events = Py_None;
+    PyObject *timer_reads = Py_None;
     unsigned int count;
-    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOO", &registers, &memory, &guard,
+    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOO", &registers, &memory, &guard,
         &fast_out, &io_events, &count, &int_mode, &int_counts,
         &host_io, &host_context, &host_ports, &host_base,
-        &poll_fn, &poll_context, &poll_state, &mmio_events)) return nullptr;
+        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads)) return nullptr;
     if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
         !PyByteArray_Check(memory) || !PyByteArray_Check(guard) ||
         !PyByteArray_Check(fast_out) || PyByteArray_GET_SIZE(fast_out)!=65536 ||
@@ -349,6 +388,12 @@ static PyObject *run_python(PyObject *, PyObject *args) {
     c.io_event_capacity=uint32_t(PyByteArray_GET_SIZE(io_events)/4);
     c.mask=uint32_t(PyByteArray_GET_SIZE(memory)-1);
     c.is386=c.mask==0xffffff;
+    if(timer_reads!=Py_None){
+        if(!PyByteArray_Check(timer_reads)||PyByteArray_GET_SIZE(timer_reads)!=sizeof(TimerReadState)){
+            PyErr_SetString(PyExc_ValueError,"invalid native timer read state");return nullptr;
+        }
+        c.timers=reinterpret_cast<TimerReadState*>(PyByteArray_AS_STRING(timer_reads));
+    }
     if (mmio_events != Py_None) {
         if (!PyByteArray_Check(mmio_events) || PyByteArray_GET_SIZE(mmio_events) < 8*8*65536) {
             PyErr_SetString(PyExc_ValueError,"invalid native mmio buffer"); return nullptr;

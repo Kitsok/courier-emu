@@ -305,10 +305,20 @@ Interactive ROM workers also use a deadline-bounded native service path.
 An attached console, SIP session or analog exchange no longer prevents all
 native polling: services between console polls, exchange/DSP batches, codec
 frames and timer expiries update their clocks in the engine. Python still
-handles input (including serialsim DTR sampling), SIP, DSP stepping and frame
-interrupts when due. The native path yields before changing a service that
-needs those handlers, and publishes its counters before Python sees them.
+handles input (including serialsim DTR sampling), SIP and DSP stepping when
+due. Frame interrupt entry and batched end-of-interrupt writes run natively
+when the stack and vector are ordinary, unwatched memory. The native path
+yields before changing a service that needs those handlers, and publishes
+its counters before Python sees them.
 `COURIER_WORKER_POLL=0` retains the Python service path for comparison.
+
+After the initial MMIO trace is full, ordinary timer count and compare reads
+also run inside the x86 engine. Their values use the memory callback's exact
+instruction timestamp; lazy counts and read tallies are published before the
+next Python handler. Control reads, timer writes and reads crossing a max
+count retain the Python model. Read effects are committed with the guest
+instruction, so a watched destination cannot count a read twice during
+fallback. `COURIER_NATIVE_TIMERS=0` disables this optimization.
 
 The x86 engine now runs the worker's fast services itself
 (`courier_worker_poll` in `native/c5x_capi.cpp`, mirrored by
