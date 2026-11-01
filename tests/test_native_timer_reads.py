@@ -65,3 +65,38 @@ def test_uncommitted_read_does_not_publish_timer_side_effects():
     cpu.hook_add(x86.UC_HOOK_MEM_WRITE, lambda *args: None, None, 0x2000, 0x2001)
     cpu.emu_start(0x1000, 0, count=1)
     assert counts[("read", 0xff30, 2)] == timers.reads == 1
+
+
+def test_native_snapshot_tracks_programming_and_ticks_between_batches():
+    states = []
+    for native in (False, True):
+        timers = TimerBlock(fast=False)
+        counts = Counter()
+        cpu = x86.Uc(0, 0, profile="186eb")
+        cpu.mem_map(0, len(cpu.memory))
+        cpu.native_enabled = native
+        if native:
+            cpu.native_timer_reads = NativeTimerReads(timers, counts)
+
+        def read(cpu, _access, address, size, _value, _user):
+            counts[("read", address, size)] += 1
+            value = timers.read(address, size, cpu.retired)
+            cpu.mem_write(address, value.to_bytes(size, "little"))
+
+        cpu.hook_add(x86.UC_HOOK_MEM_READ, read, None, 0xff30, 0xff47)
+        cpu.mem_write(0x1000, bytes.fromhex("a1 30 ff a1 32 ff"))
+        cpu.mem_write(0x2000, b"\x90" * 10)
+        values = []
+        for period in (500, 300, 900):
+            timers.write(0xff32, 2, period, cpu.retired)
+            timers.write(0xff36, 2, 0xc001, cpu.retired)
+            cpu.emu_start(0x1000, 0, count=2)
+            values.append(cpu.reg_read(x86.UC_X86_REG_AX))
+            # Several read-free batches must leave timer tallies untouched.
+            for _ in range(3):
+                cpu.emu_start(0x2000, 0, count=10)
+            timers.tick(cpu.retired)
+            cpu.emu_start(0x1000, 0, count=2)
+            values.append(cpu.reg_read(x86.UC_X86_REG_AX))
+        states.append((cpu.regs, cpu.memory, timers, counts, values))
+    assert states[0] == states[1]

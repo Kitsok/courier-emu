@@ -359,6 +359,9 @@ class TimerBlock:
     on_timebase_change: Callable[[Timebase], None] | None = None
     timebase_pinned: bool = False
     _pending: list[int] = field(default_factory=list)
+    # Invalidate batch-local native read snapshots only when Python advances
+    # or programs the timer view. This is bookkeeping, not device state.
+    revision: int = field(default=0, compare=False, repr=False)
 
     def _tick(self, instructions: int) -> int:
         return ticks_for(instructions, self.timebase)
@@ -401,6 +404,7 @@ class TimerBlock:
             return None
         index, name = entry
         timer = self.timers[index]
+        self.revision += 1
         self.reads += 1
         timer.advance(self._tick(instructions))
         if (
@@ -441,6 +445,7 @@ class TimerBlock:
             return False
         index, name = entry
         timer = self.timers[index]
+        self.revision += 1
         self.writes += 1
         timer.advance(self._tick(instructions))
         if size == 1:
@@ -453,6 +458,7 @@ class TimerBlock:
 
     def tick(self, instructions: int) -> None:
         """Advance every timer and latch an interrupt for each max count."""
+        self.revision += 1
         tick = self._tick(instructions)
         for timer in self.timers:
             before = timer.max_counts

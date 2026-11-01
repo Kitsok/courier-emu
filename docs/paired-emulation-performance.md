@@ -331,6 +331,11 @@ next Python handler. Control reads, timer writes and reads crossing a max
 count retain the Python model. Read effects are committed with the guest
 instruction, so a watched destination cannot count a read twice during
 fallback. `COURIER_NATIVE_TIMERS=0` disables this optimization.
+Snapshots are refreshed when Python advances or programs the timer view,
+rather than copied on every native batch. Committed native reads set a bit
+mask, so return bookkeeping visits only the timer registers actually read;
+a batch without timer reads needs no counter scan. Timer revisions are
+internal cache bookkeeping and do not change reported device state.
 
 An interactive ROM without SIP also bounds native polling by its next idle
 pacing check. Once the receiver is initialized and on hook, an idle service

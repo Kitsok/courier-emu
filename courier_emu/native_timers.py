@@ -16,7 +16,8 @@ class Slot(c.Structure):
 
 class ReadState(c.Structure):
     _fields_ = [("instruction_base", c.c_uint64), ("ratio", c.c_double),
-                ("slots", Slot * 3), ("reads", (c.c_uint64 * 2) * 11)]
+                ("slots", Slot * 3), ("reads", (c.c_uint64 * 2) * 11),
+                ("read_mask", c.c_uint64)]
 
 
 class NativeTimerReads:
@@ -25,24 +26,41 @@ class NativeTimerReads:
         self.buffer = bytearray(c.sizeof(ReadState))
         self.state = ReadState.from_buffer(self.buffer)
         self.entries = sorted(TIMER_REGISTERS)
+        self.timer_indexes = tuple(TIMER_REGISTERS[a][0] for a in self.entries)
+        self.revision = -1
 
     def prepare(self, base):
         s = self.state
         s.instruction_base = base
-        s.ratio = self.timers.timebase.ticks_per_instruction
-        for slot, timer in zip(s.slots, self.timers.timers):
-            slot.origin = slot.last_tick = timer.origin
-            slot.count = timer.count
-            slot.compare_a, slot.compare_b = timer.compare_a, timer.compare_b
-            slot.control = timer.control
-        c.memset(c.addressof(s.reads), 0, c.sizeof(s.reads))
+        if self.revision != self.timers.revision:
+            s.ratio = self.timers.timebase.ticks_per_instruction
+            for slot, timer in zip(s.slots, self.timers.timers):
+                slot.origin = slot.last_tick = timer.origin
+                slot.count = timer.count
+                slot.compare_a, slot.compare_b = timer.compare_a, timer.compare_b
+                slot.control = timer.control
+            self.revision = self.timers.revision
 
     def finish(self):
-        for slot, timer in zip(self.state.slots, self.timers.timers):
+        s = self.state
+        mask = s.read_mask
+        if not mask:
+            return
+        s.read_mask = 0
+        touched = 0
+        while mask:
+            bit = mask & -mask
+            mask ^= bit
+            index, width = divmod(bit.bit_length() - 1, 2)
+            count = s.reads[index][width]
+            s.reads[index][width] = 0
+            self.counts[("read", self.entries[index], width + 1)] += count
+            self.timers.reads += count
+            touched |= 1 << self.timer_indexes[index]
+        for index in range(3):
+            if not touched & (1 << index):
+                continue
+            slot, timer = s.slots[index], self.timers.timers[index]
             if slot.last_tick != slot.origin:
                 timer.advance(max(slot.last_tick, timer.origin))
-        for address, sizes in zip(self.entries, self.state.reads):
-            for size, count in enumerate(sizes, 1):
-                if count:
-                    self.counts[("read", address, size)] += count
-                    self.timers.reads += count
+        self.timers.revision += 1

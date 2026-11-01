@@ -12,6 +12,7 @@ struct TimerReadState {
     double ratio;
     TimerReadSlot slots[3];
     uint64_t reads[11][2];
+    uint64_t read_mask;
 };
 struct Core {
     uint32_t r[14], saved[14], done=0, reason=0;
@@ -336,6 +337,7 @@ static uint32_t run_batch(Core &c, uint32_t count) {
         for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];
             c.timers->slots[read.timer].last_tick=read.tick;
             ++c.timers->reads[read.index][read.size-1];
+            c.timers->read_mask |= uint64_t(1) << (2*read.index+read.size-1);
             for(unsigned k=0;k<read.size;++k)c.mem[read.address+k]=uint8_t(read.value>>(8*k));
         }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
