@@ -73,7 +73,8 @@ def main():
                 sip.rtp_socket.close()
     print(json.dumps(dict(platform=platform.platform(), python=sys.version,
                          workload='dial' if args.dial else 'idle', runs=runs), indent=2))
+    return 0 if all(r['status'] == 'instruction-limit' for r in runs) else 1
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

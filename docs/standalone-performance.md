@@ -166,6 +166,22 @@ Before stopping those services, counters on the live Courier worker measured
 dispatch-heavy work both matter on this in-order CPU. A local microbenchmark
 or a fast notebook result cannot establish that a live SBC call is viable.
 
+After stopping the two test services, repeated original/combined-optimized
+30M-instruction runs take 55.958/55.828 CPU seconds and 55.193/55.077 wall
+seconds. Memory, registers, native batch and scheduler counts remain exact.
+The 0.23% difference is within noise: **no end-to-end speedup is established**.
+The board still measured 84.2 C after testing, with 1.2 GHz observed during
+the run, so even these results do not establish cool-board capacity.
+Stopping the competing services improved the original baseline from about
+96 to 56 CPU seconds; that environmental effect must not be attributed to
+the code changes. Modeled instruction throughput is about 0.158 times real
+time in this boot/dialing test. Neither change establishes real-time calls.
+
+[Raw benchmark records](standalone-performance-results.json) preserve the
+clean ARM pair and the alternating notebook runs, including final guest
+hashes/registers. The benchmark exits unsuccessfully if a run stops before
+the requested instruction limit.
+
 Next structural investigation: profile separate post-boot idle, dialing,
 training and connected-media windows, with temperature/frequency recorded.
 The many short native batches and the live Python share justify investigating

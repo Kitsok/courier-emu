@@ -1,0 +1,463 @@
+{
+  "note": "See standalone-performance.md for conditions and limits. Full-workload speedup is not established.",
+  "arm_services_stopped_original": {
+    "platform": "Linux-6.1.63-aarch64-with-glibc2.36",
+    "python": "3.11.2 (main, Oct  7 2026, 12:35:07) [GCC 12.2.0]",
+    "workload": "dial",
+    "runs": [
+      {
+        "wall_seconds": 55.19310450199919,
+        "cpu_seconds": 55.958440109,
+        "instructions": 30000000,
+        "instructions_per_cpu_second": 536112.1564783396,
+        "realtime_cpu_multiple": 0.15769567644744187,
+        "status": "instruction-limit",
+        "scheduler": {
+          "native_polls": 16877,
+          "native_dsp_batches": 4198
+        },
+        "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+        "registers": [
+          130,
+          0,
+          22225,
+          22260,
+          288,
+          0,
+          36678,
+          22260,
+          0,
+          32768,
+          0,
+          0,
+          47387,
+          582
+        ],
+        "native": {
+          "native_retired": 29915451,
+          "batches": 105294,
+          "zero_batches": 23781,
+          "instructions_per_batch": 284.11353923300476,
+          "exits": []
+        }
+      }
+    ]
+  },
+  "arm_services_stopped_optimized": {
+    "platform": "Linux-6.1.63-aarch64-with-glibc2.36",
+    "python": "3.11.2 (main, Oct  7 2026, 12:35:07) [GCC 12.2.0]",
+    "workload": "dial",
+    "runs": [
+      {
+        "wall_seconds": 55.07662447099938,
+        "cpu_seconds": 55.828357429,
+        "instructions": 30000000,
+        "instructions_per_cpu_second": 537361.3228394308,
+        "realtime_cpu_multiple": 0.15806311473796983,
+        "status": "instruction-limit",
+        "scheduler": {
+          "native_polls": 16877,
+          "native_dsp_batches": 4198
+        },
+        "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+        "registers": [
+          130,
+          0,
+          22225,
+          22260,
+          288,
+          0,
+          36678,
+          22260,
+          0,
+          32768,
+          0,
+          0,
+          47387,
+          582
+        ],
+        "native": {
+          "native_retired": 29915451,
+          "batches": 105294,
+          "zero_batches": 23781,
+          "instructions_per_batch": 284.11353923300476,
+          "exits": []
+        }
+      }
+    ]
+  },
+  "notebook_timer_alternating": [
+    {
+      "implementation": "courier_emu/native_timers.py",
+      "wall_seconds": 8.618567494966555,
+      "cpu_seconds": 8.335885113,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3598897.968640946,
+      "realtime_cpu_multiple": 1.0586043289117026,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "/tmp/courier-timers-original.py",
+      "wall_seconds": 8.516282861004584,
+      "cpu_seconds": 8.217892197,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3650571.129535103,
+      "realtime_cpu_multiple": 1.0738038239481686,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "courier_emu/native_timers.py",
+      "wall_seconds": 8.736535771982744,
+      "cpu_seconds": 8.382343269,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3578951.4980790033,
+      "realtime_cpu_multiple": 1.0527371383807758,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "/tmp/courier-timers-original.py",
+      "wall_seconds": 8.65674503997434,
+      "cpu_seconds": 8.330901586,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3601050.821487882,
+      "realtime_cpu_multiple": 1.0592375836922314,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "courier_emu/native_timers.py",
+      "wall_seconds": 8.6507004579762,
+      "cpu_seconds": 8.295435492000001,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3616446.662617239,
+      "realtime_cpu_multiple": 1.0637662211275762,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "/tmp/courier-timers-original.py",
+      "wall_seconds": 8.584542102995329,
+      "cpu_seconds": 8.2639779,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3630212.9994805525,
+      "realtime_cpu_multiple": 1.0678155450938969,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    }
+  ],
+  "notebook_windows_alternating": [
+    {
+      "implementation": "symmetric",
+      "wall_seconds": 9.43027465895284,
+      "cpu_seconds": 9.12163303,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3288884.7754928814,
+      "realtime_cpu_multiple": 0.967414939508087,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "original",
+      "wall_seconds": 9.327499420032836,
+      "cpu_seconds": 8.968550635,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3345022.0911865323,
+      "realtime_cpu_multiple": 0.9839275514033398,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "symmetric",
+      "wall_seconds": 8.48047398601193,
+      "cpu_seconds": 8.152207533999999,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3679984.8231145395,
+      "realtime_cpu_multiple": 1.0824557678553843,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    },
+    {
+      "implementation": "original",
+      "wall_seconds": 8.706083260010928,
+      "cpu_seconds": 8.410350309,
+      "instructions": 30000000,
+      "instructions_per_cpu_second": 3567033.3455547863,
+      "realtime_cpu_multiple": 1.0492314519276724,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 16877,
+        "native_dsp_batches": 4198
+      },
+      "memory_sha256": "ce0e9fc4594641cfacb58611adee30ec1b7d590207943fc3b1f38b27d35a48c8",
+      "registers": [
+        130,
+        0,
+        22225,
+        22260,
+        288,
+        0,
+        36678,
+        22260,
+        0,
+        32768,
+        0,
+        0,
+        47387,
+        582
+      ],
+      "native": {
+        "native_retired": 29915451,
+        "batches": 105294,
+        "zero_batches": 23781,
+        "instructions_per_batch": 284.11353923300476,
+        "exits": []
+      }
+    }
+  ]
+}
