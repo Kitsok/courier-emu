@@ -98,6 +98,8 @@ class SipLine:
         # The worker may replace this with a terminal-aware wait. SIP still
         # owns the absolute media deadline and polls signalling every 10 ms.
         self.idle_wait = time.sleep
+        self.cooperative_pacing = False
+        self._frame_duration = 0.0
         # Each frame's lateness, summed: the area under the lag curve, not the
         # lag. `peak_late_seconds` is the worst a frame started behind its
         # wall-clock slot, and `late_frames` how many started more than one
@@ -155,7 +157,7 @@ class SipLine:
         if self._next_frame_at is None:
             self._next_frame_at = now
         deadline = self._next_frame_at
-        while now < deadline:
+        while not self.cooperative_pacing and now < deadline:
             # Poll while waiting so queued audio leaves in 20 ms RTP packets
             # and signalling or inbound media never waits for a 100 ms frame.
             self.sip.poll()
@@ -177,7 +179,19 @@ class SipLine:
             if len(self.late_spikes) < 64:
                 self.late_spikes.append(
                     (self.frames, round(late * 1000, 1), self.exchange.state))
-        self._next_frame_at = deadline + count / self.line_rate
+        self._frame_duration = count / self.line_rate
+        self._next_frame_at = deadline + self._frame_duration
+
+    def pacing_deadline(self, buffered: int) -> float | None:
+        """Interpolate the worker clock between complete line frames.
+
+        The worker paces guest execution at short service boundaries, so
+        servicing a frame itself must not suspend the guest for 100 ms.
+        The completed frame and buffered line-rate samples share one clock.
+        """
+        if self._next_frame_at is None:
+            return None
+        return self._next_frame_at - self._frame_duration + buffered / self.line_rate
 
     def _route(self, number: str) -> str | None:
         """The exchange has a number. Place the call and hold for the answer."""

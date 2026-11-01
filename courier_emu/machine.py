@@ -1765,6 +1765,7 @@ class CourierMachine:
 
         console_wait = getattr(self.console, "wait", None)
         idle_pacer = None
+        sip_pacer = None
         pacing_enabled = os.environ.get("COURIER_IDLE_PACING", "1") != "0"
         bridge = self.dsp_bridge
         if callable(console_wait) and pacing_enabled and self._rom_serial is not None:
@@ -1772,15 +1773,22 @@ class CourierMachine:
                 from .pacing import InstructionPacer
                 idle_pacer = InstructionPacer()
             elif bridge._sip_line is not None:
-                def sip_idle_wait(seconds: float) -> None:
+                from .pacing import DeadlinePacer
+                sip_pacer = idle_pacer = DeadlinePacer(interval=0.002)
+                bridge._sip_line.cooperative_pacing = True
+
+                def sip_idle_wait(seconds: float) -> bool:
+                    import time
+                    bridge.sip.poll()
+                    before = time.monotonic()
                     # A full FIFO must not turn a readable FD into a spin.
                     if len(self.serial_rx) < CONSOLE_INPUT_FIFO and not self.stop_requested:
-                        if console_wait(seconds):
-                            poll_console()
+                        readable = console_wait(seconds)
                     else:
-                        import time
                         time.sleep(seconds)
-                bridge._sip_line.idle_wait = sip_idle_wait
+                        readable = False
+                    bridge._sip_line.paced_seconds += max(0.0, time.monotonic() - before)
+                    return readable
 
         def service_chunk(_uc: Any, elapsed: int) -> None:
             service_chunk_body(_uc, elapsed)
@@ -2249,7 +2257,12 @@ class CourierMachine:
                 self.serial_rx.extend(typed)
                 self._serial_cooldown = min(self._serial_cooldown, 64)
                 self.serial_trace.append(f"typed at {self.instructions}")
-            if idle_pacer is not None and self.instructions >= idle_pacer.next_check:
+            if sip_pacer is not None and self.instructions >= sip_pacer.next_check:
+                deadline = bridge._sip_line.pacing_deadline(len(bridge._exchange_line_buffer))
+                if sip_pacer.service(self.instructions, self.timebase.instructions_per_second,
+                                     deadline=deadline, wait=sip_idle_wait):
+                    poll_console()
+            elif idle_pacer is not None and self.instructions >= idle_pacer.next_check:
                 ready = self._rom_receive_ready(_uc)
                 off_hook = bool(self.dsp_bridge is not None
                                 and self.dsp_bridge.daa is not None

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from courier_emu.console import SerialConsole
-from courier_emu.pacing import InstructionPacer
+from courier_emu.pacing import InstructionPacer, DeadlinePacer
 
 
 class Clock:
@@ -98,3 +98,31 @@ def test_sip_waits_keep_the_media_deadline_and_do_not_sleep_when_late(monkeypatc
     line._pace(line.line_rate // 10)
     assert len(clock.waits) == 4
     assert line.late_frames == 1
+
+
+def test_cooperative_sip_frame_service_never_waits_for_a_future_frame(monkeypatch):
+    from courier_emu.ata import SipLine
+    clock = Clock()
+    monkeypatch.setattr("courier_emu.ata.time.monotonic", clock)
+    line = SipLine(SimpleNamespace(state="idle", poll=lambda: None))
+    line.idle_wait = clock.wait
+    line.cooperative_pacing = True
+    line._next_frame_at = clock.now + .1
+    before = clock.now
+    line._pace(line.line_rate // 10)
+    assert clock.now == before and not clock.waits
+    assert line.frames == 1
+    assert line.pacing_deadline(0) == pytest.approx(before + .1)
+    assert line.pacing_deadline(line.line_rate // 20) == pytest.approx(before + .15)
+
+
+def test_media_scheduler_check_bounds_waits_and_wakes_for_input():
+    clock = Clock()
+    pacer = DeadlinePacer(clock=clock, interval=.002)
+    assert not pacer.service(100, 1000, deadline=10.1, wait=clock.wait)
+    assert clock.waits == pytest.approx([.002])
+    assert pacer.next_check == 102
+    assert pacer.service(102, 1000, deadline=10.1, wait=lambda _: True)
+    assert pacer.wakeups == 1
+    assert not pacer.service(104, 1000, deadline=9.0, wait=clock.wait)
+    assert len(clock.waits) == 1

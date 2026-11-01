@@ -6,9 +6,23 @@ import socket
 import subprocess
 import time
 import pytest
+import configparser
+import io
 
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def loopback_config(sip_port, rtp_port, server):
+    config = configparser.ConfigParser(interpolation=None)
+    config.read(ROOT / "courier-emu.ini")
+    config["sip"].update(server=server, target="sip:{number}@" + server,
+                         bind="127.0.0.1", advertise="127.0.0.1",
+                         port=str(sip_port), rtp_port=str(rtp_port))
+    config["audio"]["enabled"] = "false"
+    output = io.StringIO()
+    config.write(output)
+    return output.getvalue()
 
 
 def test_firmware_dials_and_keypress_cancels(tmp_path):
@@ -22,13 +36,8 @@ def test_firmware_dials_and_keypress_cancels(tmp_path):
             rtp_port.bind(("127.0.0.1", 0))
             local_sip = sip_port.getsockname()[1]
             local_rtp = rtp_port.getsockname()[1]
-        config = (ROOT / "courier-emu.ini").read_text()
-        config = config.replace("server = 192.168.196.29:5060",
-                                f"server = 127.0.0.1:{peer.getsockname()[1]}")
-        config = config.replace("192.168.196.29", "127.0.0.1")
-        config = config.replace("bind = 0.0.0.0", "bind = 127.0.0.1")
-        config = config.replace("port = 5074", f"port = {local_sip}")
-        config = config.replace("rtp_port = 4014", f"rtp_port = {local_rtp}")
+        config = loopback_config(local_sip, local_rtp,
+                                 f"127.0.0.1:{peer.getsockname()[1]}")
         location = tmp_path / "modem.ini"
         location.write_text(config.replace("report =", "report = diagnostics.json"))
         terminal = tmp_path / "artifacts/courier-emu.tty"
@@ -98,11 +107,7 @@ def test_firmware_rings_and_answers_incoming_call(tmp_path, auto_answer):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as reserved:
             reserved.bind(("127.0.0.1", 0))
             rtp_port = reserved.getsockname()[1]
-        config = (ROOT / "courier-emu.ini").read_text()
-        config = config.replace("server = 192.168.196.29:5060", "server = 127.0.0.1:9")
-        config = config.replace("bind = 0.0.0.0", "bind = 127.0.0.1")
-        config = config.replace("port = 5074", f"port = {sip_port}")
-        config = config.replace("rtp_port = 4014", f"rtp_port = {rtp_port}")
+        config = loopback_config(sip_port, rtp_port, "127.0.0.1:9")
         location = tmp_path / "modem.ini"
         if auto_answer:
             config = config.replace("enabled = false", "enabled = true")

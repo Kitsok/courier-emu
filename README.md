@@ -1516,11 +1516,14 @@ command-mode front-end.
 Interactive ROM sessions without SIP pace an initialized, on-hook idle
 receiver to its board instruction clock. They wait only when ahead of wall
 time, in intervals of at most 5 ms that terminal input can interrupt. SIP
-sessions retain the media clock's deadlines and sample terminal input during
-its waits. Batch runs and linked emulator peers retain their own clocks.
-`COURIER_IDLE_PACING=0` disables the added idle pacing and terminal-aware SIP
-waits for comparison; it does not disable the SIP media clock. Diagnostic
-reports include non-SIP idle wait counts and elapsed wait time under `pacing`.
+sessions pace guest execution against the media timeline at scheduler checks
+of at most 2 ms, so a complete SIP frame does not block the guest CPU for
+100 ms. Batch runs and linked emulator peers retain their own clocks.
+`COURIER_IDLE_PACING=0` retains blocking SIP frame pacing for comparison; it
+does not disable the SIP media clock. Diagnostic reports include wait counts
+and elapsed wait time under `pacing`, and native poll and DSP batch counts
+under `scheduler`. `COURIER_NATIVE_EXCHANGE=0` disables native exchange DSP
+services independently of clock-only native polling.
 
 The source launcher uses the system Python and refuses runtime compilation.
 Its default SIP and RTP ports are 5074 and 4014, allowing it to coexist with

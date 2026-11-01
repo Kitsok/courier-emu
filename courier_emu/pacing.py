@@ -1,4 +1,4 @@
-"""Wall-clock deadlines for an idle interactive board without a SIP clock."""
+"""Short, input-aware scheduler waits on instruction or SIP media clocks."""
 import math
 import time
 
@@ -42,3 +42,21 @@ class InstructionPacer:
     def summary(self):
         return {"waits": self.waits, "input_wakeups": self.wakeups,
                 "waited_seconds": self.waited}
+
+
+class DeadlinePacer(InstructionPacer):
+    """A scheduler check driven by an external media timeline."""
+
+    def service(self, instructions, rate, *, deadline, wait):
+        self.next_check = instructions + max(1, math.ceil(rate * self.interval))
+        if deadline is None:
+            return False
+        now = self.clock()
+        delay = min(self.interval, deadline - now)
+        if delay <= 0:
+            return False
+        self.waits += 1
+        readable = bool(wait(delay))
+        self.waited += max(0.0, self.clock() - now)
+        self.wakeups += readable
+        return readable

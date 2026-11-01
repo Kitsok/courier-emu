@@ -351,11 +351,14 @@ An interactive ROM without SIP also bounds native polling by its next idle
 pacing check. Once the receiver is initialized and on hook, an idle service
 waits only for positive lead over the board instruction clock, at most 5 ms
 per wait, and readable terminal input wakes it. Busy command handling and
-workers behind wall time receive no added wait. SIP retains its existing
-absolute media deadlines; during its waits the worker can poll the terminal
-without exceeding the input FIFO limit. A full FIFO uses the bounded sleep
-instead of repeatedly waking on unread data. `COURIER_IDLE_PACING=0` disables
-these additions; batch runs and socket-linked peers are unaffected.
+workers behind wall time receive no added wait. Interactive SIP retains its
+absolute media timeline, but frame service no longer sleeps: the scheduler
+interpolates between completed frames using buffered line-rate samples and
+checks for positive clock lead at intervals of at most 2 ms. Waits poll SIP
+and can wake for terminal input without exceeding the input FIFO limit. A
+full FIFO uses the bounded sleep instead of waking repeatedly on unread
+data. `COURIER_IDLE_PACING=0` retains blocking frame pacing for comparison;
+batch runs and socket-linked peers retain their original clocks.
 
 The x86 engine now runs the worker's fast services itself
 (`courier_worker_poll` in `native/c5x_capi.cpp`, mirrored by
