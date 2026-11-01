@@ -6,6 +6,20 @@ import pytest
 from courier_emu.machine import CourierMachine
 from courier_emu.rom_serial import RomSerialLayout
 from courier_emu import x86_interpreter as x86
+from courier_emu.timebase import COURIER_20MHZ, COURIER_25MHZ
+
+
+@pytest.mark.parametrize("board", [COURIER_20MHZ, COURIER_25MHZ])
+def test_rom_tick_uses_the_selected_board_clock(board):
+    machine = object.__new__(CourierMachine)
+    machine._rom_tick = True
+    machine.timebase = board
+    machine.tick_ms = 5
+    period = machine.tick_period_instructions
+    assert 0.005 <= period / board.instructions_per_second
+    assert (period - 1) / board.instructions_per_second < 0.005
+    machine.tick_ms = 0
+    assert machine.tick_period_instructions == 0
 
 
 def machine_and_memory():

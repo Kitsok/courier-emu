@@ -1025,6 +1025,15 @@ class CourierMachine:
         """Ask the run to finish at the next instruction boundary."""
         self.stop_requested = True
 
+    @property
+    def tick_period_instructions(self) -> int:
+        """The periodic board edge in this ROM's selected CPU clock."""
+        if not self.tick_ms:
+            return 0
+        if self._rom_tick:
+            return math.ceil(self.tick_ms * self.timebase.instructions_per_second / 1000)
+        return self.tick_ms * INSTRUCTIONS_PER_MS
+
     def _key_wait_tests(self) -> frozenset[int]:
         """Physical addresses of the firmware's keystroke-flag tests."""
         addresses = []
@@ -2059,7 +2068,7 @@ class CourierMachine:
                 and not self._timer_in_handler
                 and self._external_interrupt_pending is None
                 and self.instructions - self._last_tick
-                >= self.tick_ms * INSTRUCTIONS_PER_MS
+                >= self.tick_period_instructions
                 and _uc.reg_read(UC_X86_REG_FLAGS) & 0x0200
                 # This firmware keeps int3 masked throughout, so nothing is
                 # delivered here today. Honouring the mask is the point: an
@@ -2084,7 +2093,7 @@ class CourierMachine:
                 and self._external_interrupt_pending is None
                 and self._timer_interrupt_pending is None
                 and self.instructions - self._last_tick
-                >= self.tick_ms * INSTRUCTIONS_PER_MS
+                >= self.tick_period_instructions
                 and _uc.reg_read(UC_X86_REG_FLAGS) & 0x0200
             ):
                 # The tick keeps the vector the ROM's own handlers install.
@@ -2336,7 +2345,7 @@ class CourierMachine:
                 interrupts_on = bool(_uc.reg_read(UC_X86_REG_FLAGS) & 0x0200)
                 tick_due = (
                     (self._rom_tick or self._quad_modem_tick) and self.tick_ms
-                    and instructions - self._last_tick >= self.tick_ms * INSTRUCTIONS_PER_MS)
+                    and instructions - self._last_tick >= self.tick_period_instructions)
                 if (
                     self.dte_line._edge or tick_due
                     or self.int1_after_ms is not None
@@ -2370,7 +2379,7 @@ class CourierMachine:
                     service_tail_suffix(_uc, elapsed)
             elif (
                 (self._rom_tick or self._quad_modem_tick) and self.tick_ms
-                and self.instructions - self._last_tick >= self.tick_ms * INSTRUCTIONS_PER_MS
+                and self.instructions - self._last_tick >= self.tick_period_instructions
             ):
                 service_tail_suffix(_uc, elapsed)
             if fixed_refresh[0] is not None:
@@ -3372,7 +3381,7 @@ class CourierMachine:
                     deadlines.append(self._serial_input_schedule[0][0])
                 if (self._rom_tick or self._quad_modem_tick) and self.tick_ms:
                     deadlines.append(
-                        self._last_tick + math.ceil(self.tick_ms * INSTRUCTIONS_PER_MS))
+                        self._last_tick + self.tick_period_instructions)
                 for timer in timers.timers:
                     remaining = timer.ticks_to_max_count()
                     if remaining is not None:

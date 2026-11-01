@@ -66,6 +66,11 @@ fixed 30/35-million-instruction delays; character timing still uses the
 modelled serial wire. Unknown layouts follow the integrated UART's enable
 state without receiving adapter writes.
 
+ROM periodic tick deadlines use the selected board's instruction rate. A
+5 ms tick therefore follows the 20.16 MHz or 25.8048 MHz board clock rather
+than applying the legacy 25 MHz instruction count to both ROMs. Firmware
+delay loops, including those before a final result code, still execute.
+
 ## Hardware-facing corrections
 
 The terminal remains connected after its input queue drains. Previously the
