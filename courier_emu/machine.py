@@ -947,6 +947,35 @@ class CourierMachine:
             return self.console.dtr
         return self._terminal_attached
 
+    def _native_panel_input_14(self, bridge: Any, base_14: int) -> int | None:
+        if 0x14 in self.port_values:
+            return None
+        connected = self._terminal_connected
+        if not connected and (self.serial_rx or self.console is not None):
+            # Reading the latch is what notices a terminal; leave
+            # that to the read.
+            return None
+        line = bridge.line
+        exchange = bridge.exchange
+        if (line is not None and line.peer_ringing) or (
+                exchange is not None and exchange.ringing):
+            return None
+        value = base_14
+        panel = self.panel
+        if panel.board_id is not None:
+            if panel.strap_sense():
+                value |= STRAP_SENSE_BIT
+            else:
+                value &= ~STRAP_SENSE_BIT
+        # Serialsim attachment stays true across DTR changes. The existing
+        # console poll samples DTR, and service_chunk refreshes this cache
+        # before another native batch. Publish the signal, not attachment.
+        value = value | 0x01 if self._dte_dtr_asserted else value & ~0x01
+        # The resident 302/403 detector is idle-high; its ring
+        # sampler qualifies the falling edges within a burst.
+        return ((value | RING_DETECT_BIT) if self._rom_serial is not None
+                else (value & ~RING_DETECT_BIT)) & 0xFF
+
     @property
     def _terminal_attached(self) -> bool:
         """Whether the firmware should come up expecting terminal input.
@@ -3641,7 +3670,6 @@ class CourierMachine:
             # through a Python callback that publishes it again.
             panel_inputs_native = (
                 self.quad_c50 is None and self.quad_board is None
-                and not getattr(self.console, "serialsim", False)
                 and self.quad_usart is None and self.ring is None
                 and 0x14 not in (command_port, LANE_RX_ACK_PORT, 0x1C, 0x1E, *lane_ports)
                 and not bridge.handles(0x14)
@@ -3653,35 +3681,10 @@ class CourierMachine:
             base_14 = 0xFF & ~panel.dip_input(0x14, rom=self._rom_serial is not None)
             published = [None]    # the answer the native model was last given
 
-            def panel_input_14() -> int | None:
-                if 0x14 in self.port_values:
-                    return None
-                connected = self._terminal_connected
-                if not connected and (self.serial_rx or self.console is not None):
-                    # Reading the latch is what notices a terminal; leave
-                    # that to the read.
-                    return None
-                line = bridge.line
-                exchange = bridge.exchange
-                if (line is not None and line.peer_ringing) or (
-                        exchange is not None and exchange.ringing):
-                    return None
-                value = base_14
-                if panel.board_id is not None:
-                    if panel.strap_sense():
-                        value |= STRAP_SENSE_BIT
-                    else:
-                        value &= ~STRAP_SENSE_BIT
-                value = value | 0x01 if connected else value & ~0x01
-                # The resident 302/403 detector is idle-high; its ring
-                # sampler qualifies the falling edges within a burst.
-                return ((value | RING_DETECT_BIT) if self._rom_serial is not None
-                        else (value & ~RING_DETECT_BIT)) & 0xFF
-
             def refresh_fixed_inputs(force: bool = False) -> None:
                 answer = None
                 if applied[0] is not None and applied[0][0] is not None:
-                    answer = panel_input_14()
+                    answer = self._native_panel_input_14(bridge, base_14)
                 # The native side only drops its copy when a panel port is
                 # written, and those writes come back through `after_io` or
                 # the panel replay, which both force.

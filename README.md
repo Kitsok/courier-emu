@@ -25,8 +25,9 @@ management PTY. Use distinct pair numbers for additional modems.
 
 Both endpoints use raw binary TTY mode with a 115200-baud kernel transport.
 Courier reads the peer's DTR through serialsim's remote-control ioctl and
-feeds the existing firmware input pins. Dynamic DTR disables the cached native
-panel-input optimization so pin changes remain visible to firmware.
+feeds the existing firmware input pins. The native panel-input cache is refreshed after the existing serialsim
+poll samples DTR, so live pin changes remain visible without routing each
+input-latch read through Python.
 
 DSR currently reports **endpoint readiness**, asserted while the Courier worker
 owns its device, not carrier detection or a decoded board ASIC DSR output.
