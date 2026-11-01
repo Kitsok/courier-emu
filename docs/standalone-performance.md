@@ -228,3 +228,17 @@ Next measured change: avoid replaying the full generic MMIO/device handler
 for end-of-interrupt writes whose only remaining effects are the interrupt
 stack and access tallies. Native polling already applies some stack effects
 and marks the corresponding log records; replay must honor those marks.
+
+### End-of-interrupt replay experiment
+
+Tried a specialized replay of 0xff02 writes that retains width-specific
+counters and the interrupt stack while bypassing irrelevant timer, UART,
+EEPROM and trace checks. All final memory, register, scheduler and window
+counter comparisons match, and all 14 worker/timer regressions pass.
+
+Alternating off/on/on/off notebook runs give mean window CPU times of
+2.112/2.120 s for idle and 2.266/2.223 s for dialing. Idle did not improve;
+the small dialing difference is insufficient to establish a robust benefit.
+The candidate is dropped. Generic MMIO replay remains unchanged. The next
+step is native interrupt entry, which removes register/memory API calls
+from each dispatched interrupt rather than trimming device-handler checks.
