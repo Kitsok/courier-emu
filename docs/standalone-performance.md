@@ -242,3 +242,64 @@ the small dialing difference is insufficient to establish a robust benefit.
 The candidate is dropped. Generic MMIO replay remains unchanged. The next
 step is native interrupt entry, which removes register/memory API calls
 from each dispatched interrupt rather than trimming device-handler checks.
+
+### Guarded interrupt entry in C++
+
+Courier's interrupt dispatcher now offers ordinary real-mode entry to the
+native x86 extension. One call validates the vector read and all three stack
+writes, pushes the frame, reads the vector and publishes the four changed
+registers. Watchpoints, unmapped memory, a physical boundary crossing or a
+stale mapping guard decline before changing anything and retain the Python
+dispatcher. Python still owns pending requests and the controller stack;
+this moves entry mechanics, not the complete interrupt controller.
+
+The Courier reference differs from the existing I-modem helper: it reads the
+vector after writing the frame, permits zero vectors, preserves TF and adds
+two to software-interrupt return IP. The new helper preserves that behavior,
+including frames overlapping the vector table and SP wrapping through zero.
+`COURIER_NATIVE_INTERRUPTS=0` retains Python entry for comparison.
+
+Notebook validation: 43 interpreter, worker and timer tests pass, followed
+by seven focused entry tests after adding explicit stack-wrap and physical
+boundary cases. The focused tests include 200 randomized hardware/software
+frames, zero vectors, watched final pushes, unmapped memory and stale guards.
+Full firmware tests compare native entry plus native scheduling against the
+Python entry/service paths for idle, AT/ATI7 and dialing.
+
+Alternating off/on/on/off runs measure the following post-boot window CPU
+times (means of two fresh-process samples per mode):
+
+| Notebook window | Python entry | Native entry | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Idle | 2.118 s | 2.094 s | 1.1% |
+| Dialing | 2.239 s | 2.112 s | 5.7% |
+
+Every final guest hash/register set and scheduler/native/window counter
+matches within its workload. The idle profile confirms 5,942 native entries;
+dispatcher cumulative time drops from 0.152 to 0.043 s, and total profile
+calls fall from 1.543M to 1.442M. Profile timings are diagnostic, not the
+unprofiled speed measurements above. The idle gain is small relative to
+notebook variation; dialing provides the stronger local signal.
+
+Nanovax built the new extension with GCC 12.2 in `/tmp/courier-irq`, using
+the original checkout and DSP library for both modes. Its two parallel test
+services remain inactive, MainPID=0. One off/on pair per workload gives:
+
+| A53 window | Python entry | Native entry | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Idle | 11.389 s | 10.614 s | 6.8% |
+| Dialing | 13.699 s | 13.681 s | 0.1% (within noise) |
+
+All guest memory/register and scheduler/native/window counter comparisons
+match on ARM too. Temperature ranged from 79.6 to 85.8 C at run boundaries;
+the result is workload-dependent and the 6.8% observation is not a guaranteed
+gain under controlled clocks. No connected-data capacity claim is made.
+The deployed runtime and remote checkout were not changed.
+
+Retain the guarded entry optimization: it removes repeated Python APIs and
+preserves the reference semantics, with measurable entry-cost and selected
+workload benefits. [Raw interrupt benchmark records](standalone-interrupt-results.json)
+include both notebook and ARM measurements, actual window sizes and guest
+state. The remaining Python service arming, timer/controller scheduling and
+pending-request dispatch are separate migration targets; this change does
+not put the whole CPU/device interaction loop in C++.

@@ -46,6 +46,7 @@ class NativeInterpreter:
         spec.loader.exec_module(module)
         self.run = module.run
         self._inject_interrupt = module.inject_interrupt
+        self._dispatch_interrupt = module.dispatch_interrupt
         self.guard = bytearray(len(cpu.memory))
         self.signature = None
         self.retired = 0
@@ -90,6 +91,11 @@ class NativeInterpreter:
 
     def inject_interrupt(self, cpu, vector):
         return bool(self._inject_interrupt(cpu.regs, cpu.memory, vector))
+
+    def dispatch_interrupt(self, cpu, vector, software):
+        if self.signature != (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch):
+            return None
+        return self._dispatch_interrupt(cpu.regs, cpu.memory, self.guard, vector, software)
 
     def execute(self, cpu, count):
         signature = (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch)

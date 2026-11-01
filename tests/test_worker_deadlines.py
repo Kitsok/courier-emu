@@ -150,6 +150,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
     for enabled in ("0", "1"):
         monkeypatch.setenv("COURIER_WORKER_POLL", enabled)
         monkeypatch.setenv("COURIER_NATIVE_TIMERS", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_INTERRUPTS", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,

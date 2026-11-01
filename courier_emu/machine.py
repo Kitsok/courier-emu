@@ -2910,6 +2910,8 @@ class CourierMachine:
             self.interrupt = number
             _uc.emu_stop()
 
+        native_interrupts = os.environ.get("COURIER_NATIVE_INTERRUPTS", "1") != "0"
+
         def dispatch_interrupt(number: int, *, software: bool = True,
                                fault: bool = False) -> int:
             """Take a real-mode software interrupt through the vector table.
@@ -2918,6 +2920,13 @@ class CourierMachine:
             the first 0x400 bytes of that copy are the vector table it then
             enters through.
             """
+            native = getattr(uc, "_native", None)
+            if native_interrupts and native is not None and len(uc.memory) == 0x100000:
+                pc = native.dispatch_interrupt(uc, number, software)
+                if pc is not None:
+                    if not software and not fault:
+                        self._interrupt_stack.append(number)
+                    return pc
             ip = uc.reg_read(UC_X86_REG_IP)
             cs = uc.reg_read(UC_X86_REG_CS)
             ss = uc.reg_read(UC_X86_REG_SS)

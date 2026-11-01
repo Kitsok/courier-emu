@@ -493,9 +493,62 @@ static PyObject *inject_interrupt_python(PyObject *, PyObject *args) {
     Py_RETURN_TRUE;
 }
 
+// Courier's reference dispatcher reads the vector after pushing its frame,
+// leaves TF unchanged, and permits a zero vector. Keep that contract separate
+// from the I-modem's hardware interrupt helper above. Decline watched or
+// unmapped accesses before changing any memory or register.
+static PyObject *dispatch_interrupt_python(PyObject *, PyObject *args) {
+    PyObject *registers, *memory, *guards;
+    unsigned int vector;
+    int software;
+    if (!PyArg_ParseTuple(args, "OOOIp", &registers, &memory, &guards, &vector, &software))
+        return nullptr;
+    if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
+        !PyByteArray_Check(memory) || PyByteArray_GET_SIZE(memory)!=0x100000 ||
+        !PyByteArray_Check(guards) || PyByteArray_GET_SIZE(guards)!=0x100000 || vector>255) {
+        PyErr_SetString(PyExc_ValueError,"invalid Courier interrupt state"); return nullptr;
+    }
+    uint32_t values[5];
+    const int source[]={IP,CS,SS,SP,F};
+    for (int i=0;i<5;++i) {
+        values[i]=uint32_t(PyLong_AsUnsignedLong(PyList_GET_ITEM(registers,source[i])));
+        if (PyErr_Occurred()) return nullptr;
+    }
+    auto *mem=reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(memory));
+    const auto *guard=reinterpret_cast<const uint8_t*>(PyByteArray_AS_STRING(guards));
+    const uint32_t table=vector*4;
+    for (unsigned k=0;k<4;++k)
+        if (!(guard[table+k]&1) || (guard[table+k]&16)) Py_RETURN_NONE;
+    uint16_t sp=uint16_t(values[3]);
+    uint32_t slots[3];
+    for (unsigned k=0;k<3;++k) {
+        sp=uint16_t(sp-2);
+        slots[k]=((values[2]*16)+sp)&0xfffff;
+        if (slots[k]+2>0x100000) Py_RETURN_NONE;
+        for (unsigned b=0;b<2;++b)
+            if (!(guard[slots[k]+b]&2) || (guard[slots[k]+b]&32)) Py_RETURN_NONE;
+    }
+    const uint16_t frame[]={uint16_t(values[4]),uint16_t(values[1]),
+                           uint16_t(values[0]+(software?2:0))};
+    for (unsigned k=0;k<3;++k) {
+        mem[slots[k]]=uint8_t(frame[k]); mem[slots[k]+1]=uint8_t(frame[k]>>8);
+    }
+    const uint16_t offset=uint16_t(mem[table]|uint16_t(mem[table+1])<<8);
+    const uint16_t segment=uint16_t(mem[table+2]|uint16_t(mem[table+3])<<8);
+    const uint32_t flags=uint16_t(values[4]) & (software?0xffff:~IF);
+    const int dest[]={SP,F,CS,IP};
+    const uint32_t result[]={sp,flags,segment,offset};
+    for (unsigned i=0;i<4;++i) {
+        PyObject *value=PyLong_FromUnsignedLong(result[i]); if(!value)return nullptr;
+        PyList_SetItem(registers,dest[i],value);
+    }
+    return PyLong_FromUnsignedLong((uint32_t(segment)*16+offset)&0xfffff);
+}
+
 static PyMethodDef methods[]={
     {"run",run_python,METH_VARARGS,"Execute guarded interpreter instructions."},
     {"inject_interrupt",inject_interrupt_python,METH_VARARGS,"Enter a real-mode interrupt."},
+    {"dispatch_interrupt",dispatch_interrupt_python,METH_VARARGS,"Enter a guarded Courier interrupt."},
     {nullptr,nullptr,0,nullptr}
 };
 static PyModuleDef module={PyModuleDef_HEAD_INIT,"_x86_native",nullptr,-1,methods,nullptr,nullptr,nullptr,nullptr};

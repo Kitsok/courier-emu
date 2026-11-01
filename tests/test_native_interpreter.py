@@ -173,6 +173,74 @@ def test_native_interrupt_rejects_an_undersized_vector_table():
         native.inject_interrupt(cpu, 0x21)
 
 
+@pytest.mark.parametrize("software", [False, True])
+def test_courier_native_interrupt_matches_reference_frames(software):
+    from courier_emu.x86_native import NativeInterpreter
+
+    rng = random.Random(80186)
+    slow, fast = pair()
+    native = NativeInterpreter(fast)
+    native.execute(fast, 0)  # Build the mapping/watch guard without retiring.
+    for index in range(100):
+        regs = [rng.randrange(65536) for _ in range(14)]
+        # Exercise a frame overlapping the vector table, segment offset wrap,
+        # zero vectors, and TF set, as well as ordinary interrupt stacks.
+        if index < 8:
+            regs[x86.UC_X86_REG_SS] = 0
+            regs[x86.UC_X86_REG_SP] = index * 4 + 6
+        if index in (10, 11):
+            regs[x86.UC_X86_REG_SS] = 0x200
+            regs[x86.UC_X86_REG_SP] = index - 10
+        vector = index % 8 if index < 8 else rng.randrange(256)
+        initial = rng.randbytes(1024)
+        if index == 9:
+            initial = bytes(1024)
+        for cpu in (slow, fast):
+            cpu.regs[:] = regs
+            cpu.memory[:1024] = initial
+        ip, cs, ss, sp, flags = (regs[k] for k in
+            (x86.UC_X86_REG_IP, x86.UC_X86_REG_CS, x86.UC_X86_REG_SS,
+             x86.UC_X86_REG_SP, x86.UC_X86_REG_FLAGS))
+        resume = (ip + 2) & 65535 if software else ip
+        for value in (flags, cs, resume):
+            sp = (sp - 2) & 65535
+            slow.mem_write((ss * 16 + sp) & 0xfffff, value.to_bytes(2, 'little'))
+        slow.reg_write(x86.UC_X86_REG_SP, sp)
+        table = slow.mem_read(vector * 4, 4)
+        offset, segment = int.from_bytes(table[:2], 'little'), int.from_bytes(table[2:], 'little')
+        if not software:
+            slow.reg_write(x86.UC_X86_REG_FLAGS, flags & ~0x200)
+        slow.reg_write(x86.UC_X86_REG_CS, segment)
+        slow.reg_write(x86.UC_X86_REG_IP, offset)
+        assert native.dispatch_interrupt(fast, vector, software) == (segment * 16 + offset) & 0xfffff
+        assert slow.regs == fast.regs
+        assert slow.memory == fast.memory
+
+
+@pytest.mark.parametrize("kind", ['vector', 'stack', 'unmapped', 'stale', 'boundary'])
+def test_courier_interrupt_declines_without_partial_effects(kind):
+    from courier_emu.x86_native import NativeInterpreter
+
+    cpu = x86.Uc(0, 0, profile='186eb')
+    cpu.mem_map(0, 4096 if kind == 'unmapped' else len(cpu.memory))
+    cpu.regs[x86.UC_X86_REG_SP] = 0x4006
+    if kind == 'boundary':
+        cpu.regs[x86.UC_X86_REG_SS] = 0xffff
+        cpu.regs[x86.UC_X86_REG_SP] = 0x11
+    native = NativeInterpreter(cpu)
+    if kind == 'vector':
+        cpu.hook_add(x86.UC_HOOK_MEM_READ, lambda *args: None, None, 0x84, 0x87)
+    if kind == 'stack':
+        # The final push is watched: earlier pushes must remain uncommitted.
+        cpu.hook_add(x86.UC_HOOK_MEM_WRITE, lambda *args: None, None, 0x4000, 0x4001)
+    native.execute(cpu, 0)
+    if kind == 'stale':
+        cpu.hook_add(x86.UC_HOOK_MEM_WRITE, lambda *args: None, None, 0x4000, 0x4005)
+    regs, memory = cpu.regs[:], cpu.memory[:]
+    assert native.dispatch_interrupt(cpu, 0x21, False) is None
+    assert cpu.regs == regs and cpu.memory == memory
+
+
 @pytest.mark.parametrize("kind", [x86.UC_HOOK_MEM_READ, x86.UC_HOOK_MEM_WRITE])
 def test_watched_string_instruction_falls_back_without_partial_effects(kind):
     slow, fast = pair()
