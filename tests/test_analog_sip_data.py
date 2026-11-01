@@ -7,6 +7,7 @@ import socket
 import subprocess
 import time
 import pytest
+import configparser
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -29,11 +30,17 @@ def test_native_courier_pair_negotiates_lapm_and_exchanges_exact_data(tmp_path):
     try:
         for role, port, rtp, peer in [('caller',a,ar,b),('answerer',b,br,a)]:
             folder = tmp_path/role;folder.mkdir()
-            text = (ROOT/'courier-emu.ini').read_text()
-            text = text.replace('192.168.196.29:5060',f'127.0.0.1:{peer}').replace('192.168.196.29','127.0.0.1')
-            text = text.replace('0.0.0.0','127.0.0.1').replace('port = 5074',f'port = {port}').replace('rtp_port = 4014',f'rtp_port = {rtp}')
-            text = text.replace('report =', 'report = '+str(folder/'worker.json'))
-            config = folder/'modem.ini';config.write_text(text)
+            settings = configparser.ConfigParser(interpolation=None)
+            settings.read(ROOT/'courier-emu.ini')
+            settings['sip'].update(server=f'127.0.0.1:{peer}',
+                                   target='sip:{number}@127.0.0.1:'+str(peer),
+                                   bind='127.0.0.1', advertise='127.0.0.1',
+                                   port=str(port), rtp_port=str(rtp))
+            settings['audio']['enabled'] = 'false'
+            settings['logging']['report'] = str(folder/'worker.json')
+            config = folder/'modem.ini'
+            with config.open('w') as output:
+                settings.write(output)
             log = (folder/'log').open('w');logs.append(log)
             processes.append(subprocess.Popen([str(ROOT/'run.sh'),'--config',str(config)],stdout=log,stderr=subprocess.STDOUT))
         deadline = time.monotonic()+180

@@ -7,6 +7,10 @@ and the DSP's frame edge move. The harness arms it after a service of its own
 (`Machine.run`'s arm_worker_poll), and takes the fields back whenever the
 engine hands control to Python (`take_back`); while it is armed the copies
 here, not the Python attributes, are the live ones.
+
+Scheduled mode 1 advances clocks only. Mode 2 also runs stable exchange DSP
+batches and resamples between complete frames, yielding before frame work or
+for the tail of a service that generated a DSP reply or loader transition.
 """
 from __future__ import annotations
 
@@ -17,7 +21,7 @@ from .dsp import load_library
 I64, U64, F64 = ctypes.c_int64, ctypes.c_uint64, ctypes.c_double
 STACK_SLOTS = 64
 NO_LATCH = 256
-LINE_BUFFER_SLOTS = 512
+LINE_BUFFER_SLOTS = 1024
 RECORD_SLOTS = 4096
 
 
@@ -74,6 +78,8 @@ class WorkerPollState(ctypes.Structure):
         ("scheduled", U64), ("dsp_active", U64),
         ("exchange_present", U64), ("exchange_ticks", I64),
         ("console_present", U64), ("console_owed", I64),
+        ("exchange_codec_last", I64), ("exchange_idle", I64),
+        ("dsp_batches", U64),
         ("error", ctypes.c_char * 512),
     ]
 

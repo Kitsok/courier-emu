@@ -91,7 +91,8 @@ def test_frame_interrupt_entry_respects_stack_guards(watched):
         assert s.int0_in_service and s.stack_depth == 1 and s.stack[0] == 12
 
 
-def test_interactive_exchange_matches_python_services(monkeypatch):
+@pytest.mark.parametrize("serial_input", [b"", b"AT\rATI7\r", b"ATDT100\r"])
+def test_interactive_exchange_matches_python_services(monkeypatch, serial_input):
     from pathlib import Path
     from courier_emu.codec import CodecBringUp, SiliconDaa
     from courier_emu.daa import CourierDaa
@@ -145,14 +146,20 @@ def test_interactive_exchange_matches_python_services(monkeypatch):
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,
+            serial_input=serial_input,
             daa=CourierDaa("quiet"), exchange=LineExchange(),
             codec=CodecBringUp(SiliconDaa(1)), dsp_batch=4096,
             console=Console(), tick_source="dsp")
         machine.console.owner = machine
-        results.append(machine.run(20_000_000).to_dict())
+        result = machine.run(30_000_000).to_dict()
+        scheduler = result.pop("scheduler")
+        if enabled == "1":
+            assert scheduler["native_dsp_batches"] > 0
+        results.append(result)
         machines.append(machine)
     slow, fast = machines
     assert fast._worker_poll.state.polls > 0
+    assert fast._worker_poll.state.dsp_batches > 0
     assert fast.console.native_polls_with_large_buffers > 0
     assert slow.uc.memory == fast.uc.memory
     assert slow.uc.regs == fast.uc.regs

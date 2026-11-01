@@ -398,6 +398,7 @@ class RunResult:
     serial_trace: list[str] = field(default_factory=list)
     console: dict[str, int | bool] | None = None
     pacing: dict[str, int | float] | None = None
+    scheduler: dict[str, int] | None = None
     accelerated_delays: int = 0
     error: str | None = None
     dsp_bridge: dict[str, Any] | None = None
@@ -3328,11 +3329,18 @@ class CourierMachine:
                 elapsed = next_service - self._last_service
                 dsp_active = bool(bridge.active and not bridge.error
                                   and (not bridge.boot_rom_enabled or bridge.launched))
+                timed = getattr(bridge._codec_to_line, "_timed", None)
+                if (scheduled and dsp_active and bridge.boot_rom_enabled
+                        and bridge.exchange is not None and bridge.batch >= interpreter_period
+                        and timed is not None and LINE_FRAME_SAMPLES <= 1024
+                        and os.environ.get("COURIER_NATIVE_EXCHANGE", "1") != "0"
+                        and bridge.fast_clock_static(exchange=True)):
+                    scheduled = 2
                 if scheduled and (
                     (self.console is not None and self._console_owed <= elapsed)
-                    or (bridge.exchange is not None
+                    or (scheduled == 1 and bridge.exchange is not None
                         and bridge._exchange_instructions + elapsed >= bridge.batch)
-                    or (dsp_active and bridge._x86_ticks + elapsed >= bridge.batch)
+                    or (scheduled == 1 and dsp_active and bridge._x86_ticks + elapsed >= bridge.batch)
                     or (bridge.codec is not None
                         and bridge._codec_instructions + elapsed >= LINE_FRAME_INSTRUCTIONS)
                 ):
@@ -3392,10 +3400,35 @@ class CourierMachine:
                 state.dirty = 0
                 seen[0] = state.polls
                 if scheduled:
-                    # SIP/exchange services use no socket frame, resampler or
-                    # line buffer state. In particular a 100 ms SIP buffer
-                    # may exceed the paired-line buffer's 512-sample limit.
+                    # Clock-only services use no line state. Exchange DSP
+                    # services carry their own resampler and buffer, without
+                    # borrowing the paired socket frame's size limit.
                     state.line_calls = state.frame_ok = 0
+                    if scheduled == 2:
+                        buffer = bridge._exchange_line_buffer
+                        if len(buffer) > len(state.line_buffer):
+                            return
+                        state.line_buffer_count = len(buffer)
+                        if buffer:
+                            seed = array("h", buffer)
+                            ctypes.memmove(line_buffer_address, seed.buffer_info()[0], 2 * len(seed))
+                        state.timed = timed.handle
+                        state.line_rate = float(LINE_RATE)
+                        state.line_frame_samples = LINE_FRAME_SAMPLES
+                        state.tx_index = bridge._exchange_tx_index
+                        state.peak_codec = bridge._line_service["tx_peak_codec"]
+                        state.peak_line = bridge._line_service["tx_peak_line"]
+                        state.tx_consumed = state.resampled = 0
+                        state.exchange_codec_last = bridge._exchange_codec_last
+                        state.exchange_idle = bridge._exchange_idle
+                        state.debt, state.cpi = bridge._dsp_cycle_debt, bridge._dsp_cpi
+                        state.cycles_per_x86 = bridge.dsp_cycles_per_x86
+                        state.boot_rom = 1
+                        state.mailbox_writes = bridge._dsp_mailbox_writes
+                        state.overlay_active = bridge._call_overlay_active
+                        state.host_port = HOST_WORD_CELL
+                        state.loader_in_loop = core.pc() in C51_ROM_LOADER_LOOP
+                        state.loader_first, state.loader_end = C51_ROM_LOADER_LOOP.start, C51_ROM_LOADER_LOOP.stop
                     state.armed = 1
                     return
                 state.debt = bridge._dsp_cycle_debt
@@ -3585,24 +3618,30 @@ class CourierMachine:
                     # No max count is crossed while armed. Bring the lazy
                     # timer view to the last service before any Python use.
                     timers.tick(total)
+                    if state.scheduled == 2:
+                        bridge._exchange_codec_last = state.exchange_codec_last
+                        bridge._exchange_idle = state.exchange_idle
                 bridge._instructions = state.bridge_instructions
                 bridge._codec_instructions = state.codec_instructions
                 bridge._x86_ticks = state.x86_ticks
-                if not state.scheduled:
+                if state.scheduled != 1:
                     bridge._dsp_cycle_debt = state.debt
                     bridge._dsp_cpi = state.cpi
-                    bridge._line_service_skipped = state.line_skipped
                     bridge._dsp_mailbox_writes = state.mailbox_writes
+                    if not state.scheduled:
+                        bridge._line_service_skipped = state.line_skipped
                 if state.line_calls:
                     service = bridge._line_service
-                    service["calls"] += state.line_calls
+                    if state.scheduled != 2:
+                        service["calls"] += state.line_calls
                     service["tx_consumed"] += state.tx_consumed
                     service["tx_index"] = state.tx_index
                     service["tx_peak_codec"] = state.peak_codec
                     service["tx_peak_line"] = state.peak_line
                     bridge._exchange_tx_index = state.tx_index
-                    bridge._line_codec_last = state.line_codec_last
-                    bridge._line_instructions = 0
+                    if state.scheduled != 2:
+                        bridge._line_codec_last = state.line_codec_last
+                        bridge._line_instructions = 0
                     bridge._exchange_line_buffer[:] = state.line_buffer[:state.line_buffer_count]
                     bridge._codec_to_line.converted += state.resampled
                     state.line_calls = state.tx_consumed = state.resampled = 0
@@ -4026,6 +4065,10 @@ class CourierMachine:
             # A console session traces for as long as someone keeps typing,
             # so report its tail rather than an unbounded transcript.
             serial_trace = serial_trace[-MAX_SERIAL_TRACE_EVENTS:]
+        worker_poll = getattr(self, "_worker_poll", None)
+        scheduler = ({"native_polls": worker_poll.state.polls,
+                      "native_dsp_batches": worker_poll.state.dsp_batches}
+                     if worker_poll is not None else None)
         return RunResult(
             status=status,
             instructions=self.instructions,
@@ -4063,6 +4106,7 @@ class CourierMachine:
             serial_trace=serial_trace,
             console=console_result,
             pacing=idle_pacer.summary() if idle_pacer is not None else None,
+            scheduler=scheduler,
             accelerated_delays=self.accelerated_delays,
             error=error,
             dsp_bridge=bridge_result,

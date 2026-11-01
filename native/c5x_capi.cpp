@@ -2411,7 +2411,7 @@ struct WorkerPollState {
     uint64_t line_calls, tx_consumed, resampled;
     // The exchange buffer itself (_exchange_line_buffer), seeded when armed.
     uint64_t line_buffer_count;
-    int16_t line_buffer[512];
+    int16_t line_buffer[1024];
     // The frame exchange (_service_line_frame and LineLink.exchange) in a
     // call that is through and steady: allowed when frame_ok, on the line's
     // socket; the line's counters and its peer's state; the codec state the
@@ -2439,11 +2439,59 @@ struct WorkerPollState {
     int64_t exchange_ticks;
     uint64_t console_present;
     int64_t console_owed;
+    int64_t exchange_codec_last, exchange_idle;
+    uint64_t dsp_batches;
     char error[512];
 };
 
 constexpr uint32_t WORKER_IF = 0x0200;
 constexpr unsigned WORKER_INT0 = 12;
+
+// Finish the DSP part of a service. A reply or loader transition hands only
+// the uncompleted tail back to Python; the batch must never be run twice.
+int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
+{
+    uint64_t writes;
+    bool tdm;
+    ++s.dsp_batches;
+    try {
+        if (s.debt < 1) {
+            writes = core->io_port_stat(uint16_t(s.host_port)).writes;
+            tdm = core->call_tdm_active();
+        } else {
+            const int64_t owed = int64_t(s.debt);
+            const uint64_t before_instructions = core->instruction_count();
+            const uint64_t before_cycles = core->cycle_count();
+            core->run_cycles(uint64_t(owed > 1 ? owed : 1));
+            const uint64_t ran = core->instruction_count() - before_instructions;
+            const uint64_t cycles = core->cycle_count() - before_cycles;
+            writes = core->io_port_stat(uint16_t(s.host_port)).writes;
+            tdm = core->call_tdm_active();
+            s.debt -= double(cycles);
+            if (ran > 0) {
+                const double cpi = double(cycles) / double(ran);
+                s.cpi = 0.9 * s.cpi + 0.1 * (cpi > 1.0 ? cpi : 1.0);
+            }
+        }
+    } catch (const std::exception &exception) {
+        copy_error(s.error, sizeof s.error, exception.what());
+        s.resume_elapsed = elapsed;
+        s.armed = 0;
+        return 3;
+    }
+    const uint16_t pc = core->program_counter();
+    const bool in_loop = pc >= s.loader_first && pc < s.loader_end;
+    if ((s.boot_rom && writes > s.mailbox_writes) || (!s.overlay_active && tdm)
+        || in_loop != bool(s.loader_in_loop)) {
+        s.step_writes = writes;
+        s.step_tdm = tdm;
+        s.resume_elapsed = elapsed;
+        s.armed = 0;
+        return 2;
+    }
+    if (s.boot_rom) s.mailbox_writes = writes;
+    return 0;
+}
 
 // Machine.on_mmio_write's end-of-interrupt handling, for the writes the
 // engine logged since this batch began; each is marked so the harness's replay
@@ -2621,13 +2669,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     C5xCore *core = static_cast<C5xCore *>(s.core);
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
+        const bool exchange_due = s.exchange_present && s.exchange_ticks + elapsed >= s.batch;
+        const bool dsp_due = s.dsp_active && s.x86_ticks + elapsed >= s.batch;
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
         // step, and input must be sampled on its original polling boundary.
         if ((s.console_present && s.console_owed - elapsed <= 0)
             || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
-            || (s.exchange_present && s.exchange_ticks + elapsed >= s.batch)
-            || (s.dsp_active && s.x86_ticks + elapsed >= s.batch)
+            || (s.scheduled == 1 && (exchange_due || dsp_due))
             || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
             s.armed = 0; return 0;
         }
@@ -2649,6 +2698,42 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 frame_edge = true;
             }
         }
+        auto *timed = static_cast<courier::resample::Timed *>(s.timed);
+        const int64_t produced = s.scheduled == 2 ? int64_t(core->line_tx_count()) : 0;
+        const int64_t start = s.tx_index;
+        bool converted = false;
+        int64_t idle = s.exchange_idle;
+        if (exchange_due) {
+            if (produced == s.exchange_codec_last) {
+                idle += s.batch;
+                if (idle >= s.line_frame_instructions) { s.armed = 0; return 0; }
+            } else {
+                idle = 0;
+                if (produced < start || !timed) { s.armed = 0; return 0; }
+                if (produced > start) {
+                    double rate = double(core->codec_sample_rate_millihz()) / 1000.0;
+                    for (const auto &event : core->line_tx_clock_events()) {
+                        if (int64_t(event[0]) <= start) rate = 40320000.0 / double(event[1]);
+                        else if (int64_t(event[0]) < produced) { s.armed = 0; return 0; }
+                    }
+                    if (!(rate > 0) || rate != timed->input_rate
+                        || s.line_rate != timed->output_rate || !timed->kernel) {
+                        s.armed = 0; return 0;
+                    }
+                    const auto &source = core->line_tx_samples();
+                    std::vector<int16_t> samples(size_t(produced - start));
+                    for (size_t k = 0; k < samples.size(); ++k)
+                        samples[k] = int16_t(source[size_t(start) + k]);
+                    timed->run(samples.data(), samples.size(), rate, s.line_rate, timed->kernel);
+                    if (s.line_buffer_count + timed->out.size() >= s.line_frame_samples
+                        || s.line_buffer_count + timed->out.size() > 1024) {
+                        timed->rollback();
+                        s.armed = 0; return 0;
+                    }
+                    converted = true;
+                }
+            }
+        }
         s.dirty = 1;
         s.last_service = uint64_t(total);
         s.bridge_instructions += elapsed;
@@ -2656,6 +2741,33 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (s.exchange_present) s.exchange_ticks += elapsed;
         if (s.dsp_active) s.x86_ticks += elapsed;
         if (s.console_present) s.console_owed -= elapsed;
+        if (exchange_due) {
+            s.exchange_ticks -= s.batch;
+            s.exchange_codec_last = produced;
+            s.exchange_idle = idle;
+        }
+        if (converted) {
+            timed->commit();
+            const auto &source = core->line_tx_samples();
+            for (int64_t k = start; k < produced; ++k)
+                s.peak_codec = std::max(s.peak_codec, int64_t(std::abs(int16_t(source[size_t(k)]))));
+            for (const int16_t sample : timed->out) {
+                s.line_buffer[s.line_buffer_count++] = sample;
+                s.peak_line = std::max(s.peak_line, int64_t(std::abs(int(sample))));
+            }
+            s.tx_consumed += uint64_t(produced - start);
+            s.tx_index = produced;
+            s.resampled += timed->out.size();
+            ++s.line_calls;
+        }
+        if (dsp_due) {
+            s.debt += double(s.x86_ticks) * s.cycles_per_x86;
+            s.x86_ticks = 0;
+            if (const int code = worker_step(s, core, elapsed)) {
+                ++s.polls;
+                return code;
+            }
+        }
         s.timer_poll_owed -= elapsed;
         if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
         if (frame_edge) {
@@ -2827,48 +2939,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         s.line_skipped = 0;
         if (frame) worker_commit_frame(s, core, wire, header, body);
     }
-    uint64_t writes;
-    bool tdm;
-    try {
-        if (s.debt < 1) {
-            writes = core->io_port_stat(uint16_t(s.host_port)).writes;
-            tdm = core->call_tdm_active();
-        } else {
-            const int64_t owed = int64_t(s.debt);
-            const uint64_t before_instructions = core->instruction_count();
-            const uint64_t before_cycles = core->cycle_count();
-            core->run_cycles(uint64_t(owed > 1 ? owed : 1));
-            const uint64_t ran = core->instruction_count() - before_instructions;
-            const uint64_t cycles = core->cycle_count() - before_cycles;
-            writes = core->io_port_stat(uint16_t(s.host_port)).writes;
-            tdm = core->call_tdm_active();
-            s.debt -= double(cycles);
-            if (ran > 0) {
-                const double cpi = double(cycles) / double(ran);
-                s.cpi = 0.9 * s.cpi + 0.1 * (cpi > 1.0 ? cpi : 1.0);
-            }
-        }
-    } catch (const std::exception &exception) {
-        copy_error(s.error, sizeof s.error, exception.what());
-        s.resume_elapsed = elapsed;
+    if (const int code = worker_step(s, core, elapsed)) {
         ++s.polls;
-        s.armed = 0;
-        return 3;
+        return code;
     }
-    const uint16_t pc = core->program_counter();
-    const bool in_loop = pc >= s.loader_first && pc < s.loader_end;
-    if ((s.boot_rom && writes > s.mailbox_writes) || (!s.overlay_active && tdm)
-        || in_loop != bool(s.loader_in_loop)) {
-        // A DSP message to collect, the call's TDM starting, or the lanes'
-        // configuration changing: the harness finishes this service.
-        s.step_writes = writes;
-        s.step_tdm = tdm;
-        s.resume_elapsed = elapsed;
-        ++s.polls;
-        s.armed = 0;
-        return 2;
-    }
-    if (s.boot_rom) s.mailbox_writes = writes;
     // fast_service's tail. The 80186 timers are brought up to date lazily:
     // every access to one advances it first, and the harness made sure none
     // reaches a max count before elide_until.

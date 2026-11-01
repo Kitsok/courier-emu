@@ -310,19 +310,29 @@ Interactive ROM workers also use a deadline-bounded native service path.
 An attached console, SIP session or analog exchange no longer prevents all
 native polling: services between console polls, exchange/DSP batches, codec
 frames and timer expiries update their clocks in the engine. Python still
-handles input (including serialsim DTR sampling), SIP and DSP stepping when
-due. Frame interrupt entry and batched end-of-interrupt writes run natively
+handles input (including serialsim DTR sampling), SIP signalling and complete
+line frames when due. Frame interrupt entry and batched end-of-interrupt
+writes run natively
 when the stack and vector are ordinary, unwatched memory. The native path
 yields before changing a service that needs those handlers, and publishes
 its counters before Python sees them.
 `COURIER_WORKER_POLL=0` retains the Python service path for comparison.
 
-The interactive snapshot contains only the service clocks and interrupt
-state it uses. It does not copy socket-line resampler or frame state, so the
-socket path's 512-sample limit does not disable polling as an 800-sample SIP
-frame fills. Arming also checks whether the next service already requires
-Python before preparing the snapshot. Only fields owned by the selected
-native path are restored on return.
+Between complete exchange frames, stable runtime services can also advance
+the DSP and convert new codec samples into the exchange buffer natively.
+The resampler keeps the same history; a conversion completing a frame is
+rolled back so Python services that frame exactly once. Codec retunes,
+mailbox replies, loader transitions and call-state work retain their Python
+handlers. `COURIER_NATIVE_EXCHANGE=0` disables this path while keeping native
+clock-only services. Diagnostic reports expose native poll and DSP batch
+counts under `scheduler`.
+
+Clock-only snapshots contain only the service clocks and interrupt state
+they use. Exchange DSP snapshots also carry their resampler and buffer
+state, with room for an 800-sample SIP frame independently of the paired
+socket path's frame limit. Arming checks whether the next service already
+requires Python before preparing a snapshot. Only fields owned by the
+selected native path are restored on return.
 
 After the initial MMIO trace is full, ordinary timer count and compare reads
 also run inside the x86 engine. Their values use the memory callback's exact

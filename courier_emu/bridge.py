@@ -3283,7 +3283,7 @@ class CourierDspBridge:
         self.finish_fast_clock(writes, tdm_active)
         return True
 
-    def fast_clock_static(self) -> bool:
+    def fast_clock_static(self, *, exchange: bool = False) -> bool:
         """The tests of `clock_x86_fast` that only the harness can change.
 
         Everything here is bridge, DAA and line state that moves in Python
@@ -3293,8 +3293,9 @@ class CourierDspBridge:
         daa = self.daa
         core = self.core
         if (
-            self.exchange is not None or self.sip is not None or self._audio_only
-            or self.line is None or self.error or not self.active
+            (not exchange and (self.exchange is not None or self.sip is not None
+                               or self.line is None)) or self._audio_only
+            or self.error or not self.active
             or (self.boot_rom_enabled and not self.launched)
             or (self._runtime_mode and not self._runtime_ready)
             or self._call_resume_pending or self.rx_acquisition_assist
@@ -3332,7 +3333,7 @@ class CourierDspBridge:
             if daa.operation == "answer":
                 return False
             if daa.operation == "dialing":
-                if self.line.peer_off_hook:
+                if self.line is None or self.line.peer_off_hook:
                     return False
             elif daa.operation == "originate" and self._commanded_role != "originate":
                 return False
