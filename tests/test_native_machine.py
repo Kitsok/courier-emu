@@ -46,6 +46,9 @@ class Console:
     def write(self, value):
         pass
 
+    def show_lamps(self, line):
+        pass
+
     def summary(self):
         return {"polls": self.polls}
 

@@ -301,6 +301,15 @@ The worker is now about 56% C5x, 28% Python (a flat tail, about 200 calls per
 
 ### The worker's service loop, native
 
+Interactive ROM workers also use a deadline-bounded native service path.
+An attached console, SIP session or analog exchange no longer prevents all
+native polling: services between console polls, exchange/DSP batches, codec
+frames and timer expiries update their clocks in the engine. Python still
+handles input (including serialsim DTR sampling), SIP, DSP stepping and frame
+interrupts when due. The native path yields before changing a service that
+needs those handlers, and publishes its counters before Python sees them.
+`COURIER_WORKER_POLL=0` retains the Python service path for comparison.
+
 The x86 engine now runs the worker's fast services itself
 (`courier_worker_poll` in `native/c5x_capi.cpp`, mirrored by
 `courier_emu/worker_poll.py`), the way it runs the I-modem's poll. At the start

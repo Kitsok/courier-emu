@@ -2427,6 +2427,10 @@ struct WorkerPollState {
     uint64_t in_flight_length, frames_done, record, presend_error;
     uint64_t tx_record_count, rx_record_count, rx_log_count;
     int16_t tx_record[4096], rx_record[4096], rx_log[4096];
+    uint64_t scheduled, dsp_active, exchange_present;
+    int64_t exchange_ticks;
+    uint64_t console_present;
+    int64_t console_owed;
     char error[512];
 };
 
@@ -2608,6 +2612,32 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     s.io_cursor = cpu.io_event_count;
     C5xCore *core = static_cast<C5xCore *>(s.core);
     const int64_t elapsed = total - int64_t(s.last_service);
+    if (s.scheduled) {
+        // Interactive/SIP operation: run only the services before the next
+        // Python-owned event. In particular the exchange precedes the DSP
+        // step, and input must be sampled on its original polling boundary.
+        if ((s.console_present && s.console_owed - elapsed <= 0)
+            || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
+            || (s.exchange_present && s.exchange_ticks + elapsed >= s.batch)
+            || (s.dsp_active && s.x86_ticks + elapsed >= s.batch)
+            || s.bridge_instructions + elapsed - s.probe_last >= 200000
+            || (s.timer_poll_owed - elapsed <= 0 && s.int0_ok
+                && !s.int0_in_service && (flags & WORKER_IF)
+                && total - s.last_frame >= int64_t(s.frame_instructions))) {
+            s.armed = 0; return 0;
+        }
+        s.dirty = 1;
+        s.last_service = uint64_t(total);
+        s.bridge_instructions += elapsed;
+        if (s.codec_present) s.codec_instructions += elapsed;
+        if (s.exchange_present) s.exchange_ticks += elapsed;
+        if (s.dsp_active) s.x86_ticks += elapsed;
+        if (s.console_present) s.console_owed -= elapsed;
+        s.timer_poll_owed -= elapsed;
+        if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
+        ++s.polls;
+        return 1;
+    }
     // clock_x86_fast's tests that a service can change.
     if (s.x86_ticks + elapsed < s.batch
         || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)) {

@@ -3280,11 +3280,17 @@ class CourierMachine:
             def arm() -> None:
                 worker_arm[0] = False
                 core = bridge.core
+                scheduled = not (fast_service_static() and bridge.fast_clock_static())
                 if (core is None or len(self._interrupt_stack) > STACK_SLOTS
-                        or not fast_service_static() or not bridge.fast_clock_static()
+                        or (scheduled and not scheduled_static())
                         or not timer_poll_static()):
                     return
                 deadlines = [instruction_limit - 2 * interpreter_period]
+                if scheduled:
+                    deadlines.append(self.instructions + 200_000
+                                     - (bridge._instructions - getattr(bridge, "_probe_clock_last", 0)))
+                    if self.console is not None:
+                        deadlines.append(self.instructions + max(0, self._console_owed))
                 if self._serial_input_schedule:
                     deadlines.append(self._serial_input_schedule[0][0])
                 if (self._rom_tick or self._quad_modem_tick) and self.tick_ms:
@@ -3295,6 +3301,13 @@ class CourierMachine:
                     if remaining is not None:
                         deadlines.append(first_instruction_at(timer.origin + remaining))
                 state.core = core.handle
+                state.scheduled = scheduled
+                state.dsp_active = bool(bridge.active and not bridge.error
+                                        and (not bridge.boot_rom_enabled or bridge.launched))
+                state.exchange_present = bridge.exchange is not None
+                state.exchange_ticks = bridge._exchange_instructions
+                state.console_present = self.console is not None
+                state.console_owed = self._console_owed
                 state.instruction_base = instruction_base
                 state.elide_until = max(0, min(deadlines))
                 state.last_service = self._last_service
@@ -3357,6 +3370,24 @@ class CourierMachine:
                 state.dirty = 0
                 seen[0] = state.polls
                 state.armed = 1
+
+            def scheduled_static() -> bool:
+                # No Python state machine may move between these deadlines.
+                # Exchange/SIP and console work is left to its due service;
+                # ordinary device accesses still leave the native engine.
+                return bool(
+                    self._rom_tick and self.emulate_interrupts
+                    and not self.stop_requested and not self._tick_owed
+                    and not self._serial_started and not self._supervisor_23
+                    and self.quad_c50 is None and self.quad_terminal is None
+                    and self.quad_usart is None and not self._quad_profile
+                    and not (self.uart is not None and self.uart.holding)
+                    and (mmio_batched[0] or not mmio_batch_ok
+                         or len(self.mmio_events) < self.max_io_events)
+                    and bridge.line is None and not bridge._audio_only
+                    and not bridge.error
+                    and (not bridge.active or not bridge._runtime_mode or bridge._runtime_ready)
+                )
 
             FRAME_ARM_MARGIN = 48
             native_frames = os.environ.get("COURIER_NATIVE_FRAMES", "1") != "0"
@@ -3483,6 +3514,12 @@ class CourierMachine:
                 self._next_service = total + interpreter_period
                 self._timer_poll_owed = state.timer_poll_owed
                 self._last_frame = state.last_frame
+                if state.scheduled:
+                    self._console_owed = state.console_owed
+                    bridge._exchange_instructions = state.exchange_ticks
+                    # No max count is crossed while armed. Bring the lazy
+                    # timer view to the last service before any Python use.
+                    timers.tick(total)
                 bridge._instructions = state.bridge_instructions
                 bridge._codec_instructions = state.codec_instructions
                 bridge._x86_ticks = state.x86_ticks

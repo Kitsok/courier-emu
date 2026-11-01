@@ -71,6 +71,9 @@ class WorkerPollState(ctypes.Structure):
         ("tx_record", ctypes.c_int16 * RECORD_SLOTS),
         ("rx_record", ctypes.c_int16 * RECORD_SLOTS),
         ("rx_log", ctypes.c_int16 * RECORD_SLOTS),
+        ("scheduled", U64), ("dsp_active", U64),
+        ("exchange_present", U64), ("exchange_ticks", I64),
+        ("console_present", U64), ("console_owed", I64),
         ("error", ctypes.c_char * 512),
     ]
 
