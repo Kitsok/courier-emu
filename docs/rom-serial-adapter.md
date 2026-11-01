@@ -44,7 +44,9 @@ adapter.
 | Mode byte | `033e` | `0237` |
 | Output-routing flag | `0ea7` | `0d93` |
 
-At the first queued byte after the existing boot delay, the adapter selects
+The adapter waits for a nonzero receive callback, the firmware's ready
+command dispatcher and its frame interrupt vector. With a DSP attached, it
+also waits for reset release and successful DSP launch. It then selects
 command mode and the attention handler, and disables the separate buffered
 output route. It supplies bytes through this image's integrated-UART ISR.
 After a command, queued input waits until the firmware returns to its ready
@@ -59,8 +61,10 @@ than the XMF supervisor's `092d`.
 
 This remains an explicit substitute for raw-pin autobaud in a CPU-only run.
 It does not establish cycle-accurate baud detection, DSP startup, or a working
-telephone connection. Timing still uses the harness's instruction-based boot
-and character delays.
+telephone connection. Startup follows the initialized receiver rather than
+fixed 30/35-million-instruction delays; character timing still uses the
+modelled serial wire. Unknown layouts follow the integrated UART's enable
+state without receiving adapter writes.
 
 ## Hardware-facing corrections
 
@@ -85,6 +89,9 @@ analysis in `rom-dte-path.md` describes the pre-fix behavior.
 of queued input, repeated commands, and Q1/Q0 behavior. The layout tests cover
 both resident builds and reject incomplete signatures. The XMF callback
 regression checks that its existing serial path still works.
+`tests/test_rom_readiness.py` checks initialization gates and verifies that
+queued AT, identification, reset and another AT command finish before the
+former startup delay expires.
 
 Validation on 2026-09-06: the focused ROM serial, serial callback, layout, and
 panel suite passed **31 tests and 8 subtests**. Both ROMs completed

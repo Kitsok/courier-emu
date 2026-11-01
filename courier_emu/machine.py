@@ -176,19 +176,10 @@ DTE_BIT_INSTRUCTIONS = INSTRUCTIONS_PER_SECOND // DTE_BAUD
 # whole 8N1 frame, which is what the wire actually holds.
 START_BIT_INSTRUCTIONS = DTE_BIT_INSTRUCTIONS * DteTransmitLine.FRAME_BITS
 RX_BIT_INSTRUCTIONS = 150
-# When the harness's terminal raises its handshake. Long enough after reset
-# that the ROM's callback chain has already sampled the line unasserted.
 # How far past the later of a ROM's DSP reset and download entries those
 # routines run. Both and their handshake waits sit inside the resulting span;
 # e3aa..e67b in the captured board image, whose block ends at e597.
 ROM_DOWNLOADER_SPAN = 0x200
-DTE_READY_INSTRUCTIONS = 30_000_000
-# And when it starts sending. The chain wants the handshake asserted, then a
-# quiet spell, then a character: [0x321] counts thirty of its own polls down
-# to zero before it will take one, and [0x322] gives up after fifty. At the
-# frame rate above that window is roughly four to six and a half million
-# instructions after the handshake, so the first character lands inside it.
-DTE_TYPING_INSTRUCTIONS = DTE_READY_INSTRUCTIONS + 5_000_000
 PC_WATCH_SAMPLES = 64
 MEM_WATCH_EVENTS = 96
 
@@ -840,18 +831,28 @@ class CourierMachine:
                 0x61D0C: "main-loop",
             })
 
-    def _dte_asserted(self) -> bool:
-        """Whether the harness's terminal has raised its handshake yet.
+    def _rom_receive_ready(self, uc: Any) -> bool:
+        """Deliver early input only after the firmware owns its receiver.
 
-        The ROM will not take a character until its callback chain has seen
-        this line unasserted and then asserted, so a terminal that is already
-        present at reset is one the chain never notices. The wait is measured
-        from reset rather than recovered from the board.
+        The byte adapter already replaces raw-pin autobaud for recognized
+        layouts. Its entry needs the firmware's idle dispatcher and a live
+        receive callback, rather than an arbitrary interval after reset.
+        Unknown layouts use the UART enable and receive no adapter writes.
         """
-        return (
-            self.instructions >= DTE_READY_INSTRUCTIONS
-            and (bool(self.serial_rx) or self.uart is not None and self.uart.received > 0)
-        )
+        layout = self._rom_serial
+        if layout is None:
+            return self.uart is not None and self.uart.receive_enabled
+        if self._rom_dte_opened:
+            return True
+        bridge = self.dsp_bridge
+        if bridge is not None and (self._dsp_in_reset or not bridge.active or bridge.error
+                                   or bridge.boot_rom_enabled and not bridge.launched):
+            return False
+        callbacks = bytes(uc.mem_read(layout.callbacks, 6))
+        receive = int.from_bytes(callbacks[:2], "little")
+        command = int.from_bytes(callbacks[4:6], "little")
+        return bool(receive and command == layout.command_idle
+                    and self._int0_vector_installed(uc))
 
     def _int0_vector_installed(self, uc: Any) -> bool:
         """Whether the firmware has put a handler behind the frame edge.
@@ -1812,7 +1813,7 @@ class CourierMachine:
                 and (self.uart.receive_enabled or self._rom_tick)
                 and self.serial_rx
                 and interrupts_on
-                and self.instructions >= DTE_TYPING_INSTRUCTIONS
+                and self._rom_receive_ready(_uc)
                 and (
                     not self._rom_dte_opened
                     or self.uart.holding
@@ -1860,6 +1861,7 @@ class CourierMachine:
                     _uc.mem_write(layout.output_flags, bytes((flags & ~1,)))
                     self._rom_dte_opened = True
                     self._trace_serial("rom-dte: firmware attention adapter")
+                    self._trace_serial(f"rom-dte: receiver ready at {self.instructions}")
                 elif self._rom_dte_opened and not self.uart.holding:
                     layout = self._rom_serial
                     command = int.from_bytes(_uc.mem_read(layout.callbacks + 4, 2), "little")
