@@ -13,7 +13,8 @@ from courier_emu.media_native import NativeMedia, SIP_STATES
 
 
 class Control(c.Structure):
-    _fields_ = [(name, c.c_int64) for name in ('state', 'inbound', 'last_status')]
+    _fields_ = [(name, c.c_int64) for name in ('state', 'inbound', 'last_status', 'signal_fd')]
+    _fields_ += [('deadline', c.c_double)]
 
 
 class State(c.Structure):

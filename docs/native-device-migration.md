@@ -155,3 +155,21 @@ continued native operation after both Python device views close, and cycle
 collection. All 56 combined local checks pass. No SIP messages, modem calls
 or performance measurements were performed. Runtime activation and codec /
 authoritative board-worker integration are still outstanding.
+
+## Native signalling readiness and timer checks
+
+The native port now checks the SIP socket with a non-consuming readiness
+poll and compares the next signalling deadline before yielding to Python.
+When neither requires attention it services native RTP and continues the
+same frame entirely in C++. The control-plane SIP session publishes state
+and its earliest timer after relevant updates and after polling; this covers
+INVITE retransmission/setup, inbound-answer and media-update acknowledgement,
+registration refresh and cancelled-INVITE expiry. Readiness errors and media
+I/O errors still hand control back for the existing signalling/error path.
+
+Two additional checks verify an idle frame makes no Python poll, socket
+readiness and expired timers yield once, and each reference timer family
+publishes its correct minimum deadline. All 58 combined local checks pass.
+The readiness marker is consumed by a fake signalling handler: no SIP dialog,
+firmware/physical modem call or performance measurement was made. Runtime
+activation and direct codec/authoritative worker integration remain pending.

@@ -1,12 +1,16 @@
 // Subscriber-loop supervision. SIP packet parsing remains a control-plane event.
 #pragma once
 #include "line_media.hpp"
+#include <poll.h>
+#include <limits>
 
 namespace courier::analog {
 enum SipState { SipIdle,SipInviting,SipTrying,SipRinging,SipIncoming,SipConnected,SipClosed,SipFailed };
 enum PortEvent { PortDone,PortPoll,PortRejectBusy,PortRing,PortAnswer,PortRoute,PortReject,PortHangup };
 struct SipControl {
     int64_t state=SipIdle,inbound=0,last_status=0;
+    int64_t signal_fd=-1;
+    double deadline=std::numeric_limits<double>::infinity();
 };
 struct PortState {
     uint64_t sip_state=SipIdle,incoming_active=0,placed=0,answered=0;
@@ -54,7 +58,15 @@ struct SipPort {
     int resume() {
         if(event)return event;
         while(running) switch(phase) {
-        case 0: return yield(PortPoll,1);
+        case 0: {
+            const double now=media::monotonic();
+            pollfd descriptor{int(control.signal_fd),POLLIN,0};
+            if(control.signal_fd<0 || now>=control.deadline ||
+               ::poll(&descriptor,1,0)!=0)return yield(PortPoll,1);
+            media.transport.poll(now);
+            if(media.transport.snapshot().error)return yield(PortPoll,1);
+            phase=1;break;
+        }
         case 1: {
             const int state=int(control.state);
             if(state==SipIncoming && control.inbound) {

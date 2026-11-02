@@ -102,3 +102,64 @@ def test_port_device_cycles_are_collectible(port):
     del line, session
     gc.collect()
     assert all(ref() is None for ref in refs)
+
+
+def test_native_frames_only_yield_for_ready_signalling_or_timers(port, monkeypatch):
+    line, _, session = port
+    calls = []
+
+    def poll():
+        calls.append('poll')
+        try:
+            session.socket.recvfrom(256)
+        except BlockingIOError:
+            pass
+        session._register_refresh_at = None
+
+    monkeypatch.setattr(session, 'poll', poll)
+    line.service(False, [], 80)
+    assert calls == []
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+        # Readiness marker only; the scripted poll consumes it without parsing.
+        peer.sendto(b'ready', session.socket.getsockname())
+        line.service(False, [], 80)
+    assert calls == ['poll']
+    line.service(False, [], 80)
+    assert calls == ['poll']
+    session._register_refresh_at = 0
+    assert line._native_control.deadline == 0
+    line.service(False, [], 80)
+    assert calls == ['poll', 'poll']
+    assert line._native_control.deadline == float('inf')
+
+
+def test_all_reference_signalling_timer_families_are_published(port):
+    line, _, session = port
+    assert session.signalling_deadline() == float('inf')
+    session._invite_deadline = 80
+    session._invite_sent_at = 20
+    session._retransmit_after = .5
+    session._invite = b'scripted'
+    session.state = 'inviting'
+    assert line._native_control.deadline == 20.5
+    session.state = 'trying'
+    assert line._native_control.deadline == 80
+    session.state = 'connected'
+    session.direction = 'inbound'
+    session._incoming_final_at = 90
+    session._incoming_next_response_at = 91
+    assert line._native_control.deadline == 91
+    session._incoming_next_response_at = 130
+    assert line._native_control.deadline == 122
+    session._incoming_acked = True
+    assert line._native_control.deadline == float('inf')
+    session._media_update = dict(success=True, acked=False, started=100, next=102)
+    assert line._native_control.deadline == 102
+    session._media_update = dict(success=True, acked=False, started=100, next=150)
+    assert line._native_control.deadline == 132
+    session._media_update = None
+    session._cancelled_invites = {'retired': (170, b'', ('127.0.0.1', 9))}
+    assert line._native_control.deadline == 170
+    session._register_refresh_at = 160
+    assert line._native_control.deadline == 160
+    session.state = 'idle'

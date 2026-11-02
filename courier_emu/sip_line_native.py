@@ -17,7 +17,8 @@ from .media_native import NativeSipSession, SIP_STATES
 
 
 class Control(c.Structure):
-    _fields_ = [(name, c.c_int64) for name in ('state', 'inbound', 'last_status')]
+    _fields_ = [(name, c.c_int64) for name in ('state', 'inbound', 'last_status', 'signal_fd')]
+    _fields_ += [('deadline', c.c_double)]
 
 
 class PortState(c.Structure):
@@ -106,17 +107,24 @@ class NativeSipLine(SipLine):
         line._native_media_state = lib.courier_line_media_state(line._native_media_handle).contents
         line._native_finalizer = weakref.finalize(line, lib.courier_sip_port_destroy, handle)
         line.__class__ = cls
+        line.sip._native_port_view = weakref.ref(line)
         line._sync_control()
         return line
 
     def _sync_control(self):
+        if not self._native_finalizer.alive:
+            raise RuntimeError('native subscriber port is closed')
         self._native_control.state = SIP_STATES.index(self.sip.state)
         self._native_control.inbound = self.sip.direction == 'inbound'
         self._native_control.last_status = self.sip.last_status
+        self._native_control.signal_fd = self.sip.socket.fileno()
+        self._native_control.deadline = self.sip.signalling_deadline()
         getattr(self._native_lib, 'courier_sip_port_from')(
             self._native_port, (self.sip.incoming_from or '').encode())
 
     def control_event(self, event):
+        if not self._native_finalizer.alive:
+            raise RuntimeError('native subscriber port is closed')
         if event == 1:
             self.sip.poll()
         elif event == 2:
@@ -178,6 +186,8 @@ class NativeSipLine(SipLine):
 
     @_pending.setter
     def _pending(self, values):
+        if not self._native_finalizer.alive:
+            raise RuntimeError('native subscriber port is closed')
         self._native_lib.courier_line_media_reset(self._native_media_handle)
         data = pcm(values)
         self._native_lib.courier_line_media_append(self._native_media_handle, data, len(data))

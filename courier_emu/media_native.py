@@ -281,6 +281,35 @@ class NativeSipSession(SipSession):
                 media.remote(value)
             elif name == 'error' and not value:
                 media.set('error', 0)
+            if name in ('state', 'direction', 'last_status', 'incoming_from',
+                        '_invite_deadline', '_incoming_final_at', '_incoming_next_response_at',
+                        '_incoming_acked', '_invite_sent_at', '_retransmit_after',
+                        '_register_refresh_at', '_media_update', '_cancelled_invites', '_invite'):
+                self._publish_port_control()
+
+    def _publish_port_control(self):
+        view = self.__dict__.get('_native_port_view')
+        line = view() if view is not None else None
+        if line is not None and line._native_finalizer.alive:
+            line._sync_control()
+
+    def signalling_deadline(self):
+        """Earliest reference SIP timer that requires the control plane."""
+        deadlines = []
+        update = self._media_update
+        if self.state == 'connected' and update and update['success'] and not update['acked']:
+            deadlines.extend((update['started'] + 32, update['next']))
+        if self.direction == 'inbound' and self.state == 'connected' and not self._incoming_acked:
+            deadlines.extend((self._incoming_final_at + 32, self._incoming_next_response_at))
+        deadlines.extend(value[0] for value in self._cancelled_invites.values())
+        if self.state in ('inviting', 'trying'):
+            deadlines.append(self._invite_deadline)
+        refresh = getattr(self, '_register_refresh_at', None)
+        if refresh is not None:
+            deadlines.append(refresh)
+        if self.state == 'inviting' and self._invite:
+            deadlines.append(self._invite_sent_at + self._retransmit_after)
+        return min(deadlines, default=math.inf)
 
     def enable_media_clock(self, *, buffer_samples=480):
         self._native_media.enable_clock(buffer_samples)
@@ -311,7 +340,10 @@ class NativeSipSession(SipSession):
 
     def poll(self):
         with self._native_media.control():
-            return super().poll()
+            try:
+                return super().poll()
+            finally:
+                self._publish_port_control()
 
     def start_call(self, number):
         with self._native_media.control():
