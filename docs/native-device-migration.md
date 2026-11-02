@@ -110,3 +110,27 @@ duplicate/rate validation, and bypass of Python peer callbacks. Combined
 with RTP, analog and streaming-converter checks, 44 checks pass. SIP dialog
 supervision, board/codec integration and runtime activation remain pending.
 No SIP dialogs, modem calls or performance measurements were performed.
+
+## Native subscriber-loop supervision
+
+`native/sip_port.hpp` owns the subscriber port's SIP-to-loop and loop-to-SIP
+state transitions, incoming-call flag, placed/answered counts and cooperative
+frame clock/lateness accounting. Its frame continuation yields explicit
+control events for SIP polling, routing, ringing, answering, rejection and
+hangup. After each event the same frame/subframe resumes without replaying
+PCM. Signalling parsers and transactions remain on the Python control plane.
+The native exchange/transport provider supplies connected audio throughout.
+
+Eight scripted checks cover decoded-digit routing, busy and failed outcomes,
+connected audio, remote release, incoming answer/local hangup, busy rejection,
+cancellation, empty-number routing and cooperative clock/lateness behavior.
+Reference event order, waveforms, transmit queues, exchange status and port
+counters match exactly. The empty hotline retains the reference behavior:
+reorder locally without creating a SIP request or incrementing placed calls.
+Combined with native media/device/resampler checks, 52 checks pass.
+
+These scripts use fake signalling objects and local UDP sockets only. There
+were no SIP dialogs, firmware modem calls, physical calls or performance
+measurements. Runtime adapters, codec/board integration and replacing the
+remaining per-batch worker snapshots remain outstanding before final call
+and measurement validation.

@@ -4,6 +4,7 @@
 #include "resample.hpp"
 #include "stream_resample.hpp"
 #include "line_media.hpp"
+#include "sip_port.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -3294,5 +3295,35 @@ size_t courier_line_media_underruns(void *handle,uint64_t *out,size_t capacity) 
     const size_t count=log.size(),n=std::min(count,capacity);
     if(out)for(size_t k=0;k<n;++k){out[2*k]=log[k].first;out[2*k+1]=log[k].second;}
     return count;
+}
+}
+
+extern "C" {
+void *courier_sip_port_create(void *exchange,void *media) {
+    try { return new courier::analog::SipPort(*static_cast<courier::analog::Exchange *>(exchange),
+                                             *static_cast<courier::media::Media *>(media)); }
+    catch (...) { return nullptr; }
+}
+void courier_sip_port_destroy(void *handle) {delete static_cast<courier::analog::SipPort *>(handle);}
+void *courier_sip_port_state(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->s;}
+void *courier_sip_port_control(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->control;}
+void *courier_sip_port_media(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->media;}
+void courier_sip_port_from(void *handle,const char *number) {
+    static_cast<courier::analog::SipPort *>(handle)->incoming_from=number?number:"";
+}
+int courier_sip_port_begin(void *handle,int hook,const int32_t *data,size_t size,int64_t count,double now,int realtime) {
+    try {static_cast<courier::analog::SipPort *>(handle)->begin(bool(hook),data,size,count,now,bool(realtime));return 0;}
+    catch (...) {return -1;}
+}
+int courier_sip_port_resume(void *handle) {
+    try {return static_cast<courier::analog::SipPort *>(handle)->resume();}
+    catch (...) {return -1;}
+}
+void courier_sip_port_ack(void *handle,int route) {
+    auto &port=*static_cast<courier::analog::SipPort *>(handle);
+    if(route)port.route_result();else port.acknowledge();
+}
+size_t courier_sip_port_layout(int control) {
+    return control?sizeof(courier::analog::SipControl):sizeof(courier::analog::PortState);
 }
 }
