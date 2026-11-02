@@ -3478,7 +3478,7 @@ class CourierMachine:
                     state.scheduled = scheduled
                     state.dsp_active = dsp_active
                     state.exchange_present = bridge.exchange is not None
-                    state.exchange_ticks = bridge._exchange_instructions
+                    state.exchange_ticks = 0 if scheduled == 3 else bridge._exchange_instructions
                     state.console_present = self.console is not None
                     state.console_owed = self._console_owed
                     state.instruction_base = instruction_base
@@ -3501,12 +3501,15 @@ class CourierMachine:
                     state.stack_depth = len(stack)
                     for index, vector in enumerate(stack):
                         state.stack[index] = vector
-                    state.bridge_instructions = bridge._instructions
-                    state.probe_last = getattr(bridge, "_probe_clock_last", 0)
+                    if scheduled != 3:
+                        state.bridge_instructions = bridge._instructions
+                        state.probe_last = getattr(bridge, "_probe_clock_last", 0)
                     state.codec_present = bridge.codec is not None
-                    state.codec_instructions = bridge._codec_instructions
+                    if scheduled != 3:
+                        state.codec_instructions = bridge._codec_instructions
                     state.line_frame_instructions = LINE_FRAME_INSTRUCTIONS
-                    state.x86_ticks = bridge._x86_ticks
+                    if scheduled != 3:
+                        state.x86_ticks = bridge._x86_ticks
                     state.batch = bridge.batch
                 latch = self.panel.latches.get(0x14)
                 state.panel_latch = NO_LATCH if latch is None else latch
@@ -3536,8 +3539,9 @@ class CourierMachine:
                         state.exchange_codec_last = bridge._exchange_codec_last
                         state.exchange_idle = bridge._exchange_idle
                     if scheduled in (2, 3):
-                        state.debt, state.cpi = bridge._dsp_cycle_debt, bridge._dsp_cpi
-                        state.cycles_per_x86 = bridge.dsp_cycles_per_x86
+                        if scheduled == 2:
+                            state.debt, state.cpi = bridge._dsp_cycle_debt, bridge._dsp_cpi
+                            state.cycles_per_x86 = bridge.dsp_cycles_per_x86
                         state.boot_rom = 1
                         state.mailbox_writes = bridge._dsp_mailbox_writes
                         state.overlay_active = bridge._call_overlay_active
@@ -3763,7 +3767,8 @@ class CourierMachine:
                     self._console_owed = state.console_owed
                     if state.pacer_period:
                         sip_pacer.next_check = state.pacer_next
-                    bridge._exchange_instructions = state.exchange_ticks
+                    if state.scheduled != 3:
+                        bridge._exchange_instructions = state.exchange_ticks
                     if not state.timer_model:
                         # Comparison path: max-count deadlines bound this
                         # stretch. The native model already owns its clocks.
@@ -3771,11 +3776,13 @@ class CourierMachine:
                     if state.scheduled == 2:
                         bridge._exchange_codec_last = state.exchange_codec_last
                         bridge._exchange_idle = state.exchange_idle
-                bridge._instructions = state.bridge_instructions
+                if state.scheduled != 3:
+                    bridge._instructions = state.bridge_instructions
                 if state.scheduled != 3:
                     bridge._codec_instructions = state.codec_instructions
-                bridge._x86_ticks = state.x86_ticks
-                if state.scheduled != 1:
+                if state.scheduled != 3:
+                    bridge._x86_ticks = state.x86_ticks
+                if state.scheduled not in (1, 3):
                     bridge._dsp_cycle_debt = state.debt
                     bridge._dsp_cpi = state.cpi
                     bridge._dsp_mailbox_writes = state.mailbox_writes

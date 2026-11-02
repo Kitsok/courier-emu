@@ -68,6 +68,8 @@ class NativeCourierDspBridge(CourierDspBridge):
             if type(bridge.codec.codec) is SiliconDaa:
                 NativeSiliconDaa.adopt(bridge.codec.codec)
         owner = NativeBoardMedia(line, bridge.daa, bridge.batch)
+        for attribute, field in CLOCK_FIELDS.items():
+            setattr(owner.state, field, getattr(bridge, attribute, 0))
         if bridge.codec is not None:
             from .codec import CodecBringUp
             from .codec_native import NativeCodecBringUp
@@ -153,11 +155,18 @@ class NativeCourierDspBridge(CourierDspBridge):
         super().close()
 
 
+CLOCK_FIELDS = {
+    '_instructions': 'board_instructions', '_x86_ticks': 'x86_ticks',
+    '_exchange_instructions': 'exchange_ticks', '_probe_clock_last': 'probe_last',
+    '_dsp_cycle_debt': 'debt', '_dsp_cpi': 'cpi', 'dsp_cycles_per_x86': 'cycles_per_x86',
+}
+
 for _python, _native in {
     '_exchange_tx_index': 'tx_index', '_exchange_codec_last': 'codec_last', '_exchange_idle': 'idle',
     '_line_rx_peak': 'line_rx_peak', '_codec_in_peak': 'codec_in_peak',
     '_codec_handed_peak': 'handed_peak', '_codec_handed_at': 'handed_at',
     '_codec_handed_ever': 'handed_ever', '_codec_queue_peak': 'queue_peak', '_codec_replayed': 'replayed',
     '_codec_instructions': 'codec_instructions',
+    **CLOCK_FIELDS,
 }.items():
     setattr(NativeCourierDspBridge, _python, BoardField(_native))

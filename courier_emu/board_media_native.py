@@ -20,6 +20,8 @@ class BoardMediaState(c.Structure):
     _fields_ += [(name, c.c_uint64) for name in ('queue_input', 'clocked_input', 'replayed')]
     _fields_ += [('cushion_rate', c.c_double)]
     _fields_ += [('codec_instructions', c.c_int64)]
+    _fields_ += [(name, c.c_int64) for name in ('board_instructions', 'x86_ticks', 'exchange_ticks', 'probe_last')]
+    _fields_ += [(name, c.c_double) for name in ('debt', 'cpi', 'cycles_per_x86')]
 
 
 _LIBRARY = None

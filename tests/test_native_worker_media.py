@@ -29,10 +29,16 @@ def test_worker_keeps_complete_steady_frames_native_without_snapshots(pair):
     for device in cores:advance(device, 760, 2880000, 0x1200)
     bridge._instructions = 64;bridge._service_exchange()
     poll, run = worker(native, cores[1])
+    poll.state.debt = 12345
+    poll.state.x86_ticks = poll.state.exchange_ticks = 9000
+    poll.state.bridge_instructions = 88888
     poll.state.line_buffer_count = 999
     poll.state.line_buffer[0] = 321
     assert run(64) == 1
     assert poll.state.dsp_batches == 1
+    assert native.state.board_instructions == 64
+    assert poll.state.debt == 12345
+    assert poll.state.bridge_instructions == 88888
     assert poll.state.native_media_services == 1
     assert poll.state.native_media_yields == 0
     assert poll.state.line_calls == 0
@@ -71,8 +77,8 @@ def test_sip_readiness_yields_before_dsp_and_resumes_exactly_one_frame(pair, mon
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
         peer.sendto(b'ready', session.socket.getsockname())
         assert run(64) == 6
-        assert poll.state.x86_ticks == 64
-        assert poll.state.exchange_ticks == 0
+        assert native.state.x86_ticks == 64
+        assert native.state.exchange_ticks == 0
         assert poll.state.timer_poll_owed == 64
         assert poll.state.dsp_batches == 0
         assert native.state.frames == 0

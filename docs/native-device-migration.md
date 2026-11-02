@@ -311,3 +311,23 @@ performance measurements remain deferred until the migration is finalized.
 Validation: 58 master/device/worker/bridge checks pass; five legacy firmware
 call workloads are explicitly deselected. No modem calls or performance
 measurements were performed for this milestone.
+
+## Shared native DSP scheduling context
+
+The persistent native board now owns the bridge instruction count, exchange
+service remainder, accumulated DSP ticks, probe-clock marker, DSP cycle debt,
+cycle estimate and CPU-to-DSP ratio. Native bridge attributes are live views
+of those fields. Worker mode 3 operates on the same storage and no longer
+seeds or takes back these fields through its legacy snapshot; comparison
+modes keep their existing snapshots. DSP execution updates the shared debt
+and cycle estimate directly, including service continuation after a media
+yield. Machine interrupt and console scheduling fields still use the existing
+boundary and remain a separate integration task.
+
+A worker script seeds deliberately wrong legacy clock/debt values and proves
+native service ignores them. The boot regression compares the entire shared
+board state as well as CPU, interrupt, DSP, codec and media results through a
+DAA transition. All 43 selected worker/bridge/boot checks pass, with five
+legacy call workloads deselected. No modem calls or performance measurements
+were performed. A compiler error from a shadowed cycle-estimate local was
+corrected before these checks passed.

@@ -2494,15 +2494,17 @@ constexpr unsigned WORKER_INT0 = 12;
 // the uncompleted tail back to Python; the batch must never be run twice.
 int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
 {
+    double &debt=s.scheduled==3?s.native_media->s.debt:s.debt;
+    double &cpi=s.scheduled==3?s.native_media->s.cpi:s.cpi;
     uint64_t writes;
     bool tdm;
     ++s.dsp_batches;
     try {
-        if (s.debt < 1) {
+        if (debt < 1) {
             writes = core->io_port_stat(uint16_t(s.host_port)).writes;
             tdm = core->call_tdm_active();
         } else {
-            const int64_t owed = int64_t(s.debt);
+            const int64_t owed = int64_t(debt);
             const uint64_t before_instructions = core->instruction_count();
             const uint64_t before_cycles = core->cycle_count();
             core->run_cycles(uint64_t(owed > 1 ? owed : 1));
@@ -2510,10 +2512,10 @@ int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
             const uint64_t cycles = core->cycle_count() - before_cycles;
             writes = core->io_port_stat(uint16_t(s.host_port)).writes;
             tdm = core->call_tdm_active();
-            s.debt -= double(cycles);
+            debt -= double(cycles);
             if (ran > 0) {
-                const double cpi = double(cycles) / double(ran);
-                s.cpi = 0.9 * s.cpi + 0.1 * (cpi > 1.0 ? cpi : 1.0);
+                const double measured = double(cycles) / double(ran);
+                cpi = 0.9 * cpi + 0.1 * (measured > 1.0 ? measured : 1.0);
             }
         }
     } catch (const std::exception &exception) {
@@ -2712,11 +2714,18 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     }
     s.io_cursor = cpu.io_event_count;
     C5xCore *core = static_cast<C5xCore *>(s.core);
+    int64_t &clock_bridge_instructions=s.scheduled==3 && s.native_media?s.native_media->s.board_instructions:s.bridge_instructions;
+    int64_t &clock_x86_ticks=s.scheduled==3 && s.native_media?s.native_media->s.x86_ticks:s.x86_ticks;
+    int64_t &clock_exchange_ticks=s.scheduled==3 && s.native_media?s.native_media->s.exchange_ticks:s.exchange_ticks;
+    int64_t &clock_probe_last=s.scheduled==3 && s.native_media?s.native_media->s.probe_last:s.probe_last;
+    double &clock_debt=s.scheduled==3 && s.native_media?s.native_media->s.debt:s.debt;
+    double &clock_cpi=s.scheduled==3 && s.native_media?s.native_media->s.cpi:s.cpi;
+    double &clock_cycles_per_x86=s.scheduled==3 && s.native_media?s.native_media->s.cycles_per_x86:s.cycles_per_x86;
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
         if(s.scheduled==3 && !s.native_media){s.armed=0;return 0;}
-        const bool exchange_due = s.exchange_present && s.exchange_ticks + elapsed >= s.batch;
-        const bool dsp_due = s.dsp_active && s.x86_ticks + elapsed >= s.batch;
+        const bool exchange_due = s.exchange_present && clock_exchange_ticks + elapsed >= s.batch;
+        const bool dsp_due = s.dsp_active && clock_x86_ticks + elapsed >= s.batch;
         const bool console_due = s.console_present && s.console_owed - elapsed <= 0;
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
@@ -2724,7 +2733,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if ((s.codec_present && (s.scheduled==3?s.native_media->s.codec_instructions:s.codec_instructions) + elapsed >= s.line_frame_instructions
              && !(s.scheduled==3 && s.native_media->codec))
             || (s.scheduled == 1 && (exchange_due || dsp_due))
-            || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
+            || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
             s.armed = 0; return 0;
         }
         if (console_due) {
@@ -2833,13 +2842,13 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         s.dirty = 1;
         s.last_service = uint64_t(total);
-        s.bridge_instructions += elapsed;
+        clock_bridge_instructions += elapsed;
         if (s.codec_present) {
             if(s.scheduled==3)s.native_media->s.codec_instructions+=elapsed;
             else s.codec_instructions+=elapsed;
         }
-        if (s.exchange_present) s.exchange_ticks += elapsed;
-        if (s.dsp_active) s.x86_ticks += elapsed;
+        if (s.exchange_present) clock_exchange_ticks += elapsed;
+        if (s.dsp_active) clock_x86_ticks += elapsed;
         if (s.console_present) s.console_owed -= elapsed;
         if (console_due) {
             s.console_owed += int64_t(s.console_poll_period);
@@ -2850,11 +2859,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             ++s.native_pacer_checks;
         }
         if (exchange_due) {
-            s.exchange_ticks -= s.batch;
+            clock_exchange_ticks -= s.batch;
             if(s.scheduled==3) {
                 try {
                     const uint64_t before=worker_media_guard(*s.native_media);
-                    s.native_media->begin(*core,s.bridge_instructions);
+                    s.native_media->begin(*core,clock_bridge_instructions);
                     const int event=s.native_media->resume(*core);
                     ++s.native_media_services;
                     if(event || before!=worker_media_guard(*s.native_media)) {
@@ -2893,8 +2902,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         if (dsp_due) {
-            s.debt += double(s.x86_ticks) * s.cycles_per_x86;
-            s.x86_ticks = 0;
+            clock_debt += double(clock_x86_ticks) * clock_cycles_per_x86;
+            clock_x86_ticks = 0;
             if (const int code = worker_step(s, core, elapsed)) {
                 ++s.polls;
                 return code;
@@ -2950,7 +2959,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         return 1;
     }
     // clock_x86_fast's tests that a service can change.
-    if (s.x86_ticks + elapsed < s.batch
+    if (clock_x86_ticks + elapsed < s.batch
         || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)) {
         s.armed = 0; return 0;
     }
@@ -2959,7 +2968,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     const bool line_skip = 0 < fresh && fresh < s.line_min_samples
         && s.line_skipped < s.line_max_skip;
     if ((!line_skip && (fresh <= 0 || !s.timed))
-        || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
+        || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
         s.armed = 0; return 0;
     }
     // fast_service's frame edge, decided now: nothing it reads moves in the
@@ -3071,11 +3080,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // interpreter_service's bookkeeping, then clock_x86_fast's commit.
     s.dirty = 1;
     s.last_service = uint64_t(total);
-    s.bridge_instructions += elapsed;
+    clock_bridge_instructions += elapsed;
     if (s.codec_present) s.codec_instructions += elapsed;
-    s.x86_ticks += elapsed;
-    s.debt += double(s.x86_ticks) * s.cycles_per_x86;
-    s.x86_ticks = 0;
+    clock_x86_ticks += elapsed;
+    clock_debt += double(clock_x86_ticks) * clock_cycles_per_x86;
+    clock_x86_ticks = 0;
     if (line_skip) s.line_skipped += 1;
     else {
         timed->commit();

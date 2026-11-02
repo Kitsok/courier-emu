@@ -14,6 +14,8 @@ struct BoardMediaState {
     uint64_t queue_input=1,clocked_input=0,replayed=0;
     double cushion_rate=0;
     int64_t codec_instructions=0;
+    int64_t board_instructions=0,x86_ticks=0,exchange_ticks=0,probe_last=0;
+    double debt=0,cpi=1,cycles_per_x86=0;
 };
 struct BoardMedia {
     SipPort &port;

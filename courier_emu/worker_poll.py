@@ -13,7 +13,9 @@ batches and resamples between complete frames, yielding before frame work or
 for the tail of a service that generated a DSP reply or loader transition.
 Scheduled mode 3 calls the persistent native board/media owner directly,
 yielding for signalling and DAA predicate changes before the DSP/timer tail.
-Its media state is authoritative and is never copied through this snapshot.
+Its media and DSP scheduling state is authoritative and is never copied
+through this snapshot. Machine interrupt/console fields retain their existing
+snapshot boundary.
 Scheduled modes can own board ticks and deferred INT0/INT1 delivery; timer
 counter expiries and Python-owned device work still bound the native run.
 """
@@ -141,11 +143,16 @@ class WorkerPoll:
                     machine.frame_instructions, machine._rom_tick,
                     machine._int0_in_service, len(stack))
         s.stack[:len(stack)] = stack
-        _BRIDGE_PACK(s, _BRIDGE_OFFSET, bridge._instructions,
+        if scheduled == 3:
+            s.codec_present = bridge.codec is not None
+            s.line_frame_instructions, s.batch = line_period, bridge.batch
+        else:
+            _BRIDGE_PACK(s, _BRIDGE_OFFSET, bridge._instructions,
                      getattr(bridge, '_probe_clock_last', 0), bridge.codec is not None,
                      bridge._codec_instructions, line_period, bridge._x86_ticks, bridge.batch)
         _SCHEDULE_PACK(s, _SCHEDULE_OFFSET, scheduled, dsp_active, bridge.exchange is not None,
-                       bridge._exchange_instructions, machine.console is not None, machine._console_owed)
+                       0 if scheduled == 3 else bridge._exchange_instructions,
+                       machine.console is not None, machine._console_owed)
         _TICK_PACK(s, _TICK_OFFSET, tick_period, machine._last_tick,
                    machine.hardware_map.tick_vector, machine.ticks,
                    machine.timers.controller.enabled('int1'),
