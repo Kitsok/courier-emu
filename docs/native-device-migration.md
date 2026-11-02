@@ -238,3 +238,33 @@ edge. Together with native/codec regressions, 83 checks pass. No SIP dialogs,
 modem calls or performance measurements were performed. Native worker service
 and authoritative remaining board/device I/O integration are still pending;
 the active goal is not yet achieved.
+
+## Native worker frame integration
+
+Scheduled mode 3 invokes the persistent native media owner directly, including
+complete frames and mixed-rate transmit batches. Its pacing check reads the
+live native frame clock and buffer. No PCM buffers, resampler history or media
+counters are copied through the legacy worker snapshot. Worker clocks and
+remaining board/device service still require further migration.
+
+SIP events and DAA predicate changes yield before the DSP/interrupt tail.
+Python completes the pending frame, advances the remaining bridge work with
+zero additional clock time, then finishes the existing interrupt tail. Media
+uses return codes 6/7: code 4 is reserved by the x86 engine for an interrupt
+taken inside its poll. Reusing 4 originally allowed guest execution to continue
+past an incomplete media service; the boot regression exposed the resulting
+timer divergence. Separate codes restore exact resumption.
+
+Five controlled worker scripts validate complete native frames, mixed-rate
+batches, SIP readiness handoff, DAA qualification edges and live pacing. A
+boot-only regression compares Python/native workers for 8 million guest
+instructions with an injected DAA state and exchange phase change, reaching
+the actual resumption path. CPU registers/memory, I/O counts, timer results,
+DSP state, media state, DAA/exchange state and PCM queues match exactly.
+No AT commands, SIP dialogs or modem calls are used. Runtime stays opt-in
+pending the remaining board/device state and service migration.
+
+The combined native component, worker, boot and codec checks pass: 120 passed,
+with five legacy firmware workloads explicitly deselected to defer dial/call
+validation until the migration is complete. No performance measurements or
+physical calls were made for this milestone.

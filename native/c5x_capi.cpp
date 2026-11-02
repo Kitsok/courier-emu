@@ -2471,8 +2471,19 @@ struct WorkerPollState {
     uint64_t console_poll_period;
     double pacer_origin;
     uint64_t pacer_next, pacer_period, native_console_polls, native_pacer_checks;
+    courier::analog::BoardMedia *native_media;
+    uint64_t native_media_services,native_media_yields;
     char error[512];
 };
+
+// A line frame can change the predicates that made the DSP/ASIC tail static.
+// Yield before that tail at those edges; ordinary streaming frames stay native.
+uint64_t worker_media_guard(const courier::analog::BoardMedia &board) {
+    const auto *daa=board.daa;
+    return (!board.deferred_rx.empty()?1:0) | (daa?
+        (uint64_t(bool(daa->off_hook))<<1) | (uint64_t(daa->operation)<<2)
+        | (uint64_t(daa->line_state)<<6) | (uint64_t(daa->qualified_samples>=4000)<<9):0);
+}
 
 constexpr uint32_t WORKER_IF = 0x0200;
 constexpr unsigned WORKER_INT0 = 12;
@@ -2701,6 +2712,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     C5xCore *core = static_cast<C5xCore *>(s.core);
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
+        if(s.scheduled==3 && !s.native_media){s.armed=0;return 0;}
         const bool exchange_due = s.exchange_present && s.exchange_ticks + elapsed >= s.batch;
         const bool dsp_due = s.dsp_active && s.x86_ticks + elapsed >= s.batch;
         const bool console_due = s.console_present && s.console_owed - elapsed <= 0;
@@ -2726,7 +2738,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             const double wall = double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
             // Same interpolation and pre-DSP service order as SipLine and
             // DeadlinePacer. Full media frames still return to Python.
-            const double deadline = s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
+            const auto *media=s.scheduled==3?s.native_media:nullptr;
+            const double deadline = media
+                ? (media->port.s.clock_started ? media->port.s.next_frame_at-media->port.s.frame_duration
+                    + double(media->line_buffer.size())/8000 : wall)
+                : s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
             if (deadline > wall) { s.armed = 0; return 0; }
         }
         bool frame_edge = false;
@@ -2781,7 +2797,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         const int64_t start = s.tx_index;
         bool converted = false;
         int64_t idle = s.exchange_idle;
-        if (exchange_due) {
+        if (exchange_due && s.scheduled!=3) {
             if (produced == s.exchange_codec_last) {
                 idle += s.batch;
                 if (idle >= s.line_frame_instructions) { s.armed = 0; return 0; }
@@ -2829,8 +2845,26 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         if (exchange_due) {
             s.exchange_ticks -= s.batch;
-            s.exchange_codec_last = produced;
-            s.exchange_idle = idle;
+            if(s.scheduled==3) {
+                try {
+                    const uint64_t before=worker_media_guard(*s.native_media);
+                    s.native_media->begin(*core,s.bridge_instructions);
+                    const int event=s.native_media->resume(*core);
+                    ++s.native_media_services;
+                    if(event || before!=worker_media_guard(*s.native_media)) {
+                        s.resume_elapsed=elapsed;s.armed=0;
+                        // Code 4 is reserved by the x86 engine for an IRQ
+                        // taken inside a poll. Media must leave the engine.
+                        ++s.native_media_yields;++s.polls;return 6;
+                    }
+                } catch(const std::exception &exception) {
+                    copy_error(s.error,sizeof s.error,exception.what());
+                    s.resume_elapsed=elapsed;s.armed=0;++s.polls;return 7;
+                }
+            } else {
+                s.exchange_codec_last = produced;
+                s.exchange_idle = idle;
+            }
         }
         if (converted) {
             timed->commit();

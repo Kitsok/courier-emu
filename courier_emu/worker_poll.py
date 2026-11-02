@@ -11,6 +11,9 @@ here, not the Python attributes, are the live ones.
 Scheduled mode 1 advances clocks only. Mode 2 also runs stable exchange DSP
 batches and resamples between complete frames, yielding before frame work or
 for the tail of a service that generated a DSP reply or loader transition.
+Scheduled mode 3 calls the persistent native board/media owner directly,
+yielding for signalling and DAA predicate changes before the DSP/timer tail.
+Its media state is authoritative and is never copied through this snapshot.
 Scheduled modes can own board ticks and deferred INT0/INT1 delivery; timer
 counter expiries and Python-owned device work still bound the native run.
 """
@@ -92,6 +95,8 @@ class WorkerPollState(ctypes.Structure):
         ("console_fd", I64), ("console_poll_period", U64),
         ("pacer_origin", F64), ("pacer_next", U64), ("pacer_period", U64),
         ("native_console_polls", U64), ("native_pacer_checks", U64),
+        ("native_media", ctypes.c_void_p),
+        ("native_media_services", U64), ("native_media_yields", U64),
         ("error", ctypes.c_char * 512),
     ]
 

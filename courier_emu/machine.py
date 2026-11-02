@@ -3396,12 +3396,18 @@ class CourierMachine:
                         and os.environ.get("COURIER_NATIVE_EXCHANGE", "1") != "0"
                         and bridge.fast_clock_static(exchange=True)):
                     scheduled = 2
+                media_owner = getattr(bridge, '_native_media_owner', None)
+                if (scheduled and media_owner is not None and bridge.batch >= interpreter_period
+                        and os.environ.get('COURIER_NATIVE_EXCHANGE', '1') != '0'
+                        and (not dsp_active or bridge.fast_clock_static(exchange=True))):
+                    scheduled = 3
+                state.native_media = media_owner.handle if scheduled == 3 else None
                 console_fd = None
-                if (scheduled == 2 and native_idle_checks
+                if (scheduled in (2, 3) and native_idle_checks
                         and isinstance(self.console, SerialConsole)):
                     console_fd = self.console.native_idle_poll_fd()
                 native_pacer = bool(
-                    scheduled == 2 and native_idle_checks and sip_pacer is not None
+                    scheduled in (2, 3) and native_idle_checks and sip_pacer is not None
                     and native_monotonic
                     and isinstance(sip_pacer.clock, BuiltinFunctionType)
                     and sip_pacer.clock.__module__ == 'time'
@@ -3528,6 +3534,7 @@ class CourierMachine:
                         state.tx_consumed = state.resampled = 0
                         state.exchange_codec_last = bridge._exchange_codec_last
                         state.exchange_idle = bridge._exchange_idle
+                    if scheduled in (2, 3):
                         state.debt, state.cpi = bridge._dsp_cycle_debt, bridge._dsp_cpi
                         state.cycles_per_x86 = bridge.dsp_cycles_per_x86
                         state.boot_rom = 1
@@ -3791,6 +3798,17 @@ class CourierMachine:
                         take_back_frames(bridge)
 
             def resume(_uc: Any, _total: int, code: int) -> None:
+                if code == 7:
+                    raise RuntimeError('native media service failed: ' + state.error.decode('utf-8', 'replace'))
+                if code == 6:
+                    # The exchange and clocks were committed before the DSP
+                    # and timer/IRQ tail. Finish this frame, then run exactly
+                    # that tail without advancing the board clocks again.
+                    bridge._native_media_owner.resume(bridge.core)
+                    bridge.clock_x86(0)
+                    fast_service_rest(_uc, state.resume_elapsed)
+                    worker_arm[0] = True
+                    return
                 # The native poll did the service up to and including the DSP
                 # step; this is what fast_service does from there.
                 if code == 3:
@@ -4216,7 +4234,9 @@ class CourierMachine:
                       "native_timer_polls": worker_poll.state.native_timer_polls,
                       "native_timer_irqs": worker_poll.state.native_timer_irqs,
                       "native_console_polls": worker_poll.state.native_console_polls,
-                      "native_pacer_checks": worker_poll.state.native_pacer_checks}
+                      "native_pacer_checks": worker_poll.state.native_pacer_checks,
+                      "native_media_services": worker_poll.state.native_media_services,
+                      "native_media_yields": worker_poll.state.native_media_yields}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

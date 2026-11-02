@@ -87,6 +87,9 @@ class NativeBoardMedia:
     def service(self, core, instructions):
         if self._lib.courier_board_media_begin(self.handle, core.handle, instructions):
             raise RuntimeError('native codec service could not begin')
+        self.resume(core)
+
+    def resume(self, core):
         while True:
             event = self._lib.courier_board_media_resume(self.handle, core.handle)
             if not event:
