@@ -372,3 +372,162 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
     assert slow.uc.memory == fast.uc.memory
     assert slow.uc.regs == fast.uc.regs
     assert results[0] == results[1]
+
+
+@pytest.mark.parametrize('event', ['input', 'eof', 'badfd'])
+def test_native_empty_console_poll_preserves_phase_and_yields_for_events(event):
+    import socket
+    poll, run = scheduled()
+    s = poll.state
+    s.dsp_active = s.exchange_present = 0
+    s.console_present = 1
+    s.console_owed = 1024
+    s.console_poll_period = 8192
+    peer, worker = socket.socketpair()
+    try:
+        s.console_fd = worker.fileno()
+        assert run(1024) == 1
+        assert s.console_owed == 8192
+        assert s.native_console_polls == 1
+        for now in range(2048, 9216, 1024):
+            assert run(now) == 1
+        if event == 'input':
+            peer.sendall(b'AT\r')
+        elif event == 'eof':
+            peer.close()
+        else:
+            worker.close()
+        before = (s.last_service, s.console_owed, s.native_console_polls)
+        assert run(9216) == 0
+        assert (s.last_service, s.console_owed, s.native_console_polls) == before
+        if event == 'input':
+            assert worker.recv(16) == b'AT\r'  # Readiness never consumes input.
+    finally:
+        peer.close()
+        worker.close()
+
+
+@pytest.mark.parametrize('buffered,future', [(0, False), (0, True), (8000000, True)])
+def test_native_pacer_only_commits_checks_without_positive_lead(buffered, future):
+    import time
+    poll, run = scheduled()
+    s = poll.state
+    s.dsp_active = s.exchange_present = 0
+    s.line_rate = 8000
+    s.line_buffer_count = buffered
+    s.pacer_origin = time.monotonic() + (60 if future and not buffered else -60)
+    s.pacer_next = s.pacer_period = 1024
+    if future:
+        assert run(1024) == 0
+        assert s.last_service == s.native_pacer_checks == 0
+        assert s.pacer_next == 1024
+    else:
+        assert run(1024) == 1
+        assert s.native_pacer_checks == 1 and s.pacer_next == 2048
+
+
+def test_firmware_with_plain_console_matches_python_idle_checks(monkeypatch):
+    import socket
+    from courier_emu.codec import CodecBringUp, SiliconDaa
+    from courier_emu.console import SerialConsole
+    from courier_emu.daa import CourierDaa
+    from courier_emu.exchange import LineExchange
+    from courier_emu.images import load_image
+    from courier_emu.machine import CourierMachine
+    from courier_emu.nvram import CourierNvram
+    from courier_emu.profiles import ROOT, ANALOG403_IMAGE
+    from courier_emu.sip import SipConfig, SipSession
+
+    machines, results = [], []
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sink:
+        sink.bind(('127.0.0.1', 0))
+        for enabled in ('0', '1'):
+            monkeypatch.setenv('COURIER_NATIVE_IDLE_CHECKS', enabled)
+            terminal, transport = socket.socketpair()
+            console = SerialConsole(transport.detach())
+            sip = SipSession(SipConfig(server='127.0.0.1:'+str(sink.getsockname()[1]),
+                                       bind='127.0.0.1', advertise='127.0.0.1'))
+            try:
+                machine = CourierMachine(
+                    load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
+                    nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,
+                    daa=CourierDaa('quiet'), exchange=LineExchange(),
+                    codec=CodecBringUp(SiliconDaa(1)), dsp_batch=4096,
+                    tick_source='dsp', sip=sip, console=console,
+                    serial_input_schedule=[(15_000_000, b'ATDT100\r')])
+                # A deliberately past media origin exercises catch-up without
+                # making equivalence depend on host speed or sleep jitter.
+                machine.dsp_bridge._sip_line._next_frame_at = 0.0
+                result = machine.run(40_000_000).to_dict()
+                assert result['status'] == 'instruction-limit', (result['status'], result['error'], result['instructions'])
+                if enabled == '1':
+                    state = machine._worker_poll.state
+                    assert state.native_console_polls > 0
+                    assert state.native_pacer_checks > 0
+                machines.append(machine)
+                results.append(result)
+            finally:
+                console.close()
+                terminal.close()
+                sip.close()
+    a, b = machines
+    assert a.uc.memory == b.uc.memory
+    assert a.uc.regs == b.uc.regs
+    assert a.timers.status() == b.timers.status()
+    for key in ('serial_text', 'serial_input_remaining', 'ticks', 'timer_interrupts'):
+        assert results[0][key] == results[1][key]
+    for key in ('dsp', 'serial_port', 'exchange', 'line_service', 'core_codec'):
+        assert results[0]['dsp_bridge'][key] == results[1]['dsp_bridge'][key]
+    assert results[1]['dsp_bridge']['exchange']['dialed'] == '100'
+
+
+def test_shared_machine_service_phases_ignore_legacy_snapshots():
+    from courier_emu.service_native import ServiceState
+    poll, run = scheduled()
+    live = ServiceState(4096, 2048, 100, 200, 3)
+    s = poll.state
+    s.service_model = c.addressof(live)
+    s.console_present = 1
+    s.console_owed = 9999;s.timer_poll_owed = 8888
+    s.last_frame = 7777;s.last_tick = 6666;s.ticks = 5555
+    assert run(1024) == 1
+    assert (live.console_owed, live.timer_poll_owed) == (3072, 1024)
+    assert (live.last_frame, live.last_tick, live.ticks) == (100, 200, 3)
+    assert (s.console_owed, s.timer_poll_owed, s.last_frame, s.last_tick, s.ticks) == (
+        9999, 8888, 7777, 6666, 5555)
+
+
+def test_shared_interrupt_requests_and_eoi_ignore_snapshot_state():
+    from courier_emu.service_native import ServiceState
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    live = ServiceState()
+    live.timer_poll_owed = 1024
+    live.int0_pending, live.int1_pending = 12, 13
+    s.service_model = c.addressof(live)
+    s.pending_native = 1;s.tick_period = 0;s.int0_ok = 0
+    s.int0_pending = 31;s.int1_pending = 30;s.timer_pending = 8
+    assert run(1024, 0x302) == 1
+    assert (live.int0_pending, live.int1_pending, live.stack_depth, live.int0_in_service) == (0, 13, 1, 1)
+    assert live.stack[0] == 12
+    event = (c.c_uint8 * 8)(2, 255, 0, 0, 0, 128, 2, 0)
+    poll.cpu.mmio_events = c.addressof(event);poll.cpu.mmio_count = 1
+    assert run(2048, 0x102) == 1
+    assert live.stack_depth == live.int0_in_service == 0
+    assert live.int1_pending == 13 and event[7] == 1
+    assert (s.int0_pending, s.int1_pending, s.timer_pending) == (31, 30, 8)
+
+
+def test_shared_stack_retains_python_overflow_and_list_semantics():
+    from courier_emu.service_native import ServiceState, NativeInterruptStack
+    expected = list(range(70))
+    live = ServiceState();stack = NativeInterruptStack(live, expected)
+    assert list(stack) == expected and stack == expected
+    assert live.stack_depth == 64
+    assert stack.pop() == expected.pop()
+    stack.remove(12);expected.remove(12)
+    stack[2:5] = [31];expected[2:5] = [31]
+    while len(expected) > 60:
+        assert stack.pop() == expected.pop()
+    assert list(stack) == expected and not stack.overflow
+    assert list(live.stack[:live.stack_depth]) == expected

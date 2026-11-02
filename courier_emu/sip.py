@@ -84,6 +84,14 @@ CODECS = {
     "clearmode": (97, "CLEARMODE", linear_to_ulaw, ulaw_to_linear),
 }
 
+# Each G.711 law has only 256 inputs. Packet reception needs no per-sample
+# arithmetic or Python generator; map walks the payload through the bound
+# tuple lookup in C. Keep the scalar functions as the reference conversions.
+_DECODE_TABLES = {
+    codec: tuple(spec[3](value) for value in range(256))
+    for codec, spec in CODECS.items()
+}
+
 
 class RateConverter:
     """Streaming zero-order rate conversion for the exact 9.6/8 kHz ratio."""
@@ -273,6 +281,7 @@ class SipSession:
         self.config = config
         (self.payload_type, self.encoding,
          self._encode, self._decode) = CODECS[config.codec]
+        self._decode_octet = _DECODE_TABLES[config.codec].__getitem__
         self.server_host, self.server_port = _split_server(config.server)
         addresses = socket.getaddrinfo(
             self.server_host, self.server_port, socket.AF_INET, socket.SOCK_DGRAM
@@ -1061,6 +1070,23 @@ class SipSession:
                                   next=now + .5, interval=.5)
         self._send_response(response, 'tx re-INVITE response', source)
 
+    def _receive_rtp(self) -> None:
+        while True:
+            try:
+                packet, _source = self.rtp_socket.recvfrom(2_048)
+            except BlockingIOError:
+                break
+            if _source in self._retired_rtp_peers:
+                continue
+            if len(packet) < 12 or packet[1] & 0x7F != self.payload_type:
+                continue
+            if self.codewords:
+                self._rx_codewords.extend(packet[12:])
+            else:
+                self._rx_audio.extend(map(self._decode_octet, packet[12:]))
+            self.rtp_packets_received += 1
+            self.rtp_octets_received += len(packet) - 12
+
     def poll(self) -> None:
         if self.closed:
             return
@@ -1078,22 +1104,7 @@ class SipSession:
                 self._handle_response(data, source)
             else:
                 self._handle_request(data, source)
-        while True:
-            try:
-                packet, _source = self.rtp_socket.recvfrom(2_048)
-            except BlockingIOError:
-                break
-            if _source in self._retired_rtp_peers:
-                continue
-            if len(packet) < 12 or packet[1] & 0x7F != self.payload_type:
-                continue
-            if self.codewords:
-                self._rx_codewords.extend(packet[12:])
-            else:
-                self._rx_audio.extend(self._decode(value)
-                                      for value in packet[12:])
-            self.rtp_packets_received += 1
-            self.rtp_octets_received += len(packet) - 12
+        self._receive_rtp()
         now = time.monotonic()
         update = self._media_update
         if (self.state == 'connected' and update and update['success']

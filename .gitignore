@@ -90,3 +90,6 @@ tmp/
 
 # Local board parameters may contain dial-security credentials.
 artifacts/3453c-emulator-boot-20261003/private-parameters.sav
+
+# Original EEPROM versions retained by the ARQ-only migration.
+*.pre-arq-*.bak

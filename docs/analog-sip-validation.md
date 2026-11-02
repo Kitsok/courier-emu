@@ -19,12 +19,16 @@ the original timeout and three-ring answering.
 Running `ATS27=0&W` in the original firmware changes exactly byte 0x29 from
 0x30 to 0x00 and its checksum at 0x1ff from 0xbd to 0x8d. The
 original `idsdl403-lapm` fixture matched those firmware-written bytes exactly.
-The current fixture additionally changes S54 at byte 0x3c from 64 to 96,
+The fixture subsequently also changed S54 at byte 0x3c from 64 to 96,
 disabling 3429 baud while retaining lower symbol rates. Running
 `ATS27=0S54=96&W` in the original firmware produces those two settings and a
-checksum of 0xad at 0x1ff. The fixture preserves the remaining provisioning
-and is used only to create new settings; existing EEPROM files are never
-replaced. The raw `idsdl403` fixture remains available for historical diagnostic
+checksum of 0xad at 0x1ff. On 2026-11-02, error correction became required
+for normal use: the current fixture additionally selects &M5. Original
+firmware `AT&M5&W` changes byte 0x05 from 4 to 5 and the checksum from 0xad
+to 0xae. The current fixture matches those firmware-written bytes exactly.
+The launcher now backs up and migrates only the ARQ mode and checksum of
+valid existing EEPROMs; all other settings are preserved. These later
+defaults do not retroactively change the settings of the calls below. The raw `idsdl403` fixture remains available for historical diagnostic
 runs.
 
 ## Physical data tests

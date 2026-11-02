@@ -89,6 +89,18 @@ class SerialConsole:
         self.received += len(data)
         return data
 
+    def native_idle_poll_fd(self) -> int | None:
+        """Lend only the plain transport's no-work readiness check.
+
+        Subclasses can have signal/control work on every poll. Pending output
+        and lamp delivery also stay with Python. The native side never reads
+        this FD: input, EOF and errors all hand the original poll back.
+        """
+        if (type(self) is SerialConsole and not self.closed
+                and not self._pending and self.lamps_fd is None):
+            return self.fd
+        return None
+
     def write(self, value: int) -> None:
         """Queue one transmitted byte for the terminal."""
         self._pending.append(value & 0xFF)

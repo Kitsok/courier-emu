@@ -1,0 +1,270 @@
+{
+  "baseline": "60a6f2a",
+  "description": "10000 local 160-sample RTP packets per repetition, four repetitions per codec. Includes socket, poll, deque, and sample accumulation CPU time. Before and after ran sequentially; not a full-call throughput result.",
+  "datasets": {
+    "notebook_before": [
+      {
+        "codec": "pcmu",
+        "repeat": 0,
+        "cpu_seconds": 0.812564201,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 1,
+        "cpu_seconds": 0.881137492,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 2,
+        "cpu_seconds": 0.795860375,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 3,
+        "cpu_seconds": 0.7755110570000001,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 0,
+        "cpu_seconds": 0.7991849380000002,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 1,
+        "cpu_seconds": 0.7981366919999999,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 2,
+        "cpu_seconds": 0.8325440220000004,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 3,
+        "cpu_seconds": 0.7749221459999998,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      }
+    ],
+    "notebook_after": [
+      {
+        "codec": "pcmu",
+        "repeat": 0,
+        "cpu_seconds": 0.379964396,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 1,
+        "cpu_seconds": 0.39477906700000004,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 2,
+        "cpu_seconds": 0.390829907,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 3,
+        "cpu_seconds": 0.40253160899999996,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 0,
+        "cpu_seconds": 0.40992572699999985,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 1,
+        "cpu_seconds": 0.421094042,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 2,
+        "cpu_seconds": 0.4132155700000002,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 3,
+        "cpu_seconds": 0.3893455800000001,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      }
+    ],
+    "arm_before": [
+      {
+        "codec": "pcmu",
+        "repeat": 0,
+        "cpu_seconds": 6.936041271,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 1,
+        "cpu_seconds": 7.086754173,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 2,
+        "cpu_seconds": 7.243652754999999,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 3,
+        "cpu_seconds": 7.379411350999998,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 0,
+        "cpu_seconds": 7.113626017999998,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 1,
+        "cpu_seconds": 7.242758506000001,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 2,
+        "cpu_seconds": 7.265132262999998,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 3,
+        "cpu_seconds": 7.387232976,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      }
+    ],
+    "arm_after": [
+      {
+        "codec": "pcmu",
+        "repeat": 0,
+        "cpu_seconds": 3.176485655,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 1,
+        "cpu_seconds": 3.3037908609999995,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 2,
+        "cpu_seconds": 3.3274768229999996,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcmu",
+        "repeat": 3,
+        "cpu_seconds": 3.5228398159999994,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "19607bc2dcc1e32ed632037c1b469b6be402454f71bb72b0f367bbd176e43eb0"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 0,
+        "cpu_seconds": 3.3169715689999997,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 1,
+        "cpu_seconds": 3.2556051949999976,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 2,
+        "cpu_seconds": 3.2269256170000027,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      },
+      {
+        "codec": "pcma",
+        "repeat": 3,
+        "cpu_seconds": 3.332852826,
+        "packets": 10000,
+        "samples": 1600000,
+        "sha256": "af4858188f183c9f0180a44c394057d09b768eb219bbe4ad91abb93fa62228f4"
+      }
+    ]
+  }
+}

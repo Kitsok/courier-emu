@@ -2,7 +2,15 @@
 #include "c5x_core.h"
 #include "bearer.hpp"
 #include "resample.hpp"
+#include "stream_resample.hpp"
+#include "line_media.hpp"
+#include "sip_port.hpp"
+#include "board_media.hpp"
+#include "silicon_daa.hpp"
+#include "codec_bringup.hpp"
 #include "timers186.hpp"
+#include "analog_devices.hpp"
+#include "rtp_media.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -16,6 +24,7 @@
 #include <vector>
 #include <poll.h>
 #include <sys/socket.h>
+#include <time.h>
 
 using courier::C5xCore;
 
@@ -2382,6 +2391,13 @@ void courier_bearer_set_partial(void *handle, const uint8_t *data, std::size_t c
 // Python, and the harness takes the fields back whenever it regains control.
 namespace {
 
+struct MachineServiceState {
+    int64_t console_owed=0,timer_poll_owed=0,last_frame=0;
+    uint64_t last_tick=0,ticks=0;
+    uint64_t int0_pending=0,int1_pending=0,timer_pending=0,timer_delivered=0,int0_in_service=0,stack_depth=0;
+    uint8_t stack[64]{};
+};
+
 struct WorkerPollState {
     void *core;
     uint64_t armed, dirty, polls;
@@ -2460,8 +2476,24 @@ struct WorkerPollState {
     uint64_t pending_native, native_pending_irqs;
     courier::Timers186 *timer_model;
     uint64_t timer_pending, timer_delivered, native_timer_polls, native_timer_irqs;
+    int64_t console_fd;
+    uint64_t console_poll_period;
+    double pacer_origin;
+    uint64_t pacer_next, pacer_period, native_console_polls, native_pacer_checks;
+    courier::analog::BoardMedia *native_media;
+    uint64_t native_media_services,native_media_yields,native_codec_services;
+    MachineServiceState *service_model;
     char error[512];
 };
+
+// A line frame can change the predicates that made the DSP/ASIC tail static.
+// Yield before that tail at those edges; ordinary streaming frames stay native.
+uint64_t worker_media_guard(const courier::analog::BoardMedia &board) {
+    const auto *daa=board.daa;
+    return (!board.deferred_rx.empty()?1:0) | (daa?
+        (uint64_t(bool(daa->off_hook))<<1) | (uint64_t(daa->operation)<<2)
+        | (uint64_t(daa->line_state)<<6) | (uint64_t(daa->qualified_samples>=4000)<<9):0);
+}
 
 constexpr uint32_t WORKER_IF = 0x0200;
 constexpr unsigned WORKER_INT0 = 12;
@@ -2470,15 +2502,17 @@ constexpr unsigned WORKER_INT0 = 12;
 // the uncompleted tail back to Python; the batch must never be run twice.
 int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
 {
+    double &debt=s.scheduled==3?s.native_media->s.debt:s.debt;
+    double &cpi=s.scheduled==3?s.native_media->s.cpi:s.cpi;
     uint64_t writes;
     bool tdm;
     ++s.dsp_batches;
     try {
-        if (s.debt < 1) {
+        if (debt < 1) {
             writes = core->io_port_stat(uint16_t(s.host_port)).writes;
             tdm = core->call_tdm_active();
         } else {
-            const int64_t owed = int64_t(s.debt);
+            const int64_t owed = int64_t(debt);
             const uint64_t before_instructions = core->instruction_count();
             const uint64_t before_cycles = core->cycle_count();
             core->run_cycles(uint64_t(owed > 1 ? owed : 1));
@@ -2486,10 +2520,10 @@ int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
             const uint64_t cycles = core->cycle_count() - before_cycles;
             writes = core->io_port_stat(uint16_t(s.host_port)).writes;
             tdm = core->call_tdm_active();
-            s.debt -= double(cycles);
+            debt -= double(cycles);
             if (ran > 0) {
-                const double cpi = double(cycles) / double(ran);
-                s.cpi = 0.9 * s.cpi + 0.1 * (cpi > 1.0 ? cpi : 1.0);
+                const double measured = double(cycles) / double(ran);
+                cpi = 0.9 * cpi + 0.1 * (measured > 1.0 ? measured : 1.0);
             }
         }
     } catch (const std::exception &exception) {
@@ -2517,25 +2551,29 @@ int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
 // leaves the stack alone.
 void worker_apply_eois(WorkerPollState &s, const PollCpu &cpu)
 {
+    uint64_t &irq_int0_in_service=s.service_model?s.service_model->int0_in_service:s.int0_in_service;
+    uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
+    uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
+
     if (!cpu.mmio_events) return;
     for (uint64_t index = s.mmio_cursor; index < cpu.mmio_count; ++index) {
         uint8_t *event = cpu.mmio_events + 8 * index;
         const uint32_t address = uint32_t(event[0]) | uint32_t(event[1]) << 8
             | uint32_t(event[2]) << 16 | uint32_t(event[3]) << 24;
         const uint16_t value = uint16_t(event[4] | event[5] << 8);
-        if (address == 0xFF02 && s.stack_depth) {
+        if (address == 0xFF02 && irq_stack_depth) {
             unsigned completed;
-            if (value & 0x8000) completed = s.stack[--s.stack_depth];
+            if (value & 0x8000) completed = irq_stack[--irq_stack_depth];
             else {
                 completed = value & 0x1f;
-                for (uint64_t at = 0; at < s.stack_depth; ++at)
-                    if (s.stack[at] == completed) {
-                        std::memmove(s.stack + at, s.stack + at + 1, s.stack_depth - at - 1);
-                        --s.stack_depth;
+                for (uint64_t at = 0; at < irq_stack_depth; ++at)
+                    if (irq_stack[at] == completed) {
+                        std::memmove(irq_stack + at, irq_stack + at + 1, irq_stack_depth - at - 1);
+                        --irq_stack_depth;
                         break;
                     }
             }
-            if (completed == WORKER_INT0) s.int0_in_service = 0;
+            if (completed == WORKER_INT0) irq_int0_in_service = 0;
             s.dirty = 1;
         }
         event[7] = 1;
@@ -2670,16 +2708,25 @@ void worker_commit_frame(WorkerPollState &s, C5xCore *core, const int16_t *wire,
 
 extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, void *lent)
 {
+
     // Python's float arithmetic rounds after every operation.
 #pragma clang fp contract(off)
     WorkerPollState &s = *static_cast<WorkerPollState *>(context);
+    uint64_t &irq_int0_pending=s.service_model?s.service_model->int0_pending:s.int0_pending;
+    uint64_t &irq_int1_pending=s.service_model?s.service_model->int1_pending:s.int1_pending;
+    uint64_t &irq_timer_pending=s.service_model?s.service_model->timer_pending:s.timer_pending;
+    uint64_t &irq_timer_delivered=s.service_model?s.service_model->timer_delivered:s.timer_delivered;
+    uint64_t &irq_int0_in_service=s.service_model?s.service_model->int0_in_service:s.int0_in_service;
+    uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
+    uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
+
     if (!s.armed) return 0;
     const PollCpu &cpu = *static_cast<const PollCpu *>(lent);
     worker_apply_eois(s, cpu);
     const int64_t total = s.instruction_base + int64_t(now);
     if (uint64_t(total) >= s.elide_until) { s.armed = 0; return 0; }
     // The comparison path leaves deferred frame/INT1 delivery to Python.
-    if (!s.pending_native && (s.int0_pending || s.int1_pending || s.timer_pending)) { s.armed = 0; return 0; }
+    if (!s.pending_native && (irq_int0_pending || irq_int1_pending || irq_timer_pending)) { s.armed = 0; return 0; }
     // Lamp writes waiting for the harness's replay: harmless only if they
     // leave the latch as it is.
     for (uint64_t index = s.io_cursor; index < cpu.io_event_count; ++index) {
@@ -2688,28 +2735,63 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     }
     s.io_cursor = cpu.io_event_count;
     C5xCore *core = static_cast<C5xCore *>(s.core);
+    int64_t &clock_bridge_instructions=s.scheduled==3 && s.native_media?s.native_media->s.board_instructions:s.bridge_instructions;
+    int64_t &clock_x86_ticks=s.scheduled==3 && s.native_media?s.native_media->s.x86_ticks:s.x86_ticks;
+    int64_t &clock_exchange_ticks=s.scheduled==3 && s.native_media?s.native_media->s.exchange_ticks:s.exchange_ticks;
+    int64_t &clock_probe_last=s.scheduled==3 && s.native_media?s.native_media->s.probe_last:s.probe_last;
+    double &clock_debt=s.scheduled==3 && s.native_media?s.native_media->s.debt:s.debt;
+    double &clock_cpi=s.scheduled==3 && s.native_media?s.native_media->s.cpi:s.cpi;
+    double &clock_cycles_per_x86=s.scheduled==3 && s.native_media?s.native_media->s.cycles_per_x86:s.cycles_per_x86;
+    int64_t &service_console_owed=s.service_model?s.service_model->console_owed:s.console_owed;
+    int64_t &service_timer_poll_owed=s.service_model?s.service_model->timer_poll_owed:s.timer_poll_owed;
+    int64_t &service_last_frame=s.service_model?s.service_model->last_frame:s.last_frame;
+    uint64_t &service_last_tick=s.service_model?s.service_model->last_tick:s.last_tick;
+    uint64_t &service_ticks=s.service_model?s.service_model->ticks:s.ticks;
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
-        const bool exchange_due = s.exchange_present && s.exchange_ticks + elapsed >= s.batch;
-        const bool dsp_due = s.dsp_active && s.x86_ticks + elapsed >= s.batch;
+        if(s.scheduled==3 && !s.native_media){s.armed=0;return 0;}
+        const bool exchange_due = s.exchange_present && clock_exchange_ticks + elapsed >= s.batch;
+        const bool dsp_due = s.dsp_active && clock_x86_ticks + elapsed >= s.batch;
+        const bool console_due = s.console_present && service_console_owed - elapsed <= 0;
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
         // step, and input must be sampled on its original polling boundary.
-        if ((s.console_present && s.console_owed - elapsed <= 0)
-            || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
+        if ((s.codec_present && (s.scheduled==3?s.native_media->s.codec_instructions:s.codec_instructions) + elapsed >= s.line_frame_instructions
+             && !(s.scheduled==3 && s.native_media->codec))
             || (s.scheduled == 1 && (exchange_due || dsp_due))
-            || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
+            || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
             s.armed = 0; return 0;
+        }
+        if (console_due) {
+            if (!s.console_poll_period) { s.armed = 0; return 0; }
+            pollfd entry{int(s.console_fd), POLLIN, 0};
+            // Never consume input or hide HUP/ERR/NVAL (or EINTR). Python
+            // owns those outcomes, including draining its pending output.
+            if (::poll(&entry, 1, 0) != 0) { s.armed = 0; return 0; }
+        }
+        const bool pacer_due = s.pacer_period && uint64_t(total) >= s.pacer_next;
+        if (pacer_due) {
+            timespec now;
+            if (::clock_gettime(CLOCK_MONOTONIC, &now)) { s.armed = 0; return 0; }
+            const double wall = double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
+            // Same interpolation and pre-DSP service order as SipLine and
+            // DeadlinePacer. Full media frames still return to Python.
+            const auto *media=s.scheduled==3?s.native_media:nullptr;
+            const double deadline = media
+                ? (media->port.s.clock_started ? media->port.s.next_frame_at-media->port.s.frame_duration
+                    + double(media->line_buffer.size())/8000 : wall)
+                : s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
+            if (deadline > wall) { s.armed = 0; return 0; }
         }
         bool frame_edge = false;
         uint32_t slots[3];
         uint32_t *r = cpu.regs;
         bool tick_due = s.tick_period && (flags & WORKER_IF)
-            && uint64_t(total) >= s.last_tick
-            && uint64_t(total) - s.last_tick >= s.tick_period;
-        const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+            && uint64_t(total) >= service_last_tick
+            && uint64_t(total) - service_last_tick >= s.tick_period;
+        const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
         courier::Timers186 preview;
-        uint64_t timer_pending = s.timer_pending;
+        uint64_t timer_pending = irq_timer_pending;
         if (s.timer_model && timer_poll) {
             // Preflight expiries and priority without publishing an event or
             // touching a counter until all entry/service guards have passed.
@@ -2721,9 +2803,9 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         // The Python board tick is not generated while a timer request is
         // latched for delivery, including one collected by this service.
         tick_due = tick_due && !timer_pending;
-        if (timer_poll && s.int0_ok && !s.int0_pending
-            && !s.int0_in_service && (flags & WORKER_IF)
-            && total - s.last_frame >= int64_t(s.frame_instructions)) {
+        if (timer_poll && s.int0_ok && !irq_int0_pending
+            && !irq_int0_in_service && (flags & WORKER_IF)
+            && total - service_last_frame >= int64_t(s.frame_instructions)) {
             if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
             if (vector[0] | vector[1] | vector[2] | vector[3]) {
@@ -2731,16 +2813,16 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         const bool pending_due = s.pending_native && timer_poll && (flags & WORKER_IF)
-            && (s.int0_pending || s.int1_pending || timer_pending);
+            && (irq_int0_pending || irq_int1_pending || timer_pending);
         const bool enter_irq = tick_due || frame_edge || pending_due;
         const unsigned vector_number = tick_due ? unsigned(s.tick_vector)
-            : (frame_edge || s.int0_pending) ? WORKER_INT0
-            : s.int1_pending ? 13 : unsigned(timer_pending);
+            : (frame_edge || irq_int0_pending) ? WORKER_INT0
+            : irq_int1_pending ? 13 : unsigned(timer_pending);
         const bool deferred_entry = !tick_due && pending_due
-            && ((vector_number == WORKER_INT0 && s.int0_pending)
-                || (vector_number == 13 && s.int1_pending));
+            && ((vector_number == WORKER_INT0 && irq_int0_pending)
+                || (vector_number == 13 && irq_int1_pending));
         if (enter_irq) {
-            if (vector_number > 255 || s.stack_depth >= sizeof s.stack
+            if (vector_number > 255 || irq_stack_depth >= sizeof s.stack
                 || !worker_readable(cpu, vector_number * 4, 4)) { s.armed = 0; return 0; }
             for (unsigned k = 0; k < 3; ++k) {
                 slots[k] = ((r[REG_SS] & 0xffff) * 16
@@ -2753,7 +2835,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         const int64_t start = s.tx_index;
         bool converted = false;
         int64_t idle = s.exchange_idle;
-        if (exchange_due) {
+        if (exchange_due && s.scheduled!=3) {
             if (produced == s.exchange_codec_last) {
                 idle += s.batch;
                 if (idle >= s.line_frame_instructions) { s.armed = 0; return 0; }
@@ -2786,15 +2868,44 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         s.dirty = 1;
         s.last_service = uint64_t(total);
-        s.bridge_instructions += elapsed;
-        if (s.codec_present) s.codec_instructions += elapsed;
-        if (s.exchange_present) s.exchange_ticks += elapsed;
-        if (s.dsp_active) s.x86_ticks += elapsed;
-        if (s.console_present) s.console_owed -= elapsed;
+        clock_bridge_instructions += elapsed;
+        if (s.codec_present) {
+            if(s.scheduled==3)s.native_media->s.codec_instructions+=elapsed;
+            else s.codec_instructions+=elapsed;
+        }
+        if (s.exchange_present) clock_exchange_ticks += elapsed;
+        if (s.dsp_active) clock_x86_ticks += elapsed;
+        if (s.console_present) service_console_owed -= elapsed;
+        if (console_due) {
+            service_console_owed += int64_t(s.console_poll_period);
+            ++s.native_console_polls;
+        }
+        if (pacer_due) {
+            s.pacer_next = uint64_t(total) + s.pacer_period;
+            ++s.native_pacer_checks;
+        }
         if (exchange_due) {
-            s.exchange_ticks -= s.batch;
-            s.exchange_codec_last = produced;
-            s.exchange_idle = idle;
+            clock_exchange_ticks -= s.batch;
+            if(s.scheduled==3) {
+                try {
+                    const uint64_t before=worker_media_guard(*s.native_media);
+                    s.native_media->begin(*core,clock_bridge_instructions);
+                    const int event=s.native_media->resume(*core);
+                    ++s.native_media_services;
+                    if(event || before!=worker_media_guard(*s.native_media)) {
+                        s.resume_elapsed=elapsed;s.armed=0;
+                        // Code 4 is reserved by the x86 engine for an IRQ
+                        // taken inside a poll. Media must leave the engine.
+                        ++s.native_media_yields;++s.polls;return 6;
+                    }
+                } catch(const std::exception &exception) {
+                    copy_error(s.error,sizeof s.error,exception.what());
+                    s.resume_elapsed=elapsed;s.armed=0;++s.polls;return 7;
+                }
+            } else {
+                s.exchange_codec_last = produced;
+                s.exchange_idle = idle;
+            }
         }
         if (converted) {
             timed->commit();
@@ -2810,26 +2921,32 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             s.resampled += timed->out.size();
             ++s.line_calls;
         }
+        if(s.scheduled==3 && s.native_media->codec) {
+            while(s.native_media->s.codec_instructions>=s.line_frame_instructions) {
+                s.native_media->s.codec_instructions-=s.line_frame_instructions;
+                s.native_media->service_codec();++s.native_codec_services;
+            }
+        }
         if (dsp_due) {
-            s.debt += double(s.x86_ticks) * s.cycles_per_x86;
-            s.x86_ticks = 0;
+            clock_debt += double(clock_x86_ticks) * clock_cycles_per_x86;
+            clock_x86_ticks = 0;
             if (const int code = worker_step(s, core, elapsed)) {
                 ++s.polls;
                 return code;
             }
         }
-        s.timer_poll_owed -= elapsed;
-        if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
+        service_timer_poll_owed -= elapsed;
+        if (service_timer_poll_owed <= 0) service_timer_poll_owed += int64_t(s.timer_poll_period);
         if (s.timer_model && timer_poll) {
             *s.timer_model = preview;
-            s.timer_pending = timer_pending;
+            irq_timer_pending = timer_pending;
             ++s.native_timer_polls;
         }
         if (frame_edge) {
-            s.last_frame += int64_t(s.frame_instructions);
-            if (total - s.last_frame >= int64_t(s.frame_instructions))
-                s.last_frame = total - int64_t(s.frame_instructions);
-            s.int0_pending = WORKER_INT0;
+            service_last_frame += int64_t(s.frame_instructions);
+            if (total - service_last_frame >= int64_t(s.frame_instructions))
+                service_last_frame = total - int64_t(s.frame_instructions);
+            irq_int0_pending = WORKER_INT0;
         }
         if (enter_irq) {
             const uint32_t values[3] = {r[REG_FLAGS] & 0xffff, r[REG_CS] & 0xffff,
@@ -2843,32 +2960,32 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             const uint8_t *vector = cpu.memory + vector_number * 4;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
-            s.stack[s.stack_depth++] = uint8_t(vector_number);
+            irq_stack[irq_stack_depth++] = uint8_t(vector_number);
             if (!tick_due) {
                 if (vector_number == WORKER_INT0) {
-                    s.int0_pending = 0;
-                    s.int0_in_service = 1;
-                } else if (vector_number == 13) s.int1_pending = 0;
+                    irq_int0_pending = 0;
+                    irq_int0_in_service = 1;
+                } else if (vector_number == 13) irq_int1_pending = 0;
                 else {
-                    s.timer_pending = 0;
-                    ++s.timer_delivered;
+                    irq_timer_pending = 0;
+                    ++irq_timer_delivered;
                     ++s.native_timer_irqs;
                 }
                 if (deferred_entry) ++s.native_pending_irqs;
             }
         }
         if (tick_due) {
-            s.last_tick = uint64_t(total);
-            ++s.ticks;
+            service_last_tick = uint64_t(total);
+            ++service_ticks;
             ++s.native_ticks;
             if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
-                s.int1_pending = 13;
+                irq_int1_pending = 13;
         }
         ++s.polls;
         return 1;
     }
     // clock_x86_fast's tests that a service can change.
-    if (s.x86_ticks + elapsed < s.batch
+    if (clock_x86_ticks + elapsed < s.batch
         || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)) {
         s.armed = 0; return 0;
     }
@@ -2877,19 +2994,19 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     const bool line_skip = 0 < fresh && fresh < s.line_min_samples
         && s.line_skipped < s.line_max_skip;
     if ((!line_skip && (fresh <= 0 || !s.timed))
-        || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
+        || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
         s.armed = 0; return 0;
     }
     // fast_service's frame edge, decided now: nothing it reads moves in the
     // DSP step. An entry this cannot make the way dispatch_interrupt would is
     // left to the harness.
-    const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+    const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
     bool frame_edge = false;
     uint32_t *r = cpu.regs;
     const uint32_t sp = r[REG_SP] & 0xFFFF, ss = r[REG_SS] & 0xFFFF;
     uint32_t slots[3];
-    if (timer_poll && s.int0_ok && !s.int0_in_service && (flags & WORKER_IF)
-        && total - s.last_frame >= int64_t(s.frame_instructions)) {
+    if (timer_poll && s.int0_ok && !irq_int0_in_service && (flags & WORKER_IF)
+        && total - service_last_frame >= int64_t(s.frame_instructions)) {
         if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
         const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
         if (vector[0] | vector[1] | vector[2] | vector[3]) {
@@ -2897,7 +3014,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 slots[k] = (ss * 16 + ((sp - 2 * (k + 1)) & 0xFFFF)) & 0xFFFFF;
                 if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
             }
-            if (s.stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
+            if (irq_stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
             frame_edge = true;
         }
     }
@@ -2989,11 +3106,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // interpreter_service's bookkeeping, then clock_x86_fast's commit.
     s.dirty = 1;
     s.last_service = uint64_t(total);
-    s.bridge_instructions += elapsed;
+    clock_bridge_instructions += elapsed;
     if (s.codec_present) s.codec_instructions += elapsed;
-    s.x86_ticks += elapsed;
-    s.debt += double(s.x86_ticks) * s.cycles_per_x86;
-    s.x86_ticks = 0;
+    clock_x86_ticks += elapsed;
+    clock_debt += double(clock_x86_ticks) * clock_cycles_per_x86;
+    clock_x86_ticks = 0;
     if (line_skip) s.line_skipped += 1;
     else {
         timed->commit();
@@ -3022,14 +3139,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // fast_service's tail. The 80186 timers are brought up to date lazily:
     // every access to one advances it first, and the harness made sure none
     // reaches a max count before elide_until.
-    s.timer_poll_owed -= elapsed;
-    if (s.timer_poll_owed <= 0) {
-        s.timer_poll_owed += int64_t(s.timer_poll_period);
+    service_timer_poll_owed -= elapsed;
+    if (service_timer_poll_owed <= 0) {
+        service_timer_poll_owed += int64_t(s.timer_poll_period);
         if (frame_edge) {
-            s.last_frame += int64_t(s.frame_instructions);
-            if (total - s.last_frame >= int64_t(s.frame_instructions))
-                s.last_frame = total - int64_t(s.frame_instructions);
-            s.int0_in_service = 1;
+            service_last_frame += int64_t(s.frame_instructions);
+            if (total - service_last_frame >= int64_t(s.frame_instructions))
+                service_last_frame = total - int64_t(s.frame_instructions);
+            irq_int0_in_service = 1;
             // dispatch_interrupt(INT0_VECTOR, software=False)
             const uint32_t flags16 = r[REG_FLAGS] & 0xFFFF;
             const uint32_t values[3] = {flags16, r[REG_CS] & 0xFFFF, r[REG_IP] & 0xFFFF};
@@ -3039,7 +3156,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
             r[REG_SP] = (sp - 6) & 0xFFFF;
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
-            s.stack[s.stack_depth++] = WORKER_INT0;
+            irq_stack[irq_stack_depth++] = WORKER_INT0;
             r[REG_FLAGS] = flags16 & ~WORKER_IF;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
@@ -3059,4 +3176,365 @@ extern "C" void courier_worker_poll_layout(uint64_t *out)
     out[1] = offsetof(WorkerPollState, debt);
     out[2] = offsetof(WorkerPollState, frame_ok);
     out[3] = offsetof(WorkerPollState, error);
+}
+
+// Persistent analog devices: allocation/configuration are control-plane work;
+// frame processing and all timing/state transitions are callable by the worker.
+extern "C" {
+void courier_analog_layout(uint64_t *out) {
+    out[0]=sizeof(courier::analog::Daa);
+    out[1]=sizeof(courier::analog::ExchangeStateData);
+    out[2]=sizeof(courier::analog::DecoderState);
+}
+int courier_analog_daa_action(void *handle,int action,int64_t value) {
+    if(!handle)return -1;
+    auto &d=*static_cast<courier::analog::Daa *>(handle);
+    switch(action) {
+    case 0:d.seize(value);break;
+    case 1:d.release();break;
+    case 2:if(d.off_hook)d.operation=courier::analog::Dialing;break;
+    case 3:if(d.off_hook)d.operation=value;break;
+    case 4:d.observe(value);break;
+    default:return -1;
+    }
+    return 0;
+}
+void courier_analog_daa_render(void *handle,int64_t count,int32_t *out) {
+    if(handle && out)static_cast<courier::analog::Daa *>(handle)->render(count,out);
+}
+void *courier_analog_exchange_create() { return new courier::analog::Exchange(); }
+void courier_analog_exchange_destroy(void *handle) { static_cast<courier::analog::Exchange *>(handle)->release_reference(); }
+void *courier_analog_exchange_state(void *handle) {
+    return handle?&static_cast<courier::analog::Exchange *>(handle)->s:nullptr;
+}
+void *courier_analog_decoder_state(void *handle) {
+    return handle?&static_cast<courier::analog::Exchange *>(handle)->decoder.state:nullptr;
+}
+const char *courier_analog_exchange_string(void *handle,int field) {
+    if(!handle)return "";
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    return field==0?x.dialed.c_str():field==1?x.inbound_number.c_str():x.decoder.digits.c_str();
+}
+void courier_analog_exchange_set_string(void *handle,int field,const char *text) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    if(field==0)x.dialed=text;else if(field==1)x.inbound_number=text;else x.decoder.digits=text;
+}
+void courier_analog_exchange_directory(void *handle,const char *number,int64_t outcome) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    if(!number)x.directory.clear();else if(outcome<0)x.directory.erase(number);else x.directory[number]=outcome;
+}
+void courier_analog_exchange_tone(void *handle,const int32_t *values,size_t count) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    x.dial_tone.clear();if(count)x.dial_tone.assign(values,values+count);
+}
+int courier_analog_exchange_action(void *handle,int action,int64_t value,const char *text) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    switch(action) {
+    case 0:x.ring(text);break;
+    case 1:x.release();break;
+    case 2:x.answer();break;
+    case 3:x.set_outcome(value);break;
+    case 4:x.enter(int(value));break;
+    case 5:x.observe_hook(bool(value));break;
+    case 6:x.accept(char(value));break;
+    case 7:x.route();break;
+    case 8:x.advance();break;
+    default:return -1;
+    }
+    return x.event;
+}
+void courier_analog_exchange_begin(void *handle,int off_hook,const int32_t *data,size_t size,int64_t count) {
+    static_cast<courier::analog::Exchange *>(handle)->begin(bool(off_hook),data,size,count);
+}
+int courier_analog_exchange_resume(void *handle) { return static_cast<courier::analog::Exchange *>(handle)->resume(); }
+void courier_analog_exchange_route_result(void *handle,int64_t outcome) {
+    static_cast<courier::analog::Exchange *>(handle)->finish_route(outcome);
+}
+void courier_analog_exchange_peer_result(void *handle,const int32_t *data,size_t size) {
+    static_cast<courier::analog::Exchange *>(handle)->peer_result(data,size);
+}
+size_t courier_analog_exchange_vector(void *handle,int field,int32_t *out,size_t capacity) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    const auto &source=field==0?x.output:field==1?x.tx:x.decoder.pending;
+    const size_t first=field==1?std::min<size_t>(size_t(x.position),source.size()):0;
+    const size_t count=field==1?std::min<size_t>(size_t(x.step),source.size()-first):source.size();
+    if(out && count)std::copy_n(source.data()+first,std::min(count,capacity),out);
+    return count;
+}
+void courier_analog_decoder_pending(void *handle,const int32_t *data,size_t size) {
+    auto &pending=static_cast<courier::analog::Exchange *>(handle)->decoder.pending;
+    pending.clear();if(size)pending.assign(data,data+size);
+}
+const char *courier_analog_decoder_feed(void *handle,const int32_t *data,size_t size) {
+    static thread_local std::string result;
+    result=static_cast<courier::analog::Exchange *>(handle)->decoder.feed(data,size);
+    return result.c_str();
+}
+}
+
+namespace {
+thread_local std::string rtp_error;
+}
+extern "C" {
+const char *courier_rtp_last_error() { return rtp_error.c_str(); }
+uint64_t courier_rtp_layout() { return sizeof(courier::media::State); }
+void *courier_rtp_create(int fd) {
+    try { return new courier::media::Media(fd); }
+    catch(const std::exception &e) { rtp_error=e.what();return nullptr; }
+}
+void courier_rtp_destroy(void *handle) { static_cast<courier::media::Media *>(handle)->release_reference(); }
+void courier_rtp_stop(void *handle) { static_cast<courier::media::Media *>(handle)->stop(); }
+int courier_rtp_clock(void *handle,uint64_t samples) {
+    try { static_cast<courier::media::Media *>(handle)->clock(samples);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+void courier_rtp_configure(void *handle,uint64_t state,uint64_t payload,uint64_t law,uint64_t words,double gain) {
+    static_cast<courier::media::Media *>(handle)->configure(state,payload,law,words,gain);
+}
+int courier_rtp_remote(void *handle,const char *ip,unsigned port) {
+    try { static_cast<courier::media::Media *>(handle)->remote(ip,port);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+int courier_rtp_retire(void *handle,const char *ip,unsigned port,int operation) {
+    try { static_cast<courier::media::Media *>(handle)->retire(ip,port,operation);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+void courier_rtp_lock(void *handle) { static_cast<courier::media::Media *>(handle)->mutex.lock(); }
+void courier_rtp_unlock(void *handle) { static_cast<courier::media::Media *>(handle)->mutex.unlock(); }
+void courier_rtp_snapshot(void *handle,void *out) {
+    *static_cast<courier::media::State *>(out)=static_cast<courier::media::Media *>(handle)->snapshot();
+}
+void courier_rtp_set(void *handle,unsigned field,uint64_t value) {
+    static_cast<courier::media::Media *>(handle)->set(field,value);
+}
+void courier_rtp_next(void *handle,double value) { static_cast<courier::media::Media *>(handle)->next(value); }
+void courier_rtp_poll(void *handle,double now) { static_cast<courier::media::Media *>(handle)->poll(now); }
+void courier_rtp_receive(void *handle) { static_cast<courier::media::Media *>(handle)->receive(); }
+void courier_rtp_flush(void *handle,double now) { static_cast<courier::media::Media *>(handle)->flush(now); }
+void courier_rtp_send(void *handle,const int32_t *data,size_t count,int words,double now) {
+    static_cast<courier::media::Media *>(handle)->send(data,count,bool(words),now);
+}
+size_t courier_rtp_values(void *handle,int queue,int32_t *out,size_t capacity,int consume) {
+    return static_cast<courier::media::Media *>(handle)->values(queue,out,capacity,bool(consume));
+}
+void courier_rtp_clear(void *handle,int queue) { static_cast<courier::media::Media *>(handle)->clear(queue); }
+void courier_rtp_append(void *handle,int queue,const int32_t *data,size_t count) {
+    static_cast<courier::media::Media *>(handle)->append(queue,data,count);
+}
+void courier_rtp_convert(int law,int encode,const int32_t *in,int32_t *out,size_t count) {
+    for(size_t k=0;k<count;++k)out[k]=encode
+        ? law?courier::media::encode_alaw(in[k]):courier::media::encode_ulaw(in[k])
+        : law?courier::media::decode_alaw(uint8_t(in[k])):courier::media::decode_ulaw(uint8_t(in[k]));
+}
+}
+
+extern "C" {
+void *courier_stream_create(int precise,int compensated) {
+    try { return new courier::resample::Stream(bool(precise),bool(compensated)); }
+    catch (...) { return nullptr; }
+}
+void courier_stream_destroy(void *handle) { delete static_cast<courier::resample::Stream *>(handle); }
+int courier_stream_convert(void *handle,const int16_t *samples,size_t count,double input,double output) {
+    try { static_cast<courier::resample::Stream *>(handle)->convert(samples,count,input,output);return 0; }
+    catch (...) { return -1; }
+}
+const int16_t *courier_stream_output(void *handle,size_t *count) {
+    const auto &out=static_cast<courier::resample::Stream *>(handle)->out;
+    *count=out.size();return out.data();
+}
+void courier_stream_snapshot(void *handle,courier::resample::StreamState *out) {
+    *out=static_cast<courier::resample::Stream *>(handle)->s;
+}
+size_t courier_stream_layout() { return sizeof(courier::resample::StreamState); }
+const double *courier_stream_kernel(double cutoff,int compensated) {
+    return courier::resample::kernel_for(cutoff,bool(compensated))->data();
+}
+}
+
+extern "C" {
+void *courier_line_media_create(void *exchange,void *media) {
+    try { return new courier::analog::LineMedia(*static_cast<courier::analog::Exchange *>(exchange),
+                                               *static_cast<courier::media::Media *>(media)); }
+    catch (...) { return nullptr; }
+}
+void courier_line_media_destroy(void *handle) { delete static_cast<courier::analog::LineMedia *>(handle); }
+void courier_line_media_snapshot(void *handle,courier::analog::LineMediaState *out) {
+    *out=static_cast<courier::analog::LineMedia *>(handle)->s;
+}
+void courier_line_media_frames(void *handle,uint64_t frames) {
+    static_cast<courier::analog::LineMedia *>(handle)->s.frames=frames;
+}
+size_t courier_line_media_pending(void *handle,int32_t *out,size_t capacity,int consume) {
+    auto &queue=static_cast<courier::analog::LineMedia *>(handle)->pending;
+    const size_t count=queue.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(queue.begin(),n,out);
+    if(consume)queue.erase(queue.begin(),queue.begin()+n);
+    return count;
+}
+void courier_line_media_reset(void *handle) { static_cast<courier::analog::LineMedia *>(handle)->pending.clear(); }
+size_t courier_line_media_underruns(void *handle,uint64_t *out,size_t capacity) {
+    const auto &log=static_cast<courier::analog::LineMedia *>(handle)->underruns;
+    const size_t count=log.size(),n=std::min(count,capacity);
+    if(out)for(size_t k=0;k<n;++k){out[2*k]=log[k].first;out[2*k+1]=log[k].second;}
+    return count;
+}
+}
+
+extern "C" {
+void *courier_sip_port_create(void *exchange,void *media) {
+    try { return new courier::analog::SipPort(*static_cast<courier::analog::Exchange *>(exchange),
+                                             *static_cast<courier::media::Media *>(media)); }
+    catch (...) { return nullptr; }
+}
+void courier_sip_port_destroy(void *handle) {static_cast<courier::analog::SipPort *>(handle)->release_reference();}
+void *courier_sip_port_state(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->s;}
+void *courier_sip_port_control(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->control;}
+void *courier_sip_port_media(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->media;}
+void courier_sip_port_from(void *handle,const char *number) {
+    static_cast<courier::analog::SipPort *>(handle)->incoming_from=number?number:"";
+}
+int courier_sip_port_begin(void *handle,int hook,const int32_t *data,size_t size,int64_t count,double now,int realtime) {
+    try {static_cast<courier::analog::SipPort *>(handle)->begin(bool(hook),data,size,count,now,bool(realtime));return 0;}
+    catch (...) {return -1;}
+}
+int courier_sip_port_resume(void *handle) {
+    try {return static_cast<courier::analog::SipPort *>(handle)->resume();}
+    catch (...) {return -1;}
+}
+void courier_sip_port_ack(void *handle,int route) {
+    auto &port=*static_cast<courier::analog::SipPort *>(handle);
+    if(route)port.route_result();else port.acknowledge();
+}
+size_t courier_sip_port_layout(int control) {
+    return control?sizeof(courier::analog::SipControl):sizeof(courier::analog::PortState);
+}
+}
+
+extern "C" {
+void *courier_line_media_state(void *handle) {return &static_cast<courier::analog::LineMedia *>(handle)->s;}
+void courier_line_media_append(void *handle,const int32_t *values,size_t count) {
+    auto &pending=static_cast<courier::analog::LineMedia *>(handle)->pending;
+    pending.insert(pending.end(),values,values+count);
+}
+size_t courier_sip_port_spikes(void *handle,courier::analog::SipPort::Spike *out,size_t capacity) {
+    const auto &spikes=static_cast<courier::analog::SipPort *>(handle)->spikes;
+    const size_t count=spikes.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(spikes.begin(),n,out);
+    return count;
+}
+}
+
+extern "C" {
+void *courier_board_media_create(void *port,void *daa,size_t samples,uint64_t period,uint64_t batch,int precise,int compensated) {
+    try {return new courier::analog::BoardMedia(*static_cast<courier::analog::SipPort *>(port),
+        static_cast<courier::analog::Daa *>(daa),samples,period,batch,bool(precise),bool(compensated));}
+    catch (...) {return nullptr;}
+}
+void courier_board_media_destroy(void *handle) {delete static_cast<courier::analog::BoardMedia *>(handle);}
+void *courier_board_media_state(void *handle) {return &static_cast<courier::analog::BoardMedia *>(handle)->s;}
+size_t courier_board_media_layout() {return sizeof(courier::analog::BoardMediaState);}
+int courier_board_media_begin(void *handle,void *core,int64_t instructions) {
+    try {static_cast<courier::analog::BoardMedia *>(handle)->begin(*static_cast<C5xCore *>(core),instructions);return 0;}
+    catch (...) {return -1;}
+}
+int courier_board_media_resume(void *handle,void *core) {
+    try {return static_cast<courier::analog::BoardMedia *>(handle)->resume(*static_cast<C5xCore *>(core));}
+    catch (...) {return -1;}
+}
+int courier_board_media_reset(void *handle,void *core,int rebuild) {
+    try {
+        auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+        if(rebuild)board.rebuild(*static_cast<C5xCore *>(core));else board.reset(true);
+        return 0;
+    } catch (...) {return -1;}
+}
+size_t courier_board_media_values(void *handle,int which,int16_t *out,size_t capacity,int consume) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    auto &queue=which==0?board.line_buffer:which==1?board.in_flight:board.deferred_rx;
+    const size_t count=queue.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(queue.begin(),n,out);
+    if(consume)queue.erase(queue.begin(),queue.begin()+n);
+    return count;
+}
+}
+
+extern "C" {
+int courier_board_media_collect(void *handle,void *core) {
+    try {static_cast<courier::analog::BoardMedia *>(handle)->collect(*static_cast<C5xCore *>(core));return 0;}
+    catch (...) {return -1;}
+}
+int courier_board_media_queue(void *handle,void *core,const int32_t *data,size_t count,int64_t instructions) {
+    try {
+        auto &board=*static_cast<courier::analog::BoardMedia *>(handle);board.instructions=instructions;
+        std::vector<int32_t> samples;if(count)samples.assign(data,data+count);
+        board.queue(*static_cast<C5xCore *>(core),samples,false);return 0;
+    } catch (...) {return -1;}
+}
+void courier_board_media_replace(void *handle,int which,const int16_t *data,size_t count) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    auto &queue=which==0?board.line_buffer:which==1?board.in_flight:board.deferred_rx;
+    queue.clear();if(count)queue.insert(queue.end(),data,data+count);
+}
+void *courier_board_media_stream(void *handle,int receive) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    return receive?&board.rx_converter.s:&board.tx_converter.s;
+}
+const char *courier_board_media_digits(void *handle,const char *set) {
+    auto &digits=static_cast<courier::analog::BoardMedia *>(handle)->dial_digits;
+    if(set)digits=set;return digits.c_str();
+}
+}
+
+extern "C" {
+size_t courier_silicon_layout() {return sizeof(courier::analog::SiliconDaa);}
+int courier_silicon_action(void *handle,int action,int64_t a,int64_t b) {
+    auto &part=*static_cast<courier::analog::SiliconDaa *>(handle);
+    try {
+        switch(action){case 0:part.reset();break;case 1:part.elapse(a);break;
+        case 2:part.hook(bool(a));break;case 3:part.write(int(a),uint16_t(b));break;
+        case 4:return part.read(int(a));}
+        return 0;
+    } catch(...) {return -1;}
+}
+}
+
+extern "C" {
+void *courier_bringup_create(void *part) {
+    try{return new courier::analog::CodecBringUp(*static_cast<courier::analog::SiliconDaa *>(part));}catch(...){return nullptr;}
+}
+void courier_bringup_destroy(void *handle){static_cast<courier::analog::CodecBringUp *>(handle)->release();}
+size_t courier_bringup_layout(){return sizeof(courier::analog::BringUpState);}
+void *courier_bringup_state(void *handle){return &static_cast<courier::analog::CodecBringUp *>(handle)->s;}
+int courier_bringup_step(void *handle){return static_cast<courier::analog::CodecBringUp *>(handle)->step();}
+void courier_bringup_service(void *handle,int64_t frames){static_cast<courier::analog::CodecBringUp *>(handle)->service(frames);}
+size_t courier_bringup_steps(void *handle,int32_t *out,size_t capacity,int replace) {
+    auto &steps=static_cast<courier::analog::CodecBringUp *>(handle)->steps;
+    if(replace){steps.clear();if(capacity)steps.assign(out,out+capacity);return steps.size();}
+    const size_t n=std::min(capacity,steps.size());if(out)std::copy_n(steps.begin(),n,out);return steps.size();
+}
+}
+
+extern "C" {
+void courier_board_media_codec(void *handle,void *master) {
+    static_cast<courier::analog::BoardMedia *>(handle)->attach_codec(static_cast<courier::analog::CodecBringUp *>(master));
+}
+void courier_board_media_service_codec(void *handle) {static_cast<courier::analog::BoardMedia *>(handle)->service_codec();}
+}
+
+extern "C" size_t courier_service_layout(){return sizeof(MachineServiceState);}
+
+extern "C" int courier_line_media_record(void *handle,const char *prefix) {
+    try{static_cast<courier::analog::LineMedia *>(handle)->record(prefix);return 0;}
+    catch(...){return -1;}
+}
+
+extern "C" {
+void courier_board_media_monitor(void *handle,int enabled) {static_cast<courier::analog::BoardMedia *>(handle)->monitor=bool(enabled);}
+void courier_board_media_monitor_ack(void *handle) {static_cast<courier::analog::BoardMedia *>(handle)->monitor_done=true;}
+size_t courier_board_media_frame(void *handle,int receive,int32_t *out,size_t capacity) {
+    const auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    const auto &data=receive?board.port.exchange.output:board.frame;
+    if(out)std::copy_n(data.begin(),std::min(capacity,data.size()),out);
+    return data.size();
+}
 }

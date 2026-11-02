@@ -1,0 +1,43 @@
+{
+  "runtime_revision": "77e2fb422171deca55fa91577380bbafd4cbccf9",
+  "scope": "Final local native standalone Courier migration validation; no physical modem or A53 measurements",
+  "data_gate": "Two loopback SIP Courier emulators using the analog403 profile",
+  "error_correction_required": true,
+  "connections": {
+    "caller": {
+      "connect_result": "CONNECT 31200/ARQ/V34/LAPM/V42BIS",
+      "received_marker": "ANSWERER-DATA-MARKER",
+      "exact_transfer_verified": true,
+      "remote_host": "127.0.0.1",
+      "acquisition_assistance_enabled": false,
+      "native_path_coverage": {
+        "native_media_services": 22882,
+        "native_codec_services": 212,
+        "native_eoi_writes": 75506,
+        "native_media_yields": 4
+      }
+    },
+    "answerer": {
+      "connect_result": "CONNECT 31200/ARQ/V34/LAPM/V42BIS",
+      "received_marker": "CALLER-DATA-MARKER",
+      "exact_transfer_verified": true,
+      "remote_host": "127.0.0.1",
+      "acquisition_assistance_enabled": false,
+      "native_path_coverage": {
+        "native_media_services": 21865,
+        "native_codec_services": 202,
+        "native_eoi_writes": 71355,
+        "native_media_yields": 3
+      }
+    }
+  },
+  "physical_call_validated": false,
+  "performance_measured": false,
+  "regression_gate": {
+    "broad_run_passed": 177,
+    "broad_run_initial_failures": 1,
+    "remaining_case_passed_after_fix": true,
+    "selected_cases_verified": 178,
+    "compatibility_fix": "Restore writable native media origin for diagnostic pacing callers"
+  }
+}

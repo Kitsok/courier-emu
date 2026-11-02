@@ -23,7 +23,7 @@ def config_file(tmp_path, old=None, new=None):
 
 def test_configuration_resolves_paths_and_network_options(tmp_path):
     arguments, nvram = read_config(config_file(tmp_path))
-    assert nvram == tmp_path / "artifacts/courier-emu.nvram"
+    assert nvram == tmp_path / "artifacts/courier-emu-v32.nvram"
     args = cli.build_parser().parse_args(arguments)
     command = cli._worker_command(args)
     assert args.serial_link == str(tmp_path / "artifacts/courier-emu.tty")
@@ -47,30 +47,78 @@ def test_invalid_configuration_fails_before_startup(tmp_path, old, new):
         read_config(config_file(tmp_path, old, new))
 
 
-def test_nvram_is_seeded_once_and_invalid_existing_data_is_preserved(tmp_path):
+def test_nvram_seeding_and_backup_migration_preserve_other_settings(tmp_path):
     path = tmp_path / "state/settings"
-    seed_nvram(path)
+    assert seed_nvram(path) is None
     assert path.read_bytes() == bytes(CourierNvram.idsl403_lapm_fixture().data)
-    # Existing profiles keep their settings even with 3429 baud enabled.
-    changed = IDSDL403_NVRAM
-    path.write_bytes(changed)
-    seed_nvram(path)
-    assert path.read_bytes() == changed
-    path.write_bytes(b"bad")
+    assert seed_nvram(path) is None
+    original = bytes(IDSDL403_NVRAM)
+    path.write_bytes(original)
+    path.chmod(0o640)
+    backup = seed_nvram(path)
+    assert backup.parent == path.parent and backup.read_bytes() == original
+    actual = path.read_bytes()
+    assert {i for i, (a, b) in enumerate(zip(original, actual)) if a != b} == {5, 511}
+    assert actual[5] == 5 and actual[-1] == settings_checksum(actual)
+    assert path.stat().st_mode & 0o777 == 0o640
+    assert seed_nvram(path) is None
+    assert list(path.parent.glob('*.bak')) == [backup]
+    # Every later firmware-written non-ARQ version gets its own backup.
+    later = bytearray(actual)
+    later[5], later[0x3c] = 4, 0x64
+    later[-1] = settings_checksum(later)
+    path.write_bytes(later)
+    second = seed_nvram(path)
+    assert second != backup and second.read_bytes() == later
+    assert backup.read_bytes() == original
+    assert path.read_bytes()[0x3c] == 0x64
+
+
+@pytest.mark.parametrize('contents', [b'bad', bytes(511) + b'\x01'])
+def test_invalid_existing_nvram_is_never_migrated(tmp_path, contents):
+    path = tmp_path / 'settings.nvram'
+    path.write_bytes(contents)
     with pytest.raises(ValueError):
         seed_nvram(path)
-    assert path.read_bytes() == b"bad"
+    assert path.read_bytes() == contents
+    assert not list(tmp_path.glob('*.bak'))
+
+
+def test_migration_failure_retains_original_and_completed_backup(tmp_path, monkeypatch):
+    path = tmp_path / 'settings.nvram'
+    original = bytes(IDSDL403_NVRAM)
+    path.write_bytes(original)
+    def fail(*args):
+        raise OSError('cannot replace EEPROM')
+    monkeypatch.setattr('courier_emu.runtime.os.replace', fail)
+    with pytest.raises(OSError, match='cannot replace'):
+        seed_nvram(path)
+    assert path.read_bytes() == original
+    backups = list(tmp_path.glob('*.bak'))
+    assert len(backups) == 1 and backups[0].read_bytes() == original
+    assert set(tmp_path.iterdir()) == {path, backups[0]}
+
+
+def test_migration_through_symlink_preserves_the_link(tmp_path):
+    target = tmp_path / 'actual.nvram'
+    target.write_bytes(IDSDL403_NVRAM)
+    link = tmp_path / 'settings.nvram'
+    link.symlink_to(target)
+    backup = seed_nvram(link)
+    assert link.is_symlink()
+    assert target.read_bytes()[5] == 5
+    assert backup.read_bytes() == IDSDL403_NVRAM
 
 
 def test_new_profile_preserves_capture_except_verified_operational_settings(tmp_path):
     path = tmp_path / "settings.nvram"
     seed_nvram(path)
     actual = path.read_bytes()
-    # ATS27=0S54=96 followed by AT&W in the original 403 firmware produces
+    # ATS27=0S54=96&M5 followed by AT&W in the original 403 firmware produces
     # these EEPROM bytes, including the firmware's stored checksum.
     differences = {i: (old, new) for i, (old, new)
                    in enumerate(zip(IDSDL403_NVRAM, actual)) if old != new}
-    assert differences == {0x29: (48, 0), 0x3C: (64, 96), 0x1FF: (0xBD, 0xAD)}
+    assert differences == {0x05: (4, 5), 0x29: (48, 0), 0x3C: (64, 96), 0x1FF: (0xBD, 0xAE)}
     assert actual[-1] == settings_checksum(actual)
     assert bytes(CourierNvram.idsl403_fixture().data) == IDSDL403_NVRAM
 
@@ -158,3 +206,15 @@ def test_normal_sip_line_settings_are_explicit_and_legacy_cli_is_preserved(tmp_p
     command = cli._worker_command(args)
     assert command[command.index('--sip-line-gain')+1] == '1.0'
     assert command[command.index('--sip-local-echo')+1] == 'on'
+
+
+def test_failed_backup_never_changes_saved_settings(tmp_path, monkeypatch):
+    path = tmp_path / 'settings.nvram'
+    path.write_bytes(IDSDL403_NVRAM)
+    def fail(**kwargs):
+        raise OSError('backup unavailable')
+    monkeypatch.setattr('courier_emu.runtime.tempfile.NamedTemporaryFile', fail)
+    with pytest.raises(OSError, match='backup unavailable'):
+        seed_nvram(path)
+    assert path.read_bytes() == IDSDL403_NVRAM
+    assert list(tmp_path.iterdir()) == [path]
