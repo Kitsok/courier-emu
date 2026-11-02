@@ -476,3 +476,15 @@ findings do not establish a causal explanation for every training failure.
 Evidence is summarized in `docs/native-physical-call-a53.json`, with the full
 probe/perf capture on nanovax at `/tmp/courier-native-physical-final-1`.
 Physical modem settings were not changed and no temperatures were collected.
+
+The retained whole-attempt `cycles:u` profile has no lost samples. Its flat
+DSO shares are 46.06% native C5x/device library, 32.10% Python, 18.08% native
+x86, 1.58% ctypes and 1.53% libc. Top symbols include x86 `run_batch` (14.88%),
+Python evaluation (14.75%), C5x BE dispatch (1.92%), MADD (1.88%), ADRK
+dispatch (1.83%) and timed resampling (1.51%). The earlier whole-attempt
+baseline had 51.07% Python and 28.93% C5x/device library, but these differing
+attempts are not a controlled speedup measurement. Both delivered roughly
+23% of real-time line audio over the entire attempt. The next optimization
+candidates are DSP decode/dispatch, remaining Python callback work (requiring
+function attribution), and x86 dispatch. A change in profile share alone
+must not be presented as equivalent CPU-time savings.

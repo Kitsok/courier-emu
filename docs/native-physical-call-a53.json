@@ -34,5 +34,25 @@
   "physical_settings_changed": false,
   "temperature_collected": false,
   "remote_evidence": "/tmp/courier-native-physical-final-1",
-  "physical_log_excerpt": "11/02 23:17:36 SB0  wfr: waiting for ``RING''\n11/02 23:17:36 SB0   got: [0a][0d][0a]RING[0d]\n11/02 23:17:36 SB0    CND: RING\n11/02 23:17:36 SB0   wfr: rc=0, drn=0\n11/02 23:17:36 SB0    CND: check no: 'none'\n11/02 23:17:36 SB0    CND: check vs: all\n11/02 23:17:36 SB0  send: ATA[0d]\n11/02 23:17:36 SB0  waiting for ``CONNECT''\n11/02 23:17:36 SB0   got: ATA[0d]\n11/02 23:17:36 SB0    CND: OKATA[0d][0a]NO CARRIER\n11/02 23:18:38 SB0  found action string: ``NO CARRIER''\n11/02 23:18:38 ##### failed A_FAIL dev=ttyUSB0, pid=4336, caller='none', conn='', name=''\n"
+  "physical_log_excerpt": "11/02 23:17:36 SB0  wfr: waiting for ``RING''\n11/02 23:17:36 SB0   got: [0a][0d][0a]RING[0d]\n11/02 23:17:36 SB0    CND: RING\n11/02 23:17:36 SB0   wfr: rc=0, drn=0\n11/02 23:17:36 SB0    CND: check no: 'none'\n11/02 23:17:36 SB0    CND: check vs: all\n11/02 23:17:36 SB0  send: ATA[0d]\n11/02 23:17:36 SB0  waiting for ``CONNECT''\n11/02 23:17:36 SB0   got: ATA[0d]\n11/02 23:17:36 SB0    CND: OKATA[0d][0a]NO CARRIER\n11/02 23:18:38 SB0  found action string: ``NO CARRIER''\n11/02 23:18:38 ##### failed A_FAIL dev=ttyUSB0, pid=4336, caller='none', conn='', name=''\n",
+  "whole_attempt_profile": {
+    "event": "cycles:u",
+    "lost_samples": 0,
+    "shares_percent": {
+      "native_c5x_and_devices": 46.06,
+      "python": 32.1,
+      "native_x86": 18.08,
+      "ctypes": 1.58,
+      "libc": 1.53
+    },
+    "top_symbols_percent": {
+      "x86_run_batch": 14.88,
+      "python_eval_frame": 14.75,
+      "c5x_threaded_group_be": 1.92,
+      "c5x_op_madd": 1.88,
+      "c5x_threaded_adrk": 1.83,
+      "timed_resampler": 1.51
+    },
+    "scope": "Whole attempt including boot and dialing; not a controlled before/after benchmark"
+  }
 }
