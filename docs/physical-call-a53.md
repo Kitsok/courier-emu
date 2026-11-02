@@ -58,3 +58,68 @@ is excluded from CPU conclusions. The corrected attempt profiles the child.
 Next checks: compare the validated LAPM fixture without overwriting saved
 settings, then obtain a Python function profile during actual SIP training.
 A successful call has not yet been established on this A53 host.
+
+## Fixture comparison and training function profile
+
+The current LAPM fixture also decoded 100, received SIP answer and exchanged
+RTP, but never reported firmware CONNECT. The remote peer sent BYE. The
+runtime was then stopped manually, with 389 frames (38.9 seconds of modeled
+audio), peak lag 151.687 seconds and 405920 pending receive samples. The
+probe's generic `timeout` label does not describe a firmware result; no
+NO CARRIER line was observed before shutdown. This comparison removes the
+saved `&N6` restriction but does not resolve the throughput deficit.
+
+A separate fixture call enabled cProfile by signal only after SIP answer,
+recorded 19.871 seconds, then stopped deliberately. A temporary
+`sitecustomize.py` wrapped the worker's run and installed start/stop signals;
+no tracked remote source was modified. Instrumented timings locate work,
+not unprofiled CPU shares. The profile contains 1060795 calls, including
+4258 native x86 batches, 1381 Python-issued DSP steps, 2600 worker arming
+calls, 2543 Python service callbacks and 28 complete line frames. Native
+x86 calls take 4.923 seconds (including DSP work inside native polls), and
+Python-issued native DSP stepping takes 3.566 seconds. Arming takes 0.926
+seconds of self time. Line-audio extraction, buffer conversion and Python
+clock/service bookkeeping are also substantial costs.
+
+RTP polling takes 1.425 seconds cumulatively. Its receive generator invokes
+scalar μ-law decoding 159200 times: 0.711 seconds in the decoder plus 0.452
+seconds in the generator. Audio arrives at wall-clock speed even while the
+emulator falls behind, so this cost grows with the accumulated backlog.
+The fixture and function-profile summaries are retained in the
+[machine-readable record](physical-call-a53-results.json). Full temporary
+captures are `/tmp/courier-physical-a53-fixture-1` and
+`/tmp/courier-physical-a53-profile-1` on nanovax.
+
+## G.711 receive lookup
+
+RTP reception now maps each octet through an immutable 256-entry table for
+its negotiated law. C-level `map` iteration replaces the Python generator
+and scalar decoder calls; the scalar functions remain the reference.
+Codeword transport still preserves the original octets. No native source
+or ABI changed, so the candidate reuses the user's existing native build.
+
+`tools/benchmark_sip_receive.py` sends 10000 local 160-sample RTP packets per
+repetition, four repetitions for each codec, and records process CPU time,
+packet/sample counts and an audio hash. An isolated older package at
+`60a6f2a` is compared with the candidate; no PBX is contacted. The measured
+loop includes sockets, polling, deque operations and sample accumulation.
+
+| Host/law | Before median CPU | After median CPU | Reduction |
+| --- | ---: | ---: | ---: |
+| Notebook PCMU | 0.804 s | 0.393 s | 51.2% |
+| Notebook PCMA | 0.799 s | 0.412 s | 48.5% |
+| A53 PCMU | 7.165 s | 3.316 s | 53.7% |
+| A53 PCMA | 7.254 s | 3.286 s | 54.7% |
+
+All packet counts, sample counts and hashes match. These sequential
+before/after receive microbenchmarks do not establish full-call gains or
+constant-clock A53 timing. [Raw results](rtp-receive-results.json) retain
+every repetition. The focused SIP suite passes 31 tests, including complete
+256-codeword domains in forward/reverse order for both laws and unmodified
+CLEARMODE octets through actual UDP reception. The first sandboxed test
+invocation could not create sockets; the loopback-enabled run passes.
+
+The next control uses the existing paired-probe Bell 103 preset's
+`S54=192B1&M0&B0&N1` through the firmware AT interface, on a temporary fixture.
+Its purpose is to measure a simpler modulation's real-time demand. No carrier
+is forced and the physical modem's configuration is not modified.
