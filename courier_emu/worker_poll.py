@@ -15,6 +15,7 @@ for the tail of a service that generated a DSP reply or loader transition.
 from __future__ import annotations
 
 import ctypes
+from struct import Struct
 
 from .dsp import load_library
 
@@ -83,14 +84,29 @@ class WorkerPollState(ctypes.Structure):
         ("tick_period", U64), ("last_tick", U64), ("tick_vector", U64),
         ("ticks", U64), ("int1_enabled", U64),
         ("int0_pending", U64), ("int1_pending", U64), ("native_ticks", U64),
+        ("pending_native", U64), ("native_pending_irqs", U64),
         ("error", ctypes.c_char * 512),
     ]
+
+
+def _snapshot_pack(first, end, fmt):
+    layout = Struct('=' + fmt)
+    offset = getattr(WorkerPollState, first).offset
+    assert offset + layout.size == getattr(WorkerPollState, end).offset
+    return layout.pack_into, offset
+
+
+_CLOCK_PACK, _CLOCK_OFFSET = _snapshot_pack('instruction_base', 'stack', 'qQQqQqQQQQ')
+_BRIDGE_PACK, _BRIDGE_OFFSET = _snapshot_pack('bridge_instructions', 'debt', 'qqQqqqq')
+_SCHEDULE_PACK, _SCHEDULE_OFFSET = _snapshot_pack('scheduled', 'exchange_codec_last', 'QQQqQq')
+_TICK_PACK, _TICK_OFFSET = _snapshot_pack('tick_period', 'native_ticks', '7Q')
 
 
 class WorkerPoll:
     """The structure and the engine's handle on the native poll."""
 
     def __init__(self) -> None:
+        self.diagnostic_resumes = 0
         library = load_library()
         layout = (ctypes.c_uint64 * 4)()
         library.courier_worker_poll_layout(layout)
@@ -101,3 +117,25 @@ class WorkerPoll:
         self.state = WorkerPollState()
         self.function = ctypes.cast(library.courier_worker_poll, ctypes.c_void_p).value
         self.context = ctypes.addressof(self.state)
+
+    def seed_snapshot(self, core, machine, bridge, base, deadline, scheduled,
+                      dsp_active, tick_period, timer_period, line_period):
+        """Publish adjacent clock fields without a ctypes assignment per field."""
+        s = self.state
+        stack = machine._interrupt_stack
+        s.core = core
+        _CLOCK_PACK(s, _CLOCK_OFFSET, base, deadline, machine._last_service,
+                    machine._timer_poll_owed, timer_period, machine._last_frame,
+                    machine.frame_instructions, machine._rom_tick,
+                    machine._int0_in_service, len(stack))
+        s.stack[:len(stack)] = stack
+        _BRIDGE_PACK(s, _BRIDGE_OFFSET, bridge._instructions,
+                     getattr(bridge, '_probe_clock_last', 0), bridge.codec is not None,
+                     bridge._codec_instructions, line_period, bridge._x86_ticks, bridge.batch)
+        _SCHEDULE_PACK(s, _SCHEDULE_OFFSET, scheduled, dsp_active, bridge.exchange is not None,
+                       bridge._exchange_instructions, machine.console is not None, machine._console_owed)
+        _TICK_PACK(s, _TICK_OFFSET, tick_period, machine._last_tick,
+                   machine.hardware_map.tick_vector, machine.ticks,
+                   machine.timers.controller.enabled('int1'),
+                   machine._int0_pending or 0, machine._int1_pending or 0)
+        s.pending_native = 1

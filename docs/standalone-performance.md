@@ -331,3 +331,51 @@ corresponding Python tick services. Final memory, registers, all reported
 timer state and pending/in-service interrupt state match. The benchmark now
 records those peripheral comparisons and native tick counts explicitly.
 The next step removes the remaining Python service for deferred INT0/INT1.
+
+### Deferred interrupts and snapshot ownership
+
+The scheduled worker now delivers deferred INT0/INT1 requests in C++ at the
+same timer-poll boundary and IF condition as Python. A new frame edge still
+precedes deferred INT1, and the board tick precedes both. Requests remain
+latched while IF is clear. Vector/stack guards precede all service changes;
+timer-counter expiries, UART work and other device transitions still yield.
+`COURIER_NATIVE_WORKER_IRQS=0` keeps the first-step deferred Python path.
+
+The tick ISR also writes a watched diagnostic counter in the DSP-queue
+address range. That write ended its native batch even though the hook only
+records a trace. For this precise write-watch exit the worker can reuse its
+native snapshot after the instruction commits, refreshing EOI stack and
+panel state replayed from the batch. I/O exits, code hooks and full Python
+services cannot take this shortcut. The exit reason is published before
+return bookkeeping so the reuse decision cannot mistake an I/O handler for
+a diagnostic write.
+
+An initial attempt rebuilt a complete snapshot after each diagnostic write.
+It increased native services but saved no CPU. Snapshot reuse reduced that
+cost, and four layout-checked native-endian packed writes now replace the
+common ctypes clock-field assignments. The reference path retains ordinary
+assignments. This is still a snapshot boundary, not permanent native
+ownership of every device field.
+
+All 58 worker, timer and interpreter tests pass, including reset commands,
+deferred priority, IF holdoff, polling boundaries, entry guards and exact
+firmware/device-state comparisons against Python. Alternating longer
+notebook windows (30M measured instructions after 30M warmup) give:
+
+| Window | Python scheduling | Native scheduling | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Idle | 6.250 s | 6.181 s | 1.1% |
+| Dialing | 6.584 s | 6.515 s | 1.0% |
+
+The reduction is small. In the shorter window, native services increase
+3310 -> 5271 for idle and 4277 -> 6103 for dialing, while batch returns fall
+9624 -> 7663 and 8105 -> 6288. Those structural changes do not imply the
+same percentage CPU reduction. Earlier un-packed ARM pairs regressed while
+observed frequency fell from 1296/1200 to 1008/816 MHz; they are retained as
+negative observations, not hidden or attributed solely to the code.
+
+The benchmark supports `--perf-control FIFO` with `perf stat -D -1
+--control=fifo:FIFO` to count only the selected post-boot window. A local
+ARM smoke test verifies enable/disable and counter output. This lets the
+next ARM comparison report host instructions and cycles alongside CPU time,
+without changing the governor or confusing warmup with steady work.

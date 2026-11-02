@@ -61,6 +61,7 @@ class NativeInterpreter:
         self.exits = Counter()
         self.handled_io = False
         self.poll_code = 0
+        self.exit_reason = 0
         self.fast_out = bytearray(65536)
         for port in cpu._native_fast_out_ports:
             self.fast_out[port] = 1
@@ -138,6 +139,7 @@ class NativeInterpreter:
             cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
             cpu.native_int_mode, self.int_counts, *host_io,
         )
+        self.exit_reason = reason
         if cpu.native_after_run is not None:
             # Before anything else in Python sees the state a native poll kept.
             cpu.native_after_run()

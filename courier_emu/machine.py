@@ -1762,6 +1762,9 @@ class CourierMachine:
         # Set by each service Python runs: the worker's native poll may be
         # armed when the engine next starts a batch.
         worker_arm: list[bool] = [False]
+        worker_resume_diagnostic: list[Callable[[], None] | None] = [None]
+        native_worker_irqs = (os.environ.get("COURIER_NATIVE_WORKER_IRQS", "1") != "0"
+                              and os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0")
 
         def poll_console() -> None:
             typed = self.console.poll(CONSOLE_INPUT_FIFO - len(self.serial_rx))
@@ -2385,7 +2388,7 @@ class CourierMachine:
             if fixed_refresh[0] is not None:
                 fixed_refresh[0]()
 
-        def timer_poll_static() -> bool:
+        def timer_poll_static(*, pending_native: bool = False) -> bool:
             """fast_service's timer-poll tests of state only Python changes,
             all coming out the way that leaves only the frame edge to take."""
             uart = self.uart
@@ -2394,13 +2397,13 @@ class CourierMachine:
                 or self.serial_rx
                 or (uart is not None and uart.pending)
                 or self._external_interrupt_pending is not None
-                or self._int1_pending is not None
+                or (self._int1_pending is not None and not pending_native)
                 or self._timer_interrupt_pending is not None
                 or self.quad_usart is not None or self._quad_profile
                 or self._service_resume or self.cpu_fault is not None
                 or self.interrupt is not None
                 or (self.timers._pending and self.timers.pending_interrupt() is not None)
-                or self._int0_pending is not None
+                or (self._int0_pending is not None and not pending_native)
             )
 
         def on_milestone_code(_uc: Any, address: int, _size: int, _data: Any) -> None:
@@ -3156,6 +3159,12 @@ class CourierMachine:
             )
             if len(self.dsp_queue_writes) > self.max_io_events:
                 del self.dsp_queue_writes[0]
+            if (native_worker_irqs and self.dsp_bridge is not None
+                    and self.dsp_bridge.exchange is not None):
+                # This hook only records diagnostics. Its guest store commits
+                # before the next native batch; it changes no device state.
+                if worker_resume_diagnostic[0] is not None:
+                    worker_resume_diagnostic[0]()
 
 
         # The harness clock. Unicorn will say how big a basic block is but not
@@ -3339,6 +3348,7 @@ class CourierMachine:
             timers = self.timers
             seen = [0]
             native_board_tick = os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0"
+            resume_ready, resume_requested = [False], [False]
 
             def first_instruction_at(tick: int) -> int:
                 ratio = timers.timebase.ticks_per_instruction
@@ -3353,9 +3363,12 @@ class CourierMachine:
                 worker_arm[0] = False
                 core = bridge.core
                 scheduled = not (fast_service_static() and bridge.fast_clock_static())
+                pending_native = bool(native_worker_irqs and native_board_tick
+                                      and scheduled and self._rom_tick
+                                      and not self._serial_in_handler and not self._timer_in_handler)
                 if (core is None or len(self._interrupt_stack) > STACK_SLOTS
                         or (scheduled and not scheduled_static())
-                        or not timer_poll_static()):
+                        or not timer_poll_static(pending_native=pending_native)):
                     return
                 next_service = instruction_base + uc._clock_next
                 elapsed = next_service - self._last_service
@@ -3402,38 +3415,46 @@ class CourierMachine:
                 deadline = max(0, min(deadlines))
                 if next_service >= deadline:
                     return
-                state.core = core.handle
-                state.scheduled = scheduled
-                state.dsp_active = dsp_active
-                state.exchange_present = bridge.exchange is not None
-                state.exchange_ticks = bridge._exchange_instructions
-                state.console_present = self.console is not None
-                state.console_owed = self._console_owed
-                state.instruction_base = instruction_base
-                state.elide_until = deadline
-                state.last_service = self._last_service
-                state.timer_poll_owed = self._timer_poll_owed
-                state.timer_poll_period = TIMER_POLL_INSTRUCTIONS
-                state.last_frame = self._last_frame
-                state.tick_period = self.tick_period_instructions if tick_native else 0
-                state.last_tick, state.ticks = self._last_tick, self.ticks
-                state.tick_vector = self.hardware_map.tick_vector
-                state.int1_enabled = timers.controller.enabled("int1")
-                state.int0_pending = state.int1_pending = 0
-                state.frame_instructions = self.frame_instructions
-                state.int0_ok = bool(self._rom_tick)
-                state.int0_in_service = bool(self._int0_in_service)
-                stack = self._interrupt_stack
-                state.stack_depth = len(stack)
-                for index, vector in enumerate(stack):
-                    state.stack[index] = vector
-                state.bridge_instructions = bridge._instructions
-                state.probe_last = getattr(bridge, "_probe_clock_last", 0)
-                state.codec_present = bridge.codec is not None
-                state.codec_instructions = bridge._codec_instructions
-                state.line_frame_instructions = LINE_FRAME_INSTRUCTIONS
-                state.x86_ticks = bridge._x86_ticks
-                state.batch = bridge.batch
+                if pending_native:
+                    poll.seed_snapshot(core.handle, self, bridge, instruction_base,
+                                       deadline, scheduled, dsp_active,
+                                       self.tick_period_instructions if tick_native else 0,
+                                       TIMER_POLL_INSTRUCTIONS, LINE_FRAME_INSTRUCTIONS)
+                else:
+                    state.core = core.handle
+                    state.scheduled = scheduled
+                    state.dsp_active = dsp_active
+                    state.exchange_present = bridge.exchange is not None
+                    state.exchange_ticks = bridge._exchange_instructions
+                    state.console_present = self.console is not None
+                    state.console_owed = self._console_owed
+                    state.instruction_base = instruction_base
+                    state.elide_until = deadline
+                    state.last_service = self._last_service
+                    state.timer_poll_owed = self._timer_poll_owed
+                    state.timer_poll_period = TIMER_POLL_INSTRUCTIONS
+                    state.last_frame = self._last_frame
+                    state.tick_period = self.tick_period_instructions if tick_native else 0
+                    state.last_tick, state.ticks = self._last_tick, self.ticks
+                    state.tick_vector = self.hardware_map.tick_vector
+                    state.int1_enabled = timers.controller.enabled("int1")
+                    state.int0_pending = self._int0_pending or 0
+                    state.int1_pending = self._int1_pending or 0
+                    state.pending_native = pending_native
+                    state.frame_instructions = self.frame_instructions
+                    state.int0_ok = bool(self._rom_tick)
+                    state.int0_in_service = bool(self._int0_in_service)
+                    stack = self._interrupt_stack
+                    state.stack_depth = len(stack)
+                    for index, vector in enumerate(stack):
+                        state.stack[index] = vector
+                    state.bridge_instructions = bridge._instructions
+                    state.probe_last = getattr(bridge, "_probe_clock_last", 0)
+                    state.codec_present = bridge.codec is not None
+                    state.codec_instructions = bridge._codec_instructions
+                    state.line_frame_instructions = LINE_FRAME_INSTRUCTIONS
+                    state.x86_ticks = bridge._x86_ticks
+                    state.batch = bridge.batch
                 latch = self.panel.latches.get(0x14)
                 state.panel_latch = NO_LATCH if latch is None else latch
                 state.io_cursor = state.mmio_cursor = 0
@@ -3629,8 +3650,31 @@ class CourierMachine:
             def before_run() -> None:
                 if worker_arm[0]:
                     arm()
+                elif resume_ready[0] and resume_requested[0]:
+                    # The watched store only recorded diagnostics. The native
+                    # clocks, DSP and line snapshot remain current. EOI/panel
+                    # logs replayed after the batch may have changed these.
+                    state.int0_in_service = self._int0_in_service
+                    state.stack_depth = len(self._interrupt_stack)
+                    state.stack[:state.stack_depth] = self._interrupt_stack
+                    state.int0_pending = self._int0_pending or 0
+                    state.int1_pending = self._int1_pending or 0
+                    latch = self.panel.latches.get(0x14)
+                    state.panel_latch = NO_LATCH if latch is None else latch
+                    state.io_cursor = state.mmio_cursor = 0
+                    state.armed = 1
+                    poll.diagnostic_resumes += 1
+                resume_ready[0] = resume_requested[0] = False
+
+            def resume_diagnostic() -> None:
+                if resume_ready[0] and not worker_arm[0]:
+                    resume_requested[0] = True
+
+            worker_resume_diagnostic[0] = resume_diagnostic
 
             def after_run() -> None:
+                resume_ready[0] = bool(state.armed and state.pending_native
+                                       and uc._native.exit_reason == 4)
                 state.armed = 0
                 if state.presend_error:
                     # A frame the native service sent and took back: the
@@ -3652,7 +3696,7 @@ class CourierMachine:
                 self._next_service = total + interpreter_period
                 self._timer_poll_owed = state.timer_poll_owed
                 self._last_frame = state.last_frame
-                if state.tick_period:
+                if state.tick_period or state.pending_native:
                     self._last_tick, self.ticks = state.last_tick, state.ticks
                     self._int0_pending = state.int0_pending or None
                     self._int1_pending = state.int1_pending or None
@@ -4112,7 +4156,9 @@ class CourierMachine:
         worker_poll = getattr(self, "_worker_poll", None)
         scheduler = ({"native_polls": worker_poll.state.polls,
                       "native_dsp_batches": worker_poll.state.dsp_batches,
-                      "native_board_ticks": worker_poll.state.native_ticks}
+                      "native_board_ticks": worker_poll.state.native_ticks,
+                      "native_pending_irqs": worker_poll.state.native_pending_irqs,
+                      "native_diagnostic_resumes": worker_poll.diagnostic_resumes}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

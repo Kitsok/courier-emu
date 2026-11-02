@@ -2443,6 +2443,7 @@ struct WorkerPollState {
     uint64_t dsp_batches;
     uint64_t tick_period, last_tick, tick_vector, ticks, int1_enabled;
     uint64_t int0_pending, int1_pending, native_ticks;
+    uint64_t pending_native, native_pending_irqs;
     char error[512];
 };
 
@@ -2661,9 +2662,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     worker_apply_eois(s, cpu);
     const int64_t total = s.instruction_base + int64_t(now);
     if (uint64_t(total) >= s.elide_until) { s.armed = 0; return 0; }
-    // A tick may leave the lower-priority frame edge or INT1 pending. Python
-    // owns their subsequent delivery until that queue is native too.
-    if (s.int0_pending || s.int1_pending) { s.armed = 0; return 0; }
+    // The comparison path leaves deferred frame/INT1 delivery to Python.
+    if (!s.pending_native && (s.int0_pending || s.int1_pending)) { s.armed = 0; return 0; }
     // Lamp writes waiting for the harness's replay: harmless only if they
     // leave the latch as it is.
     for (uint64_t index = s.io_cursor; index < cpu.io_event_count; ++index) {
@@ -2691,31 +2691,31 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         const bool tick_due = s.tick_period && (flags & WORKER_IF)
             && uint64_t(total) >= s.last_tick
             && uint64_t(total) - s.last_tick >= s.tick_period;
-        uint32_t tick_slots[3];
-        if (tick_due) {
-            if (s.tick_vector > 255 || s.stack_depth >= sizeof s.stack
-                || !worker_readable(cpu, uint32_t(s.tick_vector * 4), 4)) {
-                s.armed = 0; return 0;
-            }
-            for (unsigned k = 0; k < 3; ++k) {
-                tick_slots[k] = ((r[REG_SS] & 0xffff) * 16
-                    + ((r[REG_SP] - 2 * (k + 1)) & 0xffff)) & 0xfffff;
-                if (!worker_writable(cpu, tick_slots[k], 2)) { s.armed = 0; return 0; }
-            }
-        }
-        if (s.timer_poll_owed - elapsed <= 0 && s.int0_ok
+        const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+        if (timer_poll && s.int0_ok && !s.int0_pending
             && !s.int0_in_service && (flags & WORKER_IF)
             && total - s.last_frame >= int64_t(s.frame_instructions)) {
             if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
             if (vector[0] | vector[1] | vector[2] | vector[3]) {
-                for (unsigned k = 0; k < 3; ++k) {
-                    slots[k] = ((r[REG_SS] & 0xffff) * 16
-                        + ((r[REG_SP] - 2 * (k + 1)) & 0xffff)) & 0xfffff;
-                    if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
-                }
-                if (s.stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
                 frame_edge = true;
+            }
+        }
+        const bool pending_due = s.pending_native && timer_poll && (flags & WORKER_IF)
+            && (s.int0_pending || s.int1_pending);
+        const bool enter_irq = tick_due || frame_edge || pending_due;
+        const unsigned vector_number = tick_due ? unsigned(s.tick_vector)
+            : (frame_edge || s.int0_pending) ? WORKER_INT0 : 13;
+        const bool deferred_entry = !tick_due && pending_due
+            && ((vector_number == WORKER_INT0 && s.int0_pending)
+                || (vector_number == 13 && s.int1_pending));
+        if (enter_irq) {
+            if (vector_number > 255 || s.stack_depth >= sizeof s.stack
+                || !worker_readable(cpu, vector_number * 4, 4)) { s.armed = 0; return 0; }
+            for (unsigned k = 0; k < 3; ++k) {
+                slots[k] = ((r[REG_SS] & 0xffff) * 16
+                    + ((r[REG_SP] - 2 * (k + 1)) & 0xffff)) & 0xfffff;
+                if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
             }
         }
         auto *timed = static_cast<courier::resample::Timed *>(s.timed);
@@ -2794,39 +2794,30 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             s.last_frame += int64_t(s.frame_instructions);
             if (total - s.last_frame >= int64_t(s.frame_instructions))
                 s.last_frame = total - int64_t(s.frame_instructions);
-            if (tick_due) {
-                // service_after_tick queues INT0 before service_tail_suffix
-                // queues the tick; the run loop delivers the tick first.
-                s.int0_pending = WORKER_INT0;
-            } else {
-                const uint32_t values[3] = {r[REG_FLAGS] & 0xffff, r[REG_CS] & 0xffff,
-                                        r[REG_IP] & 0xffff};
-                for (unsigned k = 0; k < 3; ++k) {
-                    cpu.memory[slots[k]] = uint8_t(values[k]);
-                    cpu.memory[slots[k] + 1] = uint8_t(values[k] >> 8);
-                }
-                r[REG_SP] = (r[REG_SP] - 6) & 0xffff;
-                r[REG_FLAGS] &= ~WORKER_IF;
-                const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
-                r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
-                r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
-                s.int0_in_service = 1;
-                s.stack[s.stack_depth++] = WORKER_INT0;
-            }
+            s.int0_pending = WORKER_INT0;
         }
-        if (tick_due) {
+        if (enter_irq) {
             const uint32_t values[3] = {r[REG_FLAGS] & 0xffff, r[REG_CS] & 0xffff,
                                         r[REG_IP] & 0xffff};
             for (unsigned k = 0; k < 3; ++k) {
-                cpu.memory[tick_slots[k]] = uint8_t(values[k]);
-                cpu.memory[tick_slots[k] + 1] = uint8_t(values[k] >> 8);
+                cpu.memory[slots[k]] = uint8_t(values[k]);
+                cpu.memory[slots[k] + 1] = uint8_t(values[k] >> 8);
             }
             r[REG_SP] = (r[REG_SP] - 6) & 0xffff;
             r[REG_FLAGS] &= ~WORKER_IF;
-            const uint8_t *vector = cpu.memory + s.tick_vector * 4;
+            const uint8_t *vector = cpu.memory + vector_number * 4;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
-            s.stack[s.stack_depth++] = uint8_t(s.tick_vector);
+            s.stack[s.stack_depth++] = uint8_t(vector_number);
+            if (!tick_due) {
+                if (vector_number == WORKER_INT0) {
+                    s.int0_pending = 0;
+                    s.int0_in_service = 1;
+                } else s.int1_pending = 0;
+                if (deferred_entry) ++s.native_pending_irqs;
+            }
+        }
+        if (tick_due) {
             s.last_tick = uint64_t(total);
             ++s.ticks;
             ++s.native_ticks;

@@ -151,7 +151,71 @@ def test_native_tick_waits_for_if_and_does_not_underflow_a_future_origin():
     assert poll.state.ticks == 0
 
 
-@pytest.mark.parametrize("serial_input", [b"", b"AT\rATI7\r", b"ATDT100\r"])
+@pytest.mark.parametrize("tick_first", [False, True])
+def test_native_pending_interrupts_wait_for_if_and_keep_priority(tick_first):
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    s.pending_native = 1
+    s.int0_pending, s.int1_pending = 12, 13
+    s.tick_period = 1024 if tick_first else 0
+    memory[52:56] = [0, 3, 0, 0x80]
+    assert run(1024, 0x102) == 1
+    assert s.stack_depth == 0 and s.int0_pending == 12 and s.int1_pending == 13
+    if tick_first:
+        assert run(2048, 0x302) == 1
+        assert s.stack_depth == 1 and s.stack[0] == 15
+        assert s.int0_pending == 12 and s.int1_pending == 13
+        assert s.native_pending_irqs == 0
+        s.tick_period = 0
+    at = 3072 if tick_first else 2048
+    assert run(at, 0x302) == 1
+    assert regs[12] == 0x100 and s.int0_in_service
+    assert s.int0_pending == 0 and s.int1_pending == 13
+    assert s.native_pending_irqs == 1
+    assert run(at + 1024, 0x302) == 1
+    assert regs[12] == 0x300 and s.int1_pending == 0
+    assert s.native_pending_irqs == 2
+
+
+@pytest.mark.parametrize("watched", ['vector', 'stack'])
+def test_native_pending_interrupt_entry_rolls_back_before_service(watched):
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    s.pending_native, s.int1_pending, s.tick_period = 1, 13, 0
+    guard[52 if watched == 'vector' else 0x7fa] |= 16 if watched == 'vector' else 32
+    before = list(regs), bytes(memory)
+    assert run(1024, 0x302) == 0
+    assert (list(regs), bytes(memory)) == before
+    assert s.polls == s.last_service == s.native_pending_irqs == 0
+    assert s.int1_pending == 13
+
+
+def test_pending_interrupt_waits_for_the_timer_poll_boundary():
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    s.pending_native, s.int1_pending, s.tick_period = 1, 13, 0
+    s.timer_poll_owed = 4096
+    memory[52:56] = [0, 3, 0, 0x80]
+    for at in (1024, 2048, 3072):
+        assert run(at, 0x302) == 1
+        assert s.stack_depth == 0 and s.int1_pending == 13
+    assert run(4096, 0x302) == 1
+    assert s.stack_depth == 1 and s.int1_pending == 0
+
+
+def test_new_frame_edge_precedes_deferred_int1():
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    s.pending_native, s.int1_pending, s.tick_period = 1, 13, 0
+    s.int0_ok, s.frame_instructions = 1, 1000
+    memory[52:56] = [0, 3, 0, 0x80]
+    assert run(1024, 0x302) == 1
+    assert regs[12] == 0x100 and s.int0_in_service and s.int1_pending == 13
+    assert run(2048, 0x302) == 1
+    assert regs[12] == 0x300 and s.int1_pending == 0
+
+
+@pytest.mark.parametrize("serial_input", [b"", b"AT\rATI7\r", b"ATDT100\r", b"AT\rATZ\rAT\r"])
 def test_interactive_exchange_matches_python_services(monkeypatch, serial_input):
     from pathlib import Path
     from courier_emu.codec import CodecBringUp, SiliconDaa
@@ -212,6 +276,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         monkeypatch.setenv("COURIER_NATIVE_TIMERS", enabled)
         monkeypatch.setenv("COURIER_NATIVE_INTERRUPTS", enabled)
         monkeypatch.setenv("COURIER_NATIVE_WORKER_TICK", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_WORKER_IRQS", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,

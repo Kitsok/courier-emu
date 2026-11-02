@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import platform
 import socket
+import stat
 import sys
 import time
 
@@ -23,8 +24,9 @@ class WindowConsole:
     poll_instructions = 8192
     closed = False
 
-    def __init__(self, warmup, stop, profile):
+    def __init__(self, warmup, stop, profile, perf_control=None):
         self.warmup, self.stop, self.profile = warmup, stop, profile
+        self.perf_control = perf_control
         self.owner = None
         self.start = self.end = None
 
@@ -39,16 +41,22 @@ class WindowConsole:
                     zero_batches=native.zero_batches,
                     polls=poll.state.polls if poll else 0,
                     native_board_ticks=getattr(poll.state, 'native_ticks', 0) if poll else 0,
+                    native_pending_irqs=getattr(poll.state, 'native_pending_irqs', 0) if poll else 0,
+                    native_diagnostic_resumes=getattr(poll, 'diagnostic_resumes', 0),
                     dsp_batches=poll.state.dsp_batches if poll else 0)
 
     def poll(self, limit):
         if self.start is None and self.owner.instructions >= self.warmup:
+            if self.perf_control:
+                self.perf_control.write('enable\n')
             self.start = self.snapshot()
             if self.profile:
                 self.profile.enable()
         elif self.start is not None and self.end is None and self.owner.instructions >= self.stop:
             if self.profile:
                 self.profile.disable()
+            if self.perf_control:
+                self.perf_control.write('disable\n')
             self.end = self.snapshot()
         return b''
 
@@ -82,13 +90,21 @@ def main():
                         help='exclude boot; observe the following --instructions window through console polls')
     parser.add_argument('--profile-out', type=Path,
                         help='cProfile only the measured console window; requires --repeat 1')
+    parser.add_argument('--perf-control', type=Path,
+                        help='perf stat control FIFO: enable/disable only during the measured window')
     args = parser.parse_args()
     if args.instructions <= 0 or args.repeat <= 0 or args.warmup_instructions < 0:
         parser.error('instructions/repeat must be positive and warmup nonnegative')
-    if args.profile_out and args.repeat != 1:
-        parser.error('--profile-out requires --repeat 1')
-    if (args.warmup_instructions or args.profile_out) and args.instructions <= 16384:
+    if (args.profile_out or args.perf_control) and args.repeat != 1:
+        parser.error('profiling requires --repeat 1')
+    if (args.warmup_instructions or args.profile_out or args.perf_control) and args.instructions <= 16384:
         parser.error('console measurement windows must exceed 16384 instructions')
+    if args.perf_control:
+        try:
+            if not stat.S_ISFIFO(args.perf_control.stat().st_mode):
+                parser.error('--perf-control must name an existing FIFO')
+        except OSError as exc:
+            parser.error(str(exc))
 
     from courier_emu.codec import CodecBringUp, SiliconDaa
     from courier_emu.daa import CourierDaa
@@ -109,9 +125,11 @@ def main():
         sink.bind(('127.0.0.1', 0))
         for _ in range(args.repeat):
             profile = cProfile.Profile() if args.profile_out else None
+            perf_control = args.perf_control.open('w', buffering=1) if args.perf_control else None
             console = (WindowConsole(args.warmup_instructions,
-                                     args.warmup_instructions + args.instructions - 8192, profile)
-                       if args.warmup_instructions or profile else None)
+                                     args.warmup_instructions + args.instructions - 8192,
+                                     profile, perf_control)
+                       if args.warmup_instructions or profile or perf_control else None)
             sip = SipSession(SipConfig(
                 server='127.0.0.1:' + str(sink.getsockname()[1]),
                 bind='127.0.0.1', advertise='127.0.0.1'))
@@ -163,7 +181,8 @@ def main():
                         raise RuntimeError('execution stopped before the measured window')
                     window = {key: end[key] - start[key] for key in
                               ('instructions', 'batches', 'retired', 'zero_batches',
-                               'polls', 'dsp_batches', 'native_board_ticks')}
+                               'polls', 'dsp_batches', 'native_board_ticks', 'native_pending_irqs',
+                               'native_diagnostic_resumes')}
                     window.update(cpu_seconds=end['cpu'] - start['cpu'],
                                   wall_seconds=end['wall'] - start['wall'],
                                   start_instruction=start['instructions'],
@@ -175,6 +194,9 @@ def main():
                     record['daa_operation'] = machine.dsp_bridge.daa.operation
                 runs.append(record)
             finally:
+                if perf_control:
+                    perf_control.write('disable\n')
+                    perf_control.close()
                 sip.socket.close()
                 sip.rtp_socket.close()
     print(json.dumps(dict(platform=platform.platform(), python=sys.version,
