@@ -4,6 +4,7 @@
 #include "resample.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
+#include "rtp_media.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -3183,5 +3184,61 @@ const char *courier_analog_decoder_feed(void *handle,const int32_t *data,size_t 
     static thread_local std::string result;
     result=static_cast<courier::analog::Exchange *>(handle)->decoder.feed(data,size);
     return result.c_str();
+}
+}
+
+namespace {
+thread_local std::string rtp_error;
+}
+extern "C" {
+const char *courier_rtp_last_error() { return rtp_error.c_str(); }
+uint64_t courier_rtp_layout() { return sizeof(courier::media::State); }
+void *courier_rtp_create(int fd) {
+    try { return new courier::media::Media(fd); }
+    catch(const std::exception &e) { rtp_error=e.what();return nullptr; }
+}
+void courier_rtp_destroy(void *handle) { delete static_cast<courier::media::Media *>(handle); }
+void courier_rtp_stop(void *handle) { static_cast<courier::media::Media *>(handle)->stop(); }
+int courier_rtp_clock(void *handle,uint64_t samples) {
+    try { static_cast<courier::media::Media *>(handle)->clock(samples);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+void courier_rtp_configure(void *handle,uint64_t state,uint64_t payload,uint64_t law,uint64_t words,double gain) {
+    static_cast<courier::media::Media *>(handle)->configure(state,payload,law,words,gain);
+}
+int courier_rtp_remote(void *handle,const char *ip,unsigned port) {
+    try { static_cast<courier::media::Media *>(handle)->remote(ip,port);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+int courier_rtp_retire(void *handle,const char *ip,unsigned port,int operation) {
+    try { static_cast<courier::media::Media *>(handle)->retire(ip,port,operation);return 0; }
+    catch(const std::exception &e) { rtp_error=e.what();return -1; }
+}
+void courier_rtp_lock(void *handle) { static_cast<courier::media::Media *>(handle)->mutex.lock(); }
+void courier_rtp_unlock(void *handle) { static_cast<courier::media::Media *>(handle)->mutex.unlock(); }
+void courier_rtp_snapshot(void *handle,void *out) {
+    *static_cast<courier::media::State *>(out)=static_cast<courier::media::Media *>(handle)->snapshot();
+}
+void courier_rtp_set(void *handle,unsigned field,uint64_t value) {
+    static_cast<courier::media::Media *>(handle)->set(field,value);
+}
+void courier_rtp_next(void *handle,double value) { static_cast<courier::media::Media *>(handle)->next(value); }
+void courier_rtp_poll(void *handle,double now) { static_cast<courier::media::Media *>(handle)->poll(now); }
+void courier_rtp_receive(void *handle) { static_cast<courier::media::Media *>(handle)->receive(); }
+void courier_rtp_flush(void *handle,double now) { static_cast<courier::media::Media *>(handle)->flush(now); }
+void courier_rtp_send(void *handle,const int32_t *data,size_t count,int words,double now) {
+    static_cast<courier::media::Media *>(handle)->send(data,count,bool(words),now);
+}
+size_t courier_rtp_values(void *handle,int queue,int32_t *out,size_t capacity,int consume) {
+    return static_cast<courier::media::Media *>(handle)->values(queue,out,capacity,bool(consume));
+}
+void courier_rtp_clear(void *handle,int queue) { static_cast<courier::media::Media *>(handle)->clear(queue); }
+void courier_rtp_append(void *handle,int queue,const int32_t *data,size_t count) {
+    static_cast<courier::media::Media *>(handle)->append(queue,data,count);
+}
+void courier_rtp_convert(int law,int encode,const int32_t *in,int32_t *out,size_t count) {
+    for(size_t k=0;k<count;++k)out[k]=encode
+        ? law?courier::media::encode_alaw(in[k]):courier::media::encode_ulaw(in[k])
+        : law?courier::media::decode_alaw(uint8_t(in[k])):courier::media::decode_ulaw(uint8_t(in[k]));
 }
 }

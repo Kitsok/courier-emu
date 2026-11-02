@@ -48,3 +48,30 @@ error-corrected data behavior locally, then build on A53 and perform the
 physical call and performance measurements. The physical success criterion
 requires both modems to establish error correction; local carrier detection
 or SIP answer alone is insufficient.
+
+## Persistent native RTP transport
+
+`native/rtp_media.hpp` owns a duplicate of the RTP socket, packet state,
+retired peers, PCM/codeword queues, G.711 conversion and the media-clock
+thread. Its queues are shared directly with the forthcoming native frame
+owner. It preserves transmit reserve/repriming, sequence and timestamp wrap,
+preanswer discard and the reference transport's receive filtering. No silent
+samples are invented to mask a stalled producer.
+
+`courier_emu/media_native.py` supplies control-plane interfaces and a SIP
+adapter that preserves the existing session's identity and signalling state
+machine. RTP counters and queue views read authoritative native state. SIP
+control updates can hold a native recursive lock so address retirement and
+other dialog changes are atomic relative to media I/O. The native clock is
+joined before its socket/object is destroyed. Python media threads are not
+used by this transport.
+
+Thirteen local transport checks pass, including all 65536 signed PCM input
+values for both encoders, all 256 codewords for both decoders, headers/gain,
+clock wrap, retired peers/payload filters, raw codewords, preanswer discard,
+queue limits, clock reserve/underflow and final counters. Adoption and the
+SIP receive adapter are checked without creating a SIP dialog or modem call.
+Together with the device/build checks, 37 checks pass. The native build now
+tracks the transport header and links its worker-thread dependency explicitly.
+Runtime activation and the complete native frame pipeline remain pending;
+no physical calls or performance measurements were made for this stage.

@@ -1070,6 +1070,23 @@ class SipSession:
                                   next=now + .5, interval=.5)
         self._send_response(response, 'tx re-INVITE response', source)
 
+    def _receive_rtp(self) -> None:
+        while True:
+            try:
+                packet, _source = self.rtp_socket.recvfrom(2_048)
+            except BlockingIOError:
+                break
+            if _source in self._retired_rtp_peers:
+                continue
+            if len(packet) < 12 or packet[1] & 0x7F != self.payload_type:
+                continue
+            if self.codewords:
+                self._rx_codewords.extend(packet[12:])
+            else:
+                self._rx_audio.extend(map(self._decode_octet, packet[12:]))
+            self.rtp_packets_received += 1
+            self.rtp_octets_received += len(packet) - 12
+
     def poll(self) -> None:
         if self.closed:
             return
@@ -1087,21 +1104,7 @@ class SipSession:
                 self._handle_response(data, source)
             else:
                 self._handle_request(data, source)
-        while True:
-            try:
-                packet, _source = self.rtp_socket.recvfrom(2_048)
-            except BlockingIOError:
-                break
-            if _source in self._retired_rtp_peers:
-                continue
-            if len(packet) < 12 or packet[1] & 0x7F != self.payload_type:
-                continue
-            if self.codewords:
-                self._rx_codewords.extend(packet[12:])
-            else:
-                self._rx_audio.extend(map(self._decode_octet, packet[12:]))
-            self.rtp_packets_received += 1
-            self.rtp_octets_received += len(packet) - 12
+        self._receive_rtp()
         now = time.monotonic()
         update = self._media_update
         if (self.state == 'connected' and update and update['success']
