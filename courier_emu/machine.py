@@ -1106,6 +1106,9 @@ class CourierMachine:
             self.dsp_bridge.set_timebase(timebase)
 
     def run(self, instruction_limit: int = 250_000) -> RunResult:
+        if getattr(self.dsp_bridge, '_native_media_owner', None) is not None:
+            from .service_native import NativeServiceMachine
+            NativeServiceMachine.adopt(self)
         if self.cpu_engine == "interpreter":
             from . import x86_interpreter as _backend
 
@@ -3352,6 +3355,7 @@ class CourierMachine:
 
             poll = self._worker_poll = WorkerPoll()
             state = poll.state
+            state.service_model = getattr(self, '_native_service_address', None)
             line_buffer_address = ctypes.addressof(state.line_buffer)
             timers = self.timers
             seen = [0]
@@ -3480,15 +3484,19 @@ class CourierMachine:
                     state.exchange_present = bridge.exchange is not None
                     state.exchange_ticks = 0 if scheduled == 3 else bridge._exchange_instructions
                     state.console_present = self.console is not None
-                    state.console_owed = self._console_owed
+                    if not state.service_model:
+                        state.console_owed = self._console_owed
                     state.instruction_base = instruction_base
                     state.elide_until = deadline
                     state.last_service = self._last_service
-                    state.timer_poll_owed = self._timer_poll_owed
+                    if not state.service_model:
+                        state.timer_poll_owed = self._timer_poll_owed
                     state.timer_poll_period = TIMER_POLL_INSTRUCTIONS
-                    state.last_frame = self._last_frame
+                    if not state.service_model:
+                        state.last_frame = self._last_frame
                     state.tick_period = self.tick_period_instructions if tick_native else 0
-                    state.last_tick, state.ticks = self._last_tick, self.ticks
+                    if not state.service_model:
+                        state.last_tick, state.ticks = self._last_tick, self.ticks
                     state.tick_vector = self.hardware_map.tick_vector
                     state.int1_enabled = timers.controller.enabled("int1")
                     state.int0_pending = self._int0_pending or 0
@@ -3754,17 +3762,20 @@ class CourierMachine:
                 self.instructions = total
                 self._last_service = total
                 self._next_service = total + interpreter_period
-                self._timer_poll_owed = state.timer_poll_owed
-                self._last_frame = state.last_frame
+                if not state.service_model:
+                    self._timer_poll_owed = state.timer_poll_owed
+                    self._last_frame = state.last_frame
                 if state.tick_period or state.pending_native:
-                    self._last_tick, self.ticks = state.last_tick, state.ticks
+                    if not state.service_model:
+                        self._last_tick, self.ticks = state.last_tick, state.ticks
                     self._int0_pending = state.int0_pending or None
                     self._int1_pending = state.int1_pending or None
                 if state.timer_model:
                     self._timer_interrupt_pending = state.timer_pending or None
                     self.timer_interrupts = state.timer_delivered
                 if state.scheduled:
-                    self._console_owed = state.console_owed
+                    if not state.service_model:
+                        self._console_owed = state.console_owed
                     if state.pacer_period:
                         sip_pacer.next_check = state.pacer_next
                     if state.scheduled != 3:

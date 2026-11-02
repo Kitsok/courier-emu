@@ -331,3 +331,21 @@ DAA transition. All 43 selected worker/bridge/boot checks pass, with five
 legacy call workloads deselected. No modem calls or performance measurements
 were performed. A compiler error from a shadowed cycle-estimate local was
 corrected before these checks passed.
+
+## Shared machine service phases
+
+`courier_emu/service_native.py` supplies permanent machine service storage and
+live views for console polling, timer polling, the last frame/tick positions
+and tick count. Standard machines with a native board adopt these views at
+run entry while preserving object identity. The native worker reads and
+updates the same fields; arming and take-back no longer copy these phases.
+Comparison/custom machine paths retain the legacy snapshot when no shared
+service model is attached.
+
+The boot comparison now checks the full shared machine service buffer as
+well as existing CPU, interrupt, DSP, codec and media evidence. A separate
+script supplies deliberately stale legacy phase fields and verifies they
+cannot affect native service. All 38 selected worker/boot checks pass; five
+call workloads remain deselected. No modem calls or performance measurements
+were made. Pending interrupt requests, the in-service stack and remaining
+CPU/device I/O transitions are still migration work.

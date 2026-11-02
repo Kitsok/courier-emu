@@ -14,8 +14,9 @@ for the tail of a service that generated a DSP reply or loader transition.
 Scheduled mode 3 calls the persistent native board/media owner directly,
 yielding for signalling and DAA predicate changes before the DSP/timer tail.
 Its media and DSP scheduling state is authoritative and is never copied
-through this snapshot. Machine interrupt/console fields retain their existing
-snapshot boundary.
+through this snapshot. Machine console/timer poll phases and frame/tick
+positions can also use shared storage. Interrupt requests and the in-service
+stack retain their existing snapshot boundary.
 Scheduled modes can own board ticks and deferred INT0/INT1 delivery; timer
 counter expiries and Python-owned device work still bound the native run.
 """
@@ -99,6 +100,7 @@ class WorkerPollState(ctypes.Structure):
         ("native_console_polls", U64), ("native_pacer_checks", U64),
         ("native_media", ctypes.c_void_p),
         ("native_media_services", U64), ("native_media_yields", U64), ("native_codec_services", U64),
+        ("service_model", ctypes.c_void_p),
         ("error", ctypes.c_char * 512),
     ]
 
@@ -138,7 +140,12 @@ class WorkerPoll:
         s = self.state
         stack = machine._interrupt_stack
         s.core = core
-        _CLOCK_PACK(s, _CLOCK_OFFSET, base, deadline, machine._last_service,
+        if s.service_model:
+            s.instruction_base, s.elide_until, s.last_service = base, deadline, machine._last_service
+            s.timer_poll_period, s.frame_instructions = timer_period, machine.frame_instructions
+            s.int0_ok, s.int0_in_service, s.stack_depth = machine._rom_tick, machine._int0_in_service, len(stack)
+        else:
+            _CLOCK_PACK(s, _CLOCK_OFFSET, base, deadline, machine._last_service,
                     machine._timer_poll_owed, timer_period, machine._last_frame,
                     machine.frame_instructions, machine._rom_tick,
                     machine._int0_in_service, len(stack))
@@ -152,9 +159,9 @@ class WorkerPoll:
                      bridge._codec_instructions, line_period, bridge._x86_ticks, bridge.batch)
         _SCHEDULE_PACK(s, _SCHEDULE_OFFSET, scheduled, dsp_active, bridge.exchange is not None,
                        0 if scheduled == 3 else bridge._exchange_instructions,
-                       machine.console is not None, machine._console_owed)
-        _TICK_PACK(s, _TICK_OFFSET, tick_period, machine._last_tick,
-                   machine.hardware_map.tick_vector, machine.ticks,
+                       machine.console is not None, 0 if s.service_model else machine._console_owed)
+        _TICK_PACK(s, _TICK_OFFSET, tick_period, 0 if s.service_model else machine._last_tick,
+                   machine.hardware_map.tick_vector, 0 if s.service_model else machine.ticks,
                    machine.timers.controller.enabled('int1'),
                    machine._int0_pending or 0, machine._int1_pending or 0)
         s.pending_native = 1

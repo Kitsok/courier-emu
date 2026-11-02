@@ -479,3 +479,19 @@ def test_firmware_with_plain_console_matches_python_idle_checks(monkeypatch):
     for key in ('dsp', 'serial_port', 'exchange', 'line_service', 'core_codec'):
         assert results[0]['dsp_bridge'][key] == results[1]['dsp_bridge'][key]
     assert results[1]['dsp_bridge']['exchange']['dialed'] == '100'
+
+
+def test_shared_machine_service_phases_ignore_legacy_snapshots():
+    from courier_emu.service_native import ServiceState
+    poll, run = scheduled()
+    live = ServiceState(4096, 2048, 100, 200, 3)
+    s = poll.state
+    s.service_model = c.addressof(live)
+    s.console_present = 1
+    s.console_owed = 9999;s.timer_poll_owed = 8888
+    s.last_frame = 7777;s.last_tick = 6666;s.ticks = 5555
+    assert run(1024) == 1
+    assert (live.console_owed, live.timer_poll_owed) == (3072, 1024)
+    assert (live.last_frame, live.last_tick, live.ticks) == (100, 200, 3)
+    assert (s.console_owed, s.timer_poll_owed, s.last_frame, s.last_tick, s.ticks) == (
+        9999, 8888, 7777, 6666, 5555)

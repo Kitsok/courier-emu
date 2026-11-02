@@ -55,6 +55,7 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
         assert machine.dsp_bridge._sip_line.placed == 0
         assert session.rtp_packets_sent == 0
         machines.append(machine);results.append(result)
+    assert bytes(machines[0]._native_service_state) == bytes(machines[1]._native_service_state)
     assert results[0].registers == results[1].registers
     assert machines[0].uc.memory == machines[1].uc.memory
     assert machines[0].io_counts == machines[1].io_counts

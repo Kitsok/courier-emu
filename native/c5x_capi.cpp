@@ -2391,6 +2391,11 @@ void courier_bearer_set_partial(void *handle, const uint8_t *data, std::size_t c
 // Python, and the harness takes the fields back whenever it regains control.
 namespace {
 
+struct MachineServiceState {
+    int64_t console_owed=0,timer_poll_owed=0,last_frame=0;
+    uint64_t last_tick=0,ticks=0;
+};
+
 struct WorkerPollState {
     void *core;
     uint64_t armed, dirty, polls;
@@ -2475,6 +2480,7 @@ struct WorkerPollState {
     uint64_t pacer_next, pacer_period, native_console_polls, native_pacer_checks;
     courier::analog::BoardMedia *native_media;
     uint64_t native_media_services,native_media_yields,native_codec_services;
+    MachineServiceState *service_model;
     char error[512];
 };
 
@@ -2721,12 +2727,17 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     double &clock_debt=s.scheduled==3 && s.native_media?s.native_media->s.debt:s.debt;
     double &clock_cpi=s.scheduled==3 && s.native_media?s.native_media->s.cpi:s.cpi;
     double &clock_cycles_per_x86=s.scheduled==3 && s.native_media?s.native_media->s.cycles_per_x86:s.cycles_per_x86;
+    int64_t &service_console_owed=s.service_model?s.service_model->console_owed:s.console_owed;
+    int64_t &service_timer_poll_owed=s.service_model?s.service_model->timer_poll_owed:s.timer_poll_owed;
+    int64_t &service_last_frame=s.service_model?s.service_model->last_frame:s.last_frame;
+    uint64_t &service_last_tick=s.service_model?s.service_model->last_tick:s.last_tick;
+    uint64_t &service_ticks=s.service_model?s.service_model->ticks:s.ticks;
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
         if(s.scheduled==3 && !s.native_media){s.armed=0;return 0;}
         const bool exchange_due = s.exchange_present && clock_exchange_ticks + elapsed >= s.batch;
         const bool dsp_due = s.dsp_active && clock_x86_ticks + elapsed >= s.batch;
-        const bool console_due = s.console_present && s.console_owed - elapsed <= 0;
+        const bool console_due = s.console_present && service_console_owed - elapsed <= 0;
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
         // step, and input must be sampled on its original polling boundary.
@@ -2761,9 +2772,9 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         uint32_t slots[3];
         uint32_t *r = cpu.regs;
         bool tick_due = s.tick_period && (flags & WORKER_IF)
-            && uint64_t(total) >= s.last_tick
-            && uint64_t(total) - s.last_tick >= s.tick_period;
-        const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+            && uint64_t(total) >= service_last_tick
+            && uint64_t(total) - service_last_tick >= s.tick_period;
+        const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
         courier::Timers186 preview;
         uint64_t timer_pending = s.timer_pending;
         if (s.timer_model && timer_poll) {
@@ -2779,7 +2790,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         tick_due = tick_due && !timer_pending;
         if (timer_poll && s.int0_ok && !s.int0_pending
             && !s.int0_in_service && (flags & WORKER_IF)
-            && total - s.last_frame >= int64_t(s.frame_instructions)) {
+            && total - service_last_frame >= int64_t(s.frame_instructions)) {
             if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
             if (vector[0] | vector[1] | vector[2] | vector[3]) {
@@ -2849,9 +2860,9 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         if (s.exchange_present) clock_exchange_ticks += elapsed;
         if (s.dsp_active) clock_x86_ticks += elapsed;
-        if (s.console_present) s.console_owed -= elapsed;
+        if (s.console_present) service_console_owed -= elapsed;
         if (console_due) {
-            s.console_owed += int64_t(s.console_poll_period);
+            service_console_owed += int64_t(s.console_poll_period);
             ++s.native_console_polls;
         }
         if (pacer_due) {
@@ -2909,17 +2920,17 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 return code;
             }
         }
-        s.timer_poll_owed -= elapsed;
-        if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
+        service_timer_poll_owed -= elapsed;
+        if (service_timer_poll_owed <= 0) service_timer_poll_owed += int64_t(s.timer_poll_period);
         if (s.timer_model && timer_poll) {
             *s.timer_model = preview;
             s.timer_pending = timer_pending;
             ++s.native_timer_polls;
         }
         if (frame_edge) {
-            s.last_frame += int64_t(s.frame_instructions);
-            if (total - s.last_frame >= int64_t(s.frame_instructions))
-                s.last_frame = total - int64_t(s.frame_instructions);
+            service_last_frame += int64_t(s.frame_instructions);
+            if (total - service_last_frame >= int64_t(s.frame_instructions))
+                service_last_frame = total - int64_t(s.frame_instructions);
             s.int0_pending = WORKER_INT0;
         }
         if (enter_irq) {
@@ -2949,8 +2960,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         if (tick_due) {
-            s.last_tick = uint64_t(total);
-            ++s.ticks;
+            service_last_tick = uint64_t(total);
+            ++service_ticks;
             ++s.native_ticks;
             if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
                 s.int1_pending = 13;
@@ -2974,13 +2985,13 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // fast_service's frame edge, decided now: nothing it reads moves in the
     // DSP step. An entry this cannot make the way dispatch_interrupt would is
     // left to the harness.
-    const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+    const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
     bool frame_edge = false;
     uint32_t *r = cpu.regs;
     const uint32_t sp = r[REG_SP] & 0xFFFF, ss = r[REG_SS] & 0xFFFF;
     uint32_t slots[3];
     if (timer_poll && s.int0_ok && !s.int0_in_service && (flags & WORKER_IF)
-        && total - s.last_frame >= int64_t(s.frame_instructions)) {
+        && total - service_last_frame >= int64_t(s.frame_instructions)) {
         if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
         const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
         if (vector[0] | vector[1] | vector[2] | vector[3]) {
@@ -3113,13 +3124,13 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // fast_service's tail. The 80186 timers are brought up to date lazily:
     // every access to one advances it first, and the harness made sure none
     // reaches a max count before elide_until.
-    s.timer_poll_owed -= elapsed;
-    if (s.timer_poll_owed <= 0) {
-        s.timer_poll_owed += int64_t(s.timer_poll_period);
+    service_timer_poll_owed -= elapsed;
+    if (service_timer_poll_owed <= 0) {
+        service_timer_poll_owed += int64_t(s.timer_poll_period);
         if (frame_edge) {
-            s.last_frame += int64_t(s.frame_instructions);
-            if (total - s.last_frame >= int64_t(s.frame_instructions))
-                s.last_frame = total - int64_t(s.frame_instructions);
+            service_last_frame += int64_t(s.frame_instructions);
+            if (total - service_last_frame >= int64_t(s.frame_instructions))
+                service_last_frame = total - int64_t(s.frame_instructions);
             s.int0_in_service = 1;
             // dispatch_interrupt(INT0_VECTOR, software=False)
             const uint32_t flags16 = r[REG_FLAGS] & 0xFFFF;
@@ -3494,3 +3505,5 @@ void courier_board_media_codec(void *handle,void *master) {
 }
 void courier_board_media_service_codec(void *handle) {static_cast<courier::analog::BoardMedia *>(handle)->service_codec();}
 }
+
+extern "C" size_t courier_service_layout(){return sizeof(MachineServiceState);}
