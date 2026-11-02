@@ -1756,7 +1756,20 @@ class CourierMachine:
         # native poll has already applied to the in-service stack.
         eoi_applied: list[bool] = [False]
 
+        from .timers_native import NativeTimerBlock
+        from .service_native import fold_native_eois
+        self._native_eoi_writes = 0
+        native_eoi_bookkeeping = (
+            hasattr(self, '_native_service_state') and type(self.timers) is NativeTimerBlock
+            and self.quad_board is None and self.hardware_map.dsp_reset_port != 0xff02
+            and (self.uart is None or type(self.uart) is EbSerial))
+
         def replay_mmio_writes(events: memoryview, count: int) -> None:
+            if (native_eoi_bookkeeping and len(self.mmio_events) >= self.max_io_events
+                    and fold_native_eois(events, count, self.mmio_counts)):
+                self._native_eoi_writes += count
+                sync_device_time()
+                return
             # What the engine retired without leaving: replayed in order, ahead
             # of anything else that looks at the state they change.
             for offset in range(0, count * 8, 8):
@@ -4276,7 +4289,8 @@ class CourierMachine:
                       "native_pacer_checks": worker_poll.state.native_pacer_checks,
                       "native_media_services": worker_poll.state.native_media_services,
                       "native_media_yields": worker_poll.state.native_media_yields,
-                      "native_codec_services": worker_poll.state.native_codec_services}
+                      "native_codec_services": worker_poll.state.native_codec_services,
+                      "native_eoi_writes": self._native_eoi_writes}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

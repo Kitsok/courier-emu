@@ -74,3 +74,4 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
     assert results[1].scheduler['native_dsp_batches'] > 0
     assert results[1].scheduler['native_media_yields'] > 0
     assert results[1].scheduler['native_codec_services'] > 0
+    assert results[1].scheduler['native_eoi_writes'] > 0

@@ -369,3 +369,23 @@ All 40 selected worker/boot checks pass; five call workloads are deferred.
 No modem calls or performance measurements were made. User-requested steps
 2–4 (remaining device I/O, runtime finalization, then complete local validation)
 remain outstanding.
+
+## Native EOI bookkeeping in the remaining I/O work (step 2)
+
+Writes already processed by native EOI handling no longer need a Python
+`on_mmio_write` callback per event once the detailed MMIO trace is full.
+The standard shared-machine path validates an entire applied-EOI batch and
+folds byte/word counts together. It retains ordinary replay if an event is
+unapplied, has another address or unsupported width, or if custom device
+behavior or detailed tracing requires it. Timer/controller writes and the
+standard UART have no additional action for FF02, and the native stack/EOI
+handling is already authoritative.
+
+Seven scripts cover mixed-width folding and fallback without partial count
+updates. The boot regression now asserts this path is actually exercised and
+continues to compare CPU, timers, devices, shared state and I/O counts. The
+combined selected worker/boot set passed 42 checks; the strengthened coverage
+run passed eight checks. Five legacy call workloads remain deferred. No
+modem calls or performance measurements were made. The remaining device I/O
+review, runtime recording/monitor support and final local validation are
+still outstanding under requested steps 2–4.

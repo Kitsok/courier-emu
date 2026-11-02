@@ -74,3 +74,17 @@ class NativeInterruptStack(MutableSequence):
         values = self.values();del values[index];self.replace(values)
     def insert(self, index, value):
         values = self.values();values.insert(index, value);self.replace(values)
+
+
+def fold_native_eois(events, count, counts):
+    """Fold a batch only when every EOI was already applied by native code."""
+    if count <= 0 or len(events) < count*8:return False
+    data = bytes(events[:count*8])
+    for offset, value in ((0, 2), (1, 255), (2, 0), (3, 0), (7, 1)):
+        if data[offset::8].count(value) != count:return False
+    widths = data[6::8]
+    narrow, wide = widths.count(1), widths.count(2)
+    if narrow+wide != count:return False
+    if narrow:counts[('write', 0xff02, 1)] += narrow
+    if wide:counts[('write', 0xff02, 2)] += wide
+    return True
