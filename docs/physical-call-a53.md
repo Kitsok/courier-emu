@@ -123,3 +123,34 @@ The next control uses the existing paired-probe Bell 103 preset's
 `S54=192B1&M0&B0&N1` through the firmware AT interface, on a temporary fixture.
 Its purpose is to measure a simpler modulation's real-time demand. No carrier
 is forced and the physical modem's configuration is not modified.
+
+## Bell 103 control: local CONNECT is insufficient
+
+The receive-optimized candidate in `/tmp/courier-call-candidate` ran the
+Bell 103 preset against physical modem 100. Firmware acknowledged the AT
+settings and ATI4 confirmed B1, &M0, &B0, &N1 and S54=192. It reported plain
+`CONNECT` 100.505 seconds after process launch, about 66.5 seconds after the
+dial command. The probe held the call for 12 more wall-clock seconds, then
+stopped gracefully, sending SIP BYE. The final report has `online_mode=true`,
+no forced connected event, no legacy carrier fallback, and zero data bytes.
+
+This is **not a confirmed end-to-end modem connection**. The physical
+modem's mgetty log records ATA at 19:01:04 local time and NO CARRIER at
+19:02:06. The emulator report was written at 19:01:55, after the probe's
+hangup. Physical ATI6 says `No Connection`, with last-call time zero; ATI11
+reports unknown modulation and zero carrier frequencies/symbol rates.
+Reading these existing logs did not require stopping mgetty or touching the
+physical serial device. The caller's firmware can detect an answering
+carrier without the physical answering modem acquiring the caller.
+
+The candidate was still far below real time: 188 line frames, peak media
+lag 90.016 seconds and 312640 pending receive samples. Incoming RTP counted
+2444 packets against only 490 transmitted. The probe's `connect` label
+means its local terminal criterion passed, not that the physical modem
+connected; the machine-readable record retains this explicit verdict.
+Full evidence is `/tmp/courier-physical-a53-bell103-1` on nanovax and
+`/var/log/mgetty/{mg_ttyUSB0,statistics.ttyUSB0}.log` for the physical side.
+
+The success criterion therefore remains unmet. Further work must reduce
+training/media production cost, and future attempts must check the physical
+side as well as the emulator's CONNECT line.
