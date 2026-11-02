@@ -136,13 +136,9 @@ sequenceDiagram
 
 Native port models, timer reads, counter expiry/request delivery, interrupt
 entry, board ticks, deferred INT0/INT1 delivery and eligible DSP/resampling
-<<<<<<< HEAD
-services can remain inside the C++ batch. The counters, mask bits and timer
-=======
 services can remain inside the C++ batch. Empty plain-terminal readiness
 polls and SIP pacing checks that require no wait can also stay native;
 input, terminal work and positive media lead return to Python. The counters, mask bits and timer
->>>>>>> 6e2b50fe0c69b3cee5ecd4f76d550b17a5dd8110
 request queue use one permanent native-layout buffer with live Python views;
 there is no per-batch timer snapshot or counter publication step. Register
 programming and calibrated-delay grants retain Python logic on those fields.
