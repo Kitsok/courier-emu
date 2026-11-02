@@ -73,6 +73,7 @@ class NativeInterpreter:
         self.io_events = bytearray(65536 * 4)
         # One batch retires at most 65536 instructions of at most 8 writes each.
         self.mmio_events = bytearray(8 * 8 * 65536)
+        self.write_trace = None
         self.int_counts = bytearray(256 * 4)
         self.out_batch_callback = cpu._native_out_batch_callback
 
@@ -95,12 +96,12 @@ class NativeInterpreter:
         return bool(self._inject_interrupt(cpu.regs, cpu.memory, vector))
 
     def dispatch_interrupt(self, cpu, vector, software):
-        if self.signature != (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch):
+        if self.signature != (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch, cpu.native_write_trace):
             return None
         return self._dispatch_interrupt(cpu.regs, cpu.memory, self.guard, vector, software)
 
     def execute(self, cpu, count):
-        signature = (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch)
+        signature = (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch, cpu.native_write_trace)
         if signature != self.signature:
             self.guard[:] = bytes(len(self.guard))
             for first, last, perms in cpu.mapped:
@@ -117,6 +118,17 @@ class NativeInterpreter:
                 # Writes the harness replays later (see the engine's guard bit 64).
                 for address in range(first, last + 1):
                     self.guard[address] |= 64
+            for first, last in cpu.native_write_trace:
+                # Any additional observer may change device state and must
+                # continue to execute synchronously, including global hooks.
+                if any(callback is not cpu.native_write_trace_hook
+                       and (end == 0 or begin <= last and end >= first)
+                       for callback, _, begin, end in cpu._write_hooks):
+                    continue
+                for address in range(first, last + 1):
+                    self.guard[address] |= 128
+            if cpu.native_write_trace and self.write_trace is None:
+                self.write_trace = bytearray(4096 * 32)
             self.signature = signature
         host_io = ()
         polling = False
@@ -138,7 +150,9 @@ class NativeInterpreter:
             host_io = (*host_io, *((None,) * (8 - len(host_io))), timer_reads.buffer)
             if timer_reads.model_buffer is not None:
                 host_io += (timer_reads.model_buffer,)
-        done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count = self.run(
+        if cpu.native_write_trace:
+            host_io = (*host_io, *((None,) * (10 - len(host_io))), self.write_trace)
+        done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = self.run(
             cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
             cpu.native_int_mode, self.int_counts, *host_io,
         )
@@ -146,6 +160,8 @@ class NativeInterpreter:
         if cpu.native_after_run is not None:
             # Before anything else in Python sees the state a native poll kept.
             cpu.native_after_run()
+        if trace_count:
+            cpu.native_write_trace_callback(memoryview(self.write_trace), trace_count)
         if timer_reads is not None:
             timer_reads.finish()
         self.poll_code = poll_code

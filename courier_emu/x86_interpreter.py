@@ -262,6 +262,11 @@ class Uc:
         self.redirect_is_free = False
         self.native_mmio_batch: tuple[tuple[int, int], ...] = ()
         self.native_mmio_callback: Callable[[memoryview, int], None] | None = None
+        # Explicit opt-in for diagnostic-only store hooks. Device-changing
+        # hooks must remain synchronous. Records carry callback-time state.
+        self.native_write_trace: tuple[tuple[int, int], ...] = ()
+        self.native_write_trace_callback: Callable[[memoryview, int], None] | None = None
+        self.native_write_trace_hook = None
         self.native_timer_reads = None
         # A watched write can schedule device updates after the instruction
         # commits, before another native batch reads the affected memory.

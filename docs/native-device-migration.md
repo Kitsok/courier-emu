@@ -527,3 +527,25 @@ training workload, then optimize the largest measured cost. Separate x86
 and DSP threads remain an investigation: shared mailbox, interrupt, reset
 and guest-clock ordering require explicit synchronization before concurrency
 can be evaluated safely.
+
+## Profile and buffer remaining diagnostic write handoffs
+
+The local loopback training profiler isolates SIP-answer-to-CONNECT work
+and verifies LAPM/V42bis with exact bidirectional data. Native batch
+handling and rearming are the largest remaining Python self-time entries;
+training-only exit counts identify watched diagnostic RAM writes as
+39.3%/47.0% of caller/answerer native exits. Function attribution is retained
+in `docs/local-training-profile.json` and described in
+`docs/local-training-profile.md`.
+
+The standard worker now buffers those diagnostic stores natively, retaining
+callback PC, width/value, stack-derived caller information and order. The
+fixed-work diagnostic path uses 83.6% less notebook CPU and 79.3% less A53
+CPU. Final local reference/candidate peers all connect with LAPM/V42bis and
+transfer exact data. One sequential training pair observes about 4.6% less
+combined CPU, with differing guest work; this is not a fixed-work full-call
+speedup result. The final focused suite passes 38 checks. Details, rejected
+ordinary-execution overhead and controls are in `docs/native-queue-trace.md`
+and `docs/native-queue-trace-results.json`. Nanovax benchmarks use an
+isolated temporary package, leaving its working checkout unchanged. No
+physical call, physical settings change or temperature sampling occurred.

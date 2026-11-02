@@ -62,3 +62,8 @@ discovery and must not be used to choose a training optimization. In
 particular, diagnostic queue hooks are frequent, but buffering them must
 preserve the guest PC, stack-derived caller, store ordering and counts.
 No implementation change is justified merely by callback count.
+
+The training-only exit gate is now complete. Watched writes account for
+39.3%/47.0% of caller/answerer native exits. The validated buffering change,
+including A53 measurements and retained diagnostic semantics, is described
+in `docs/native-queue-trace.md`.
