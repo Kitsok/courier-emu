@@ -34,24 +34,24 @@ order, live state, receiver replacement, directory mutations and independent cop
 make no calls and measure no throughput. The runtime is not yet switched to
 these models: activation belongs with the integrated board/frame owner.
 
-## Remaining implementation
+## Current integration and validation status
 
-RTP, subscriber supervision and the codec/frame pipeline are implemented as
-persistent native components below. Runtime construction still needs to
-adopt them before any Python media thread starts. Connect the authoritative
-media fields and reset/rebuild edges to the bridge, then attach the pipeline
-to the native worker with exact signalling continuations. Move remaining
-eligible board/device I/O and clock state into the native board context so
-the normal worker no longer republishes those devices at batch boundaries.
-Keep Python SIP signalling, configuration, diagnostics and explicit reference
-models. Preserve optional recording/monitor behavior when choosing runtime
-eligibility or adding native sinks.
+The standard standalone ROM/SIP/exchange path now defaults to the native
+board. `COURIER_NATIVE_BOARD=0` selects the reference implementation. Shared
+DSP clocks, machine service phases, interrupt requests/stack, native codec
+initialization, frame/media service and EOI bookkeeping are integrated.
+Existing native host lanes, mailbox status and download strobes remain in
+use. Recording uses native WAV sinks; optional speaker monitoring yields at
+its original position before ADC delivery and retains the existing playback
+thread. It adds no handoff when monitoring is absent.
 
-After the full path is implemented, validate native/reference behavior and
-error-corrected data behavior locally, then build on A53 and perform the
-physical call and performance measurements. The physical success criterion
-requires both modems to establish error correction; local carrier detection
-or SIP answer alone is insufficient.
+Python retains SIP transactions, terminal/configuration handling, diagnostics
+and cold board reset/identification/control transitions. Alternate/custom
+boards retain their existing paths. The local final validation gate is now
+in progress, including reference comparisons and error-corrected modem data.
+A53 rebuilding, physical call validation and performance measurements remain
+later work. Physical success requires both modems to establish error
+correction; local carrier detection or SIP answer alone is insufficient.
 
 ## Persistent native RTP transport
 
@@ -403,3 +403,21 @@ Ten recording/provider/adapter checks pass. The recording script verifies
 exact output bytes and headers without SIP dialogs or modem calls. Speaker
 monitor integration, default activation and complete local validation remain
 pending. No performance measurements were made.
+
+## Speaker monitoring and default runtime activation (step 3)
+
+The native board exposes an explicit optional monitor continuation before
+receive PCM is queued to the ADC, matching the reference callback order.
+Python delivers that diagnostic frame to the existing monitor and evaluates
+the firmware speaker gate, then resumes without replaying the frame. The
+native worker uses its existing media continuation boundary for this event.
+The standard path now enables the native board by default and preserves an
+explicit reference switch.
+
+The component/worker/boot set passed 140 checks with five call workloads
+deferred. Fifteen targeted checks validate monitor ordering, exact monitored
+PCM through native worker resumption, recording and boot state with monitoring
+on/off. Forty runtime/audio/bridge checks also pass, including default native
+selection and the explicit reference switch. Implementation is ready for the
+step 4 local modem/data validation gate; no physical calls or performance
+measurements have been made.

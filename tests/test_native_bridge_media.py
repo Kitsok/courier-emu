@@ -147,3 +147,44 @@ def test_shared_reset_edge_clears_native_output_cursors_and_buffer(bridge):
     assert not device._exchange_line_buffer
     assert list(device._codec_in_flight) == [400, 500]
     assert device._rx_cushion_rate is None
+
+
+def test_optional_monitor_runs_before_adc_queue_and_once_per_frame(bridge):
+    device, *_ = bridge
+    delivered = []
+
+    class Monitor:
+        def feed(self, tx, rx, *, enabled):
+            delivered.append((list(tx), list(rx), enabled,
+                              device._native_media_owner.state.frames, len(device._codec_in_flight)))
+        def close(self):pass
+
+    device.audio_monitor = Monitor()
+    device.speaker_enabled = lambda: True
+    device._exchange_line_buffer.extend(range(800))
+    device.core.host_write(0x21, 0x1200)
+    state = device.core.codec_state()
+    device.core.step_cycles(state['frame_period'])
+    device._service_exchange()
+    assert len(delivered) == 1
+    tx, rx, enabled, frames, queued = delivered[0]
+    assert tx == list(range(800)) and rx == [0]*800
+    assert enabled and frames == 0 and queued == 0
+    assert device._native_media_owner.state.frames == 1
+    assert len(device._codec_in_flight) >= 800
+    device.audio_monitor = None
+
+
+def test_native_default_and_explicit_reference_switch(bridge, monkeypatch):
+    existing, *_ = bridge
+    for setting, expected in [(None, True), ('0', False)]:
+        if setting is None:monkeypatch.delenv('COURIER_NATIVE_BOARD', raising=False)
+        else:monkeypatch.setenv('COURIER_NATIVE_BOARD', setting)
+        session = SipSession(SipConfig(server='127.0.0.1:9', bind='127.0.0.1'))
+        device = CourierDspBridge(existing.image, daa=CourierDaa(), sip=session, exchange=LineExchange())
+        try:
+            assert isinstance(device, NativeCourierDspBridge) == expected
+            assert isinstance(session, NativeSipSession) == expected
+            assert (session._rtp_clock_thread is None) == expected
+        finally:
+            device.close()

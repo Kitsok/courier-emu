@@ -3527,3 +3527,14 @@ extern "C" int courier_line_media_record(void *handle,const char *prefix) {
     try{static_cast<courier::analog::LineMedia *>(handle)->record(prefix);return 0;}
     catch(...){return -1;}
 }
+
+extern "C" {
+void courier_board_media_monitor(void *handle,int enabled) {static_cast<courier::analog::BoardMedia *>(handle)->monitor=bool(enabled);}
+void courier_board_media_monitor_ack(void *handle) {static_cast<courier::analog::BoardMedia *>(handle)->monitor_done=true;}
+size_t courier_board_media_frame(void *handle,int receive,int32_t *out,size_t capacity) {
+    const auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    const auto &data=receive?board.port.exchange.output:board.frame;
+    if(out)std::copy_n(data.begin(),std::min(capacity,data.size()),out);
+    return data.size();
+}
+}

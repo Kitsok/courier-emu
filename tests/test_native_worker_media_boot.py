@@ -33,13 +33,15 @@ class Console:
     def summary(self):return {}
 
 
-def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
+@pytest.mark.parametrize('monitor', [False, True])
+def test_boot_state_matches_python_worker_with_native_media(monkeypatch, monitor):
     path = ROOT / ANALOG403_IMAGE
     if not path.exists():pytest.skip('optional captured analog403 image unavailable')
     monkeypatch.setenv('COURIER_NATIVE_BOARD', '1')
     monkeypatch.setenv('COURIER_SIP_TX_BUFFER_MS', '0')
     monkeypatch.delenv('COURIER_SIP_RECORD', raising=False)
     machines, results = [], []
+    monitor_records = []
     for enabled in ('0', '1'):
         monkeypatch.setenv('COURIER_WORKER_POLL', enabled)
         session = SipSession(SipConfig(server='127.0.0.1:9', bind='127.0.0.1'))
@@ -48,6 +50,15 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
             board_id=7, daa=CourierDaa('quiet'), exchange=LineExchange(),
             codec=CodecBringUp(SiliconDaa(1)), dsp_batch=4096, console=Console(),
             sip=session, tick_source='dsp')
+        records = []
+        monitor_records.append(records)
+        if monitor:
+            class Monitor:
+                def __init__(self, target):self.target = target
+                def feed(self, tx, rx, *, enabled):self.target.append((tuple(tx), tuple(rx), enabled))
+                def close(self):pass
+            machine.dsp_bridge.audio_monitor = Monitor(records)
+            machine.dsp_bridge.speaker_enabled = lambda: True
         machine.console.owner = machine
         machine.dsp_bridge._sip_line.cooperative_pacing = True
         result = machine.run(8_000_000)
@@ -62,6 +73,8 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
     assert results[0].serial_text == results[1].serial_text
     assert results[0].ticks == results[1].ticks
     assert results[0].timer_interrupts == results[1].timer_interrupts
+    assert monitor_records[0] == monitor_records[1]
+    if monitor:assert monitor_records[0]
     left, right = [machine.dsp_bridge for machine in machines]
     assert left._last_state == right._last_state
     assert bytes(left._native_media_owner.state) == bytes(right._native_media_owner.state)

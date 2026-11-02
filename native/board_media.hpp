@@ -32,6 +32,7 @@ struct BoardMedia {
     std::string dial_digits;
     int64_t instructions=0;
     bool active=false,in_frame=false,fallback=false;
+    bool monitor=false,monitor_done=false;
     BoardMedia(SipPort &subscriber,Daa *device,size_t samples,uint64_t period,uint64_t quantum,
                bool precise,bool compensated):port(subscriber),daa(device),
         tx_converter(precise,compensated),rx_converter(precise,compensated),
@@ -136,13 +137,14 @@ struct BoardMedia {
                 in_frame=true;
             }
             const int event=port.resume();if(event)return event;
+            if(monitor && !monitor_done)return 8;
             queue(core,port.exchange.output);
             if(daa) {
                 daa->line_state=port.exchange.line_state();daa->observe(int64_t(frame_samples));
                 if(!port.exchange.dialed.empty() && daa->operation==Originate)daa->operation=Dialing;
                 dial_digits=port.exchange.dialed;
             }
-            ++s.frames;in_frame=false;
+            ++s.frames;in_frame=false;monitor_done=false;
             active=!fallback && line_buffer.size()>=frame_samples;
         }
         return 0;

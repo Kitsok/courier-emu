@@ -675,7 +675,7 @@ class CourierDspBridge:
         self.ring = ring
         self.exchange = exchange
         native_media = (
-            os.environ.get("COURIER_NATIVE_BOARD", "0") == "1"
+            os.environ.get("COURIER_NATIVE_BOARD", "1") != "0"
             and self.boot_rom_enabled and not self.is3453 and line is None
             and type(sip) is SipSession and type(exchange) is LineExchange
             and not legacy_carrier_fallback and not rx_acquisition_assist and not rx_samples

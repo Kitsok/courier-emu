@@ -107,10 +107,13 @@ class NativeCourierDspBridge(CourierDspBridge):
                 self._sync_media_flags()
             elif name == 'core' and old_core is not None and old_core is not value:
                 owner.reset(value, rebuild=True)
+            elif name == 'audio_monitor':
+                owner.set_monitor(self._monitor_frame if value is not None else None)
+
+    def _monitor_frame(self, transmitted, received):
+        self.audio_monitor.feed(transmitted, received, enabled=self.speaker_enabled())
 
     def _service_exchange(self):
-        if self.audio_monitor is not None:
-            raise RuntimeError('native media monitor integration is not enabled')
         self._native_media_owner.service(self.core, self._instructions)
 
     def _take_line_audio(self):

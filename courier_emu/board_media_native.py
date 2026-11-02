@@ -49,6 +49,9 @@ def library():
         'digits': ([c.c_void_p, c.c_char_p], c.c_char_p),
         'codec': ([c.c_void_p, c.c_void_p], None),
         'service_codec': ([c.c_void_p], None),
+        'monitor': ([c.c_void_p, c.c_int], None),
+        'monitor_ack': ([c.c_void_p], None),
+        'frame': ([c.c_void_p, c.c_int, c.POINTER(c.c_int32), c.c_size_t], c.c_size_t),
     }
     for name, (args, result) in signatures.items():
         fn = getattr(lib, 'courier_board_media_' + name)
@@ -102,7 +105,22 @@ class NativeBoardMedia:
                 return
             if event < 0:
                 raise RuntimeError('native codec service failed')
+            if event == 8:
+                self.monitor_callback(self.frame(0), self.frame(1))
+                self._lib.courier_board_media_monitor_ack(self.handle)
+                continue
             self.line.control_event(event)
+
+    def frame(self, receive):
+        fn = self._lib.courier_board_media_frame
+        count = fn(self.handle, receive, None, 0)
+        data = (c.c_int32 * count)()
+        fn(self.handle, receive, data, count)
+        return list(data)
+
+    def set_monitor(self, callback):
+        self.monitor_callback = callback
+        self._lib.courier_board_media_monitor(self.handle, callback is not None)
 
     def reset(self, core, *, rebuild=False):
         if self._lib.courier_board_media_reset(self.handle, core.handle, rebuild):
