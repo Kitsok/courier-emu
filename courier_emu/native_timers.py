@@ -28,8 +28,9 @@ assert _SLOT_PACK.size == c.sizeof(Slot)
 class NativeTimerReads:
     def __init__(self, timers, counts):
         self.timers, self.counts = timers, counts
-        self.buffer = bytearray(c.sizeof(ReadState))
-        self.state = ReadState.from_buffer(self.buffer)
+        self.model_buffer = getattr(timers, 'buffer', None)
+        self.buffer = None if self.model_buffer is not None else bytearray(c.sizeof(ReadState))
+        self.state = timers.native_state if self.model_buffer is not None else ReadState.from_buffer(self.buffer)
         self.entries = sorted(TIMER_REGISTERS)
         self.timer_indexes = tuple(TIMER_REGISTERS[a][0] for a in self.entries)
         self.slot_offsets = tuple(ReadState.slots.offset + i * c.sizeof(Slot)
@@ -39,6 +40,8 @@ class NativeTimerReads:
     def prepare(self, base):
         s = self.state
         s.instruction_base = base
+        if self.model_buffer is not None:
+            return
         if self.revision != self.timers.revision:
             s.ratio = self.timers.timebase.ticks_per_instruction
             # Write the six native-endian uint64 fields in one call instead
@@ -60,15 +63,19 @@ class NativeTimerReads:
             bit = mask & -mask
             mask ^= bit
             index, width = divmod(bit.bit_length() - 1, 2)
-            count = s.reads[index][width]
-            s.reads[index][width] = 0
+            reads = s.read_counts if self.model_buffer is not None else s.reads
+            count = reads[index][width]
+            reads[index][width] = 0
             self.counts[("read", self.entries[index], width + 1)] += count
-            self.timers.reads += count
+            if self.model_buffer is None:
+                self.timers.reads += count
             touched |= 1 << self.timer_indexes[index]
         for index in range(3):
             if not touched & (1 << index):
                 continue
             slot, timer = s.slots[index], self.timers.timers[index]
-            if slot.last_tick != slot.origin:
-                timer.advance(max(slot.last_tick, timer.origin))
-        self.timers.revision += 1
+            last_tick = s.last_read_tick[index] if self.model_buffer is not None else slot.last_tick
+            if last_tick != slot.origin:
+                timer.advance(max(last_tick, timer.origin))
+        if self.model_buffer is None:
+            self.timers.revision += 1

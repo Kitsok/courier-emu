@@ -699,6 +699,11 @@ class CourierMachine:
             # The EB leaves IMASK bit 1 reserved: INT3 is bit 7, not the
             # legacy DMA-equipped controller's bit 6. The 2.3.x tick uses it.
             self.timers.controller = EbInterruptController()
+        if (self._rom_tick and with_dsp and cpu_engine == 'interpreter'
+                and os.environ.get('COURIER_X86_NATIVE', '1') != '0'
+                and os.environ.get('COURIER_NATIVE_TIMER_MODEL', '1') != '0'):
+            from .timers_native import NativeTimerBlock
+            self.timers = NativeTimerBlock(self.timers)
         self._int0_in_service = False
         self._interrupt_stack: list[int] = []
         self._timer_interrupt_pending: int | None = None
@@ -3410,10 +3415,15 @@ class CourierMachine:
                 if (self._rom_tick or self._quad_modem_tick) and self.tick_ms and not tick_native:
                     deadlines.append(
                         self._last_tick + self.tick_period_instructions)
-                for timer in timers.timers:
-                    remaining = timer.ticks_to_max_count()
-                    if remaining is not None:
-                        deadlines.append(first_instruction_at(timer.origin + remaining))
+                if hasattr(timers, 'next_deadline'):
+                    timer_deadline = timers.next_deadline()
+                    if timer_deadline is not None:
+                        deadlines.append(timer_deadline)
+                else:
+                    for timer in timers.timers:
+                        remaining = timer.ticks_to_max_count()
+                        if remaining is not None:
+                            deadlines.append(first_instruction_at(timer.origin + remaining))
                 deadline = max(0, min(deadlines))
                 if next_service >= deadline:
                     return

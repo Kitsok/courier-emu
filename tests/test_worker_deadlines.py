@@ -277,6 +277,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         monkeypatch.setenv("COURIER_NATIVE_INTERRUPTS", enabled)
         monkeypatch.setenv("COURIER_NATIVE_WORKER_TICK", enabled)
         monkeypatch.setenv("COURIER_NATIVE_WORKER_IRQS", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_TIMER_MODEL", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,

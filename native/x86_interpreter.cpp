@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <csetjmp>
+#include "timers186.hpp"
 namespace {
 enum { AX,CX,DX,BX,SP,BP,SI,DI,ES,CS,SS,DS,IP,F };
 constexpr uint32_t CF=1, PF=4, AF=16, ZF=64, SF=128, IF=512, DF=1024, OF=2048;
@@ -70,27 +71,33 @@ struct Core {
     int seg=-1; struct Write { uint32_t address,value; int size; };
     Write writes[8]; int nw=0;
     TimerReadState *timers=nullptr;
+    courier::Timers186 *timer_model=nullptr;
     struct TimerRead { uint32_t address, value, size, index, timer; uint64_t tick; };
     TimerRead timer_reads[8]; unsigned nr=0;
     bool timer_read(uint32_t a, int n, uint32_t &value) {
-        if (!timers || a < 0xff30 || a > 0xff46 || (a & 1) || (n != 1 && n != 2)) return false;
+        if ((!timers && !timer_model) || a < 0xff30 || a > 0xff46 || (a & 1) || (n != 1 && n != 2)) return false;
         const unsigned offset=(a-0xff30)/2, timer=offset/4, field=offset%4;
         // Control reads may grant a calibrated delay; T2 has no compare B.
         if (field==3 || offset==10 || timer>2 || nr==8) return false;
         for(int k=0;k<n;++k) if(!(guard[a+k]&1)) return false;
-        const TimerReadSlot &s=timers->slots[timer];
         // Memory hooks observe retired instructions before this instruction;
         // port callbacks use a different, in-flight timestamp convention.
-        const uint64_t tick=uint64_t(double(timers->instruction_base+done)*timers->ratio);
-        uint64_t count=s.count;
-        if ((s.control&0x8000) && !(s.control&0x0c)) {
-            const uint64_t elapsed=tick>s.origin?tick-s.origin:0;
-            uint64_t period=s.compare_a?s.compare_a:65536;
-            if(s.control&2) period+=s.compare_b?s.compare_b:65536;
+        const uint64_t base=timer_model?timer_model->instruction_base:timers->instruction_base;
+        const double ratio=timer_model?timer_model->ratio:timers->ratio;
+        const uint64_t tick=uint64_t(double(base+done)*ratio);
+        const int64_t origin=timer_model?timer_model->slots[timer].origin:int64_t(timers->slots[timer].origin);
+        const uint64_t control=timer_model?timer_model->slots[timer].control:timers->slots[timer].control;
+        const uint64_t compare_a=timer_model?timer_model->slots[timer].compare_a:timers->slots[timer].compare_a;
+        const uint64_t compare_b=timer_model?timer_model->slots[timer].compare_b:timers->slots[timer].compare_b;
+        uint64_t count=timer_model?timer_model->slots[timer].count:timers->slots[timer].count;
+        if ((control&0x8000) && !(control&0x0c)) {
+            const uint64_t elapsed=int64_t(tick)>origin?uint64_t(int64_t(tick)-origin):0;
+            uint64_t period=compare_a?compare_a:65536;
+            if(control&2) period+=compare_b?compare_b:65536;
             if(count+elapsed>=period) return false;  // latch expiries in Python
             count+=elapsed;
         }
-        value=uint32_t(field==0?count:field==1?s.compare_a:s.compare_b)&(n==1?255:65535);
+        value=uint32_t(field==0?count:field==1?compare_a:compare_b)&(n==1?255:65535);
         const unsigned index=offset>10?offset-1:offset;
         timer_reads[nr++]={a,value,unsigned(n),index,timer,tick};
         return true;
@@ -335,9 +342,17 @@ static uint32_t run_batch(Core &c, uint32_t count) {
         std::memcpy(c.saved,c.r,sizeof(c.r));
         c.step();
         for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];
-            c.timers->slots[read.timer].last_tick=read.tick;
-            ++c.timers->reads[read.index][read.size-1];
-            c.timers->read_mask |= uint64_t(1) << (2*read.index+read.size-1);
+            if(c.timer_model){
+                c.timer_model->slots[read.timer].advance(int64_t(read.tick));
+                c.timer_model->last_read_tick[read.timer]=read.tick;
+                ++c.timer_model->read_counts[read.index][read.size-1];
+                c.timer_model->read_mask |= uint64_t(1) << (2*read.index+read.size-1);
+                ++c.timer_model->reads; ++c.timer_model->revision;
+            }else{
+                c.timers->slots[read.timer].last_tick=read.tick;
+                ++c.timers->reads[read.index][read.size-1];
+                c.timers->read_mask |= uint64_t(1) << (2*read.index+read.size-1);
+            }
             for(unsigned k=0;k<read.size;++k)c.mem[read.address+k]=uint8_t(read.value>>(8*k));
         }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
@@ -364,11 +379,12 @@ static PyObject *run_python(PyObject *, PyObject *args) {
     PyObject *poll_fn = Py_None, *poll_context = Py_None, *poll_state = Py_None;
     PyObject *mmio_events = Py_None;
     PyObject *timer_reads = Py_None;
+    PyObject *timer_model = Py_None;
     unsigned int count;
-    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOO", &registers, &memory, &guard,
+    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOO", &registers, &memory, &guard,
         &fast_out, &io_events, &count, &int_mode, &int_counts,
         &host_io, &host_context, &host_ports, &host_base,
-        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads)) return nullptr;
+        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model)) return nullptr;
     if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
         !PyByteArray_Check(memory) || !PyByteArray_Check(guard) ||
         !PyByteArray_Check(fast_out) || PyByteArray_GET_SIZE(fast_out)!=65536 ||
@@ -395,6 +411,12 @@ static PyObject *run_python(PyObject *, PyObject *args) {
             PyErr_SetString(PyExc_ValueError,"invalid native timer read state");return nullptr;
         }
         c.timers=reinterpret_cast<TimerReadState*>(PyByteArray_AS_STRING(timer_reads));
+    }
+    if(timer_model!=Py_None){
+        if(!PyByteArray_Check(timer_model)||PyByteArray_GET_SIZE(timer_model)!=sizeof(courier::Timers186)){
+            PyErr_SetString(PyExc_ValueError,"invalid native timer model");return nullptr;
+        }
+        c.timer_model=reinterpret_cast<courier::Timers186*>(PyByteArray_AS_STRING(timer_model));
     }
     if (mmio_events != Py_None) {
         if (!PyByteArray_Check(mmio_events) || PyByteArray_GET_SIZE(mmio_events) < 8*8*65536) {

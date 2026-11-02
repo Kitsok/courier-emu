@@ -2,6 +2,7 @@
 #include "c5x_core.h"
 #include "bearer.hpp"
 #include "resample.hpp"
+#include "timers186.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -17,6 +18,19 @@
 #include <sys/socket.h>
 
 using courier::C5xCore;
+
+extern "C" void courier_timer186_layout(uint64_t *out) {
+    out[0] = sizeof(courier::Timers186);
+    out[1] = sizeof(courier::Timer186);
+    out[2] = offsetof(courier::Timers186, read_counts);
+    out[3] = offsetof(courier::Timers186, revision);
+}
+extern "C" void courier_timer186_tick(void *state, uint64_t instructions) {
+    static_cast<courier::Timers186 *>(state)->tick(instructions);
+}
+extern "C" uint64_t courier_timer186_deadline(void *state) {
+    return static_cast<courier::Timers186 *>(state)->deadline();
+}
 
 namespace {
 void copy_error(char *buffer, std::size_t size, const char *message)

@@ -422,3 +422,29 @@ return to Python. The timer deadline scan and snapshot publication also
 remain; removing those copies needs persistent native timer/device state,
 not merely additional native callbacks. Connected training/data capacity
 has not been established by these idle/dialing measurements.
+
+## Authoritative timer/controller state
+
+The analog ROM worker can now use a permanent native-layout timer buffer
+(`native/timers186.hpp`, mirrored by `timers_native.py`). The three counters,
+origins, compare/control registers, mask bits, pending queue and diagnostic
+counts have one authoritative representation. Python fields are live views
+of that buffer; native timer reads update the same counters on instruction
+commit. Ordinary reads no longer copy or reconstruct timer snapshots.
+
+Native clock advancement and deadline calculation preserve the Python
+model's single-shot, alternating, external/prescaled, zero-compare, mask and
+pending-request rules. Register programming and calibrated-delay grants
+retain the reference Python logic on live fields. Unsupported board mask
+maps keep their existing model. `COURIER_NATIVE_TIMER_MODEL=0` selects the
+original TimerBlock and its snapshot read view.
+
+This first step retains the timer-expiry boundary in worker scheduling.
+It establishes storage ownership before native expiry/delivery is enabled.
+Randomized register/clock scripts, mask/queue cases, exact deadline tests,
+independent deep copies and transactional MMIO read rollback match the
+reference. The initial timer/worker/interpreter run passes 66 tests,
+including idle, identification, dialing and reset firmware comparisons.
+The shared header is a dependency of both native builds, and layout checks
+guard the Python/C++ ABI. Performance is assessed after moving the expiry
+boundary, rather than claiming a gain from the storage change alone.

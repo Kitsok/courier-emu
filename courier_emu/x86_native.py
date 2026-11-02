@@ -21,7 +21,8 @@ def build_library():
     installed = packaged_library(LIBRARY.name)
     if installed is not None:
         return installed
-    if not LIBRARY.exists() or LIBRARY.stat().st_mtime_ns < SOURCE.stat().st_mtime_ns:
+    sources = (SOURCE, SOURCE.with_name('timers186.hpp'))
+    if not LIBRARY.exists() or any(LIBRARY.stat().st_mtime_ns < p.stat().st_mtime_ns for p in sources):
         require_build_allowed(LIBRARY)
         LIBRARY.parent.mkdir(exist_ok=True)
         # Concurrent workers must never load a half-written shared library.
@@ -135,6 +136,8 @@ class NativeInterpreter:
         if timer_reads is not None:
             timer_reads.prepare(cpu.native_host_base + cpu.retired)
             host_io = (*host_io, *((None,) * (8 - len(host_io))), timer_reads.buffer)
+            if timer_reads.model_buffer is not None:
+                host_io += (timer_reads.model_buffer,)
         done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count = self.run(
             cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
             cpu.native_int_mode, self.int_counts, *host_io,
