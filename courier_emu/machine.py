@@ -3338,6 +3338,7 @@ class CourierMachine:
             line_buffer_address = ctypes.addressof(state.line_buffer)
             timers = self.timers
             seen = [0]
+            native_board_tick = os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0"
 
             def first_instruction_at(tick: int) -> int:
                 ratio = timers.timebase.ticks_per_instruction
@@ -3388,7 +3389,10 @@ class CourierMachine:
                         deadlines.append(self.instructions + max(0, self._console_owed))
                 if self._serial_input_schedule:
                     deadlines.append(self._serial_input_schedule[0][0])
-                if (self._rom_tick or self._quad_modem_tick) and self.tick_ms:
+                tick_native = (native_board_tick and scheduled and self._rom_tick
+                               and not self._serial_in_handler and not self._timer_in_handler
+                               and self.tick_ms)
+                if (self._rom_tick or self._quad_modem_tick) and self.tick_ms and not tick_native:
                     deadlines.append(
                         self._last_tick + self.tick_period_instructions)
                 for timer in timers.timers:
@@ -3411,6 +3415,11 @@ class CourierMachine:
                 state.timer_poll_owed = self._timer_poll_owed
                 state.timer_poll_period = TIMER_POLL_INSTRUCTIONS
                 state.last_frame = self._last_frame
+                state.tick_period = self.tick_period_instructions if tick_native else 0
+                state.last_tick, state.ticks = self._last_tick, self.ticks
+                state.tick_vector = self.hardware_map.tick_vector
+                state.int1_enabled = timers.controller.enabled("int1")
+                state.int0_pending = state.int1_pending = 0
                 state.frame_instructions = self.frame_instructions
                 state.int0_ok = bool(self._rom_tick)
                 state.int0_in_service = bool(self._int0_in_service)
@@ -3643,6 +3652,10 @@ class CourierMachine:
                 self._next_service = total + interpreter_period
                 self._timer_poll_owed = state.timer_poll_owed
                 self._last_frame = state.last_frame
+                if state.tick_period:
+                    self._last_tick, self.ticks = state.last_tick, state.ticks
+                    self._int0_pending = state.int0_pending or None
+                    self._int1_pending = state.int1_pending or None
                 if state.scheduled:
                     self._console_owed = state.console_owed
                     bridge._exchange_instructions = state.exchange_ticks
@@ -4098,7 +4111,8 @@ class CourierMachine:
             serial_trace = serial_trace[-MAX_SERIAL_TRACE_EVENTS:]
         worker_poll = getattr(self, "_worker_poll", None)
         scheduler = ({"native_polls": worker_poll.state.polls,
-                      "native_dsp_batches": worker_poll.state.dsp_batches}
+                      "native_dsp_batches": worker_poll.state.dsp_batches,
+                      "native_board_ticks": worker_poll.state.native_ticks}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

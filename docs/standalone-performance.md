@@ -303,3 +303,31 @@ include both notebook and ARM measurements, actual window sizes and guest
 state. The remaining Python service arming, timer/controller scheduling and
 pending-request dispatch are separate migration targets; this change does
 not put the whole CPU/device interaction loop in C++.
+
+## Native board-tick scheduling
+
+The standalone scheduled worker now owns the recurring ROM board tick in
+shared native state: its period, phase, count, vector, INT1 mask and pending
+INT0/INT1 requests. Ordinary tick entry remains inside the x86 batch. A tick
+coincident with a frame edge enters the board vector first and retains INT0;
+an enabled INT1 is also retained for later delivery. Pending requests initially
+yield the next service to Python. Guarded vectors/stacks and timer-counter
+expiries retain the Python service. `COURIER_NATIVE_WORKER_TICK=0` restores
+the old board-tick deadline. Paired workers retain their original path.
+
+Full idle, AT/ATI7 and dialing comparisons against Python services pass.
+Seven focused cases cover tick/frame/INT1 priority, flags, deferred requests,
+watched stacks/vectors, future origins and delayed IF. Notebook alternating
+off/on/on/off post-boot window means:
+
+| Window | Python ticks | Native ticks | Native ticks per window |
+| --- | ---: | ---: | ---: |
+| Idle | 2.106 s | 2.091 s | 215 |
+| Dialing | 2.187 s | 2.179 s | 352 |
+
+Those sub-1% differences are noise, not an established speedup. Native polls
+increase 3310 -> 3525 for idle and 4277 -> 4631 for dialing, replacing the
+corresponding Python tick services. Final memory, registers, all reported
+timer state and pending/in-service interrupt state match. The benchmark now
+records those peripheral comparisons and native tick counts explicitly.
+The next step removes the remaining Python service for deferred INT0/INT1.

@@ -38,6 +38,7 @@ class WindowConsole:
                     batches=native.batches, retired=native.retired,
                     zero_batches=native.zero_batches,
                     polls=poll.state.polls if poll else 0,
+                    native_board_ticks=getattr(poll.state, 'native_ticks', 0) if poll else 0,
                     dsp_batches=poll.state.dsp_batches if poll else 0)
 
     def poll(self, limit):
@@ -145,6 +146,16 @@ def main():
                     status=result['status'], scheduler=result['scheduler'],
                     memory_sha256=hashlib.sha256(machine.uc.memory).hexdigest(),
                     registers=list(machine.uc.regs),
+                    timers=machine.timers.status(),
+                    interrupt_state=dict(ticks=machine.ticks, last_tick=machine._last_tick,
+                                         last_frame=machine._last_frame,
+                                         timer_interrupts=machine.timer_interrupts,
+                                         stack=machine._interrupt_stack[:],
+                                         int0_in_service=machine._int0_in_service,
+                                         int0_pending=machine._int0_pending,
+                                         int1_pending=machine._int1_pending,
+                                         timer_pending=machine._timer_interrupt_pending,
+                                         external_pending=machine._external_interrupt_pending),
                     native=machine.uc._native.statistics())
                 if console:
                     start = console.start
@@ -152,7 +163,7 @@ def main():
                         raise RuntimeError('execution stopped before the measured window')
                     window = {key: end[key] - start[key] for key in
                               ('instructions', 'batches', 'retired', 'zero_batches',
-                               'polls', 'dsp_batches')}
+                               'polls', 'dsp_batches', 'native_board_ticks')}
                     window.update(cpu_seconds=end['cpu'] - start['cpu'],
                                   wall_seconds=end['wall'] - start['wall'],
                                   start_instruction=start['instructions'],

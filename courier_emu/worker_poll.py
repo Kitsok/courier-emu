@@ -80,6 +80,9 @@ class WorkerPollState(ctypes.Structure):
         ("console_present", U64), ("console_owed", I64),
         ("exchange_codec_last", I64), ("exchange_idle", I64),
         ("dsp_batches", U64),
+        ("tick_period", U64), ("last_tick", U64), ("tick_vector", U64),
+        ("ticks", U64), ("int1_enabled", U64),
+        ("int0_pending", U64), ("int1_pending", U64), ("native_ticks", U64),
         ("error", ctypes.c_char * 512),
     ]
 

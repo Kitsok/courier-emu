@@ -91,6 +91,66 @@ def test_frame_interrupt_entry_respects_stack_guards(watched):
         assert s.int0_in_service and s.stack_depth == 1 and s.stack[0] == 12
 
 
+def tick_scheduled():
+    poll, run = scheduled()
+    regs = (c.c_uint32 * 14)()
+    memory = (c.c_uint8 * 0x100000)()
+    guard = (c.c_uint8 * 0x100000)()
+    c.memset(guard, 3, len(guard))
+    regs[4], regs[9], regs[12], regs[13] = 0x800, 0x1234, 0x5678, 0x302
+    memory[48:52], memory[60:64] = [0, 1, 0, 0x80], [0, 2, 0, 0x80]
+    poll.cpu.regs, poll.cpu.memory, poll.cpu.guard = map(c.addressof, (regs, memory, guard))
+    poll.cpu.memory_size = len(memory)
+    poll.state.dsp_active = poll.state.exchange_present = 0
+    poll.state.tick_period, poll.state.tick_vector = 1024, 15
+    return poll, run, regs, memory, guard
+
+
+@pytest.mark.parametrize("frame", [False, True])
+@pytest.mark.parametrize("int1", [False, True])
+def test_native_tick_preserves_frame_and_int1_priority(frame, int1):
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    s.int0_ok, s.int1_enabled = frame, int1
+    s.frame_instructions = 1000
+    assert run(1024, 0x302) == 1
+    assert (regs[4], regs[9], regs[12], regs[13]) == (0x7fa, 0x8000, 0x200, 0x102)
+    assert list(memory[0x7fa:0x800]) == [0x78, 0x56, 0x34, 0x12, 0x02, 0x03]
+    assert s.last_tick == s.last_service == 1024
+    assert s.ticks == s.native_ticks == 1
+    assert s.stack_depth == 1 and s.stack[0] == 15
+    assert s.int0_pending == (12 if frame else 0)
+    assert s.int1_pending == (13 if int1 else 0)
+    assert not s.int0_in_service
+    if frame:
+        assert s.last_frame == 1000
+    if frame or int1:
+        assert run(2048, 0x102) == 0
+        assert s.last_service == 1024  # Pending work leaves the next service to Python.
+
+
+@pytest.mark.parametrize("watched", ['vector', 'stack'])
+def test_native_tick_declines_guarded_entry_before_advancing_clocks(watched):
+    poll, run, regs, memory, guard = tick_scheduled()
+    guard[60 if watched == 'vector' else 0x7fa] |= 16 if watched == 'vector' else 32
+    before = list(regs), bytes(memory)
+    assert run(1024, 0x302) == 0
+    assert (list(regs), bytes(memory)) == before
+    assert poll.state.polls == poll.state.last_service == poll.state.ticks == 0
+
+
+def test_native_tick_waits_for_if_and_does_not_underflow_a_future_origin():
+    poll, run, regs, memory, guard = tick_scheduled()
+    assert run(1024, 0x102) == 1
+    assert poll.state.ticks == 0
+    assert run(2048, 0x302) == 1
+    assert poll.state.last_tick == 2048 and poll.state.ticks == 1
+    poll, run, regs, memory, guard = tick_scheduled()
+    poll.state.last_tick = 4096
+    assert run(1024, 0x302) == 1
+    assert poll.state.ticks == 0
+
+
 @pytest.mark.parametrize("serial_input", [b"", b"AT\rATI7\r", b"ATDT100\r"])
 def test_interactive_exchange_matches_python_services(monkeypatch, serial_input):
     from pathlib import Path
@@ -151,6 +211,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         monkeypatch.setenv("COURIER_WORKER_POLL", enabled)
         monkeypatch.setenv("COURIER_NATIVE_TIMERS", enabled)
         monkeypatch.setenv("COURIER_NATIVE_INTERRUPTS", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_WORKER_TICK", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,
@@ -163,6 +224,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         scheduler = result.pop("scheduler")
         if enabled == "1":
             assert scheduler["native_dsp_batches"] > 0
+            assert scheduler["native_board_ticks"] > 0
         results.append(result)
         machines.append(machine)
     slow, fast = machines
