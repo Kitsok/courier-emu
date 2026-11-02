@@ -7,6 +7,7 @@ import math
 import os
 import re
 from dataclasses import asdict, dataclass, field
+from types import BuiltinFunctionType
 from typing import Any, Callable
 
 from .operational import AtEvents
@@ -3357,6 +3358,10 @@ class CourierMachine:
             native_board_tick = os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0"
             native_timer_poll = (hasattr(timers, 'native_state')
                                  and os.environ.get('COURIER_NATIVE_TIMER_POLL', '1') != '0')
+            native_idle_checks = os.environ.get('COURIER_NATIVE_IDLE_CHECKS', '1') != '0'
+            from time import get_clock_info
+            native_monotonic = (get_clock_info('monotonic').implementation
+                                == 'clock_gettime(CLOCK_MONOTONIC)')
             resume_ready, resume_requested = [False], [False]
 
             def first_instruction_at(tick: int) -> int:
@@ -3391,8 +3396,29 @@ class CourierMachine:
                         and os.environ.get("COURIER_NATIVE_EXCHANGE", "1") != "0"
                         and bridge.fast_clock_static(exchange=True)):
                     scheduled = 2
+                console_fd = None
+                if (scheduled == 2 and native_idle_checks
+                        and isinstance(self.console, SerialConsole)):
+                    console_fd = self.console.native_idle_poll_fd()
+                native_pacer = bool(
+                    scheduled == 2 and native_idle_checks and sip_pacer is not None
+                    and native_monotonic
+                    and isinstance(sip_pacer.clock, BuiltinFunctionType)
+                    and sip_pacer.clock.__module__ == 'time'
+                    and bridge._sip_line._next_frame_at is not None)
+                state.console_poll_period = (self.console.poll_instructions
+                                             if console_fd is not None else 0)
+                state.console_fd = console_fd if console_fd is not None else -1
+                state.pacer_period = 0
+                if native_pacer:
+                    line = bridge._sip_line
+                    state.pacer_origin = line._next_frame_at - line._frame_duration
+                    state.pacer_next = sip_pacer.next_check
+                    state.pacer_period = max(1, math.ceil(
+                        self.timebase.instructions_per_second * sip_pacer.interval))
                 if scheduled and (
-                    (self.console is not None and self._console_owed <= elapsed)
+                    (self.console is not None and self._console_owed <= elapsed
+                     and console_fd is None)
                     or (scheduled == 1 and bridge.exchange is not None
                         and bridge._exchange_instructions + elapsed >= bridge.batch)
                     or (scheduled == 1 and dsp_active and bridge._x86_ticks + elapsed >= bridge.batch)
@@ -3403,12 +3429,12 @@ class CourierMachine:
                     # constructing a native snapshot that immediately yields.
                     return
                 deadlines = [instruction_limit - 2 * interpreter_period]
-                if idle_pacer is not None:
+                if idle_pacer is not None and not native_pacer:
                     deadlines.append(idle_pacer.next_check)
                 if scheduled:
                     deadlines.append(self.instructions + 200_000
                                      - (bridge._instructions - getattr(bridge, "_probe_clock_last", 0)))
-                    if self.console is not None:
+                    if self.console is not None and console_fd is None:
                         deadlines.append(self.instructions + max(0, self._console_owed))
                 if self._serial_input_schedule:
                     deadlines.append(self._serial_input_schedule[0][0])
@@ -3727,6 +3753,8 @@ class CourierMachine:
                     self.timer_interrupts = state.timer_delivered
                 if state.scheduled:
                     self._console_owed = state.console_owed
+                    if state.pacer_period:
+                        sip_pacer.next_check = state.pacer_next
                     bridge._exchange_instructions = state.exchange_ticks
                     if not state.timer_model:
                         # Comparison path: max-count deadlines bound this
@@ -4186,7 +4214,9 @@ class CourierMachine:
                       "native_pending_irqs": worker_poll.state.native_pending_irqs,
                       "native_diagnostic_resumes": worker_poll.diagnostic_resumes,
                       "native_timer_polls": worker_poll.state.native_timer_polls,
-                      "native_timer_irqs": worker_poll.state.native_timer_irqs}
+                      "native_timer_irqs": worker_poll.state.native_timer_irqs,
+                      "native_console_polls": worker_poll.state.native_console_polls,
+                      "native_pacer_checks": worker_poll.state.native_pacer_checks}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

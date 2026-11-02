@@ -16,6 +16,7 @@
 #include <vector>
 #include <poll.h>
 #include <sys/socket.h>
+#include <time.h>
 
 using courier::C5xCore;
 
@@ -2460,6 +2461,10 @@ struct WorkerPollState {
     uint64_t pending_native, native_pending_irqs;
     courier::Timers186 *timer_model;
     uint64_t timer_pending, timer_delivered, native_timer_polls, native_timer_irqs;
+    int64_t console_fd;
+    uint64_t console_poll_period;
+    double pacer_origin;
+    uint64_t pacer_next, pacer_period, native_console_polls, native_pacer_checks;
     char error[512];
 };
 
@@ -2692,14 +2697,31 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     if (s.scheduled) {
         const bool exchange_due = s.exchange_present && s.exchange_ticks + elapsed >= s.batch;
         const bool dsp_due = s.dsp_active && s.x86_ticks + elapsed >= s.batch;
+        const bool console_due = s.console_present && s.console_owed - elapsed <= 0;
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
         // step, and input must be sampled on its original polling boundary.
-        if ((s.console_present && s.console_owed - elapsed <= 0)
-            || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
+        if ((s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
             || (s.scheduled == 1 && (exchange_due || dsp_due))
             || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
             s.armed = 0; return 0;
+        }
+        if (console_due) {
+            if (!s.console_poll_period) { s.armed = 0; return 0; }
+            pollfd entry{int(s.console_fd), POLLIN, 0};
+            // Never consume input or hide HUP/ERR/NVAL (or EINTR). Python
+            // owns those outcomes, including draining its pending output.
+            if (::poll(&entry, 1, 0) != 0) { s.armed = 0; return 0; }
+        }
+        const bool pacer_due = s.pacer_period && uint64_t(total) >= s.pacer_next;
+        if (pacer_due) {
+            timespec now;
+            if (::clock_gettime(CLOCK_MONOTONIC, &now)) { s.armed = 0; return 0; }
+            const double wall = double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
+            // Same interpolation and pre-DSP service order as SipLine and
+            // DeadlinePacer. Full media frames still return to Python.
+            const double deadline = s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
+            if (deadline > wall) { s.armed = 0; return 0; }
         }
         bool frame_edge = false;
         uint32_t slots[3];
@@ -2791,6 +2813,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (s.exchange_present) s.exchange_ticks += elapsed;
         if (s.dsp_active) s.x86_ticks += elapsed;
         if (s.console_present) s.console_owed -= elapsed;
+        if (console_due) {
+            s.console_owed += int64_t(s.console_poll_period);
+            ++s.native_console_polls;
+        }
+        if (pacer_due) {
+            s.pacer_next = uint64_t(total) + s.pacer_period;
+            ++s.native_pacer_checks;
+        }
         if (exchange_due) {
             s.exchange_ticks -= s.batch;
             s.exchange_codec_last = produced;

@@ -126,3 +126,26 @@ def test_media_scheduler_check_bounds_waits_and_wakes_for_input():
     assert pacer.wakeups == 1
     assert not pacer.service(104, 1000, deadline=9.0, wait=clock.wait)
     assert len(clock.waits) == 1
+
+
+def test_native_console_permission_excludes_pending_work_and_subclasses():
+    class OtherConsole(SerialConsole):
+        pass
+    peer, worker = socket.socketpair()
+    console = SerialConsole(worker.detach())
+    try:
+        assert console.native_idle_poll_fd() == console.fd
+        console._pending.extend(b'not drained')
+        assert console.native_idle_poll_fd() is None
+        console._pending.clear()
+        console.lamps_fd = console.fd
+        assert console.native_idle_poll_fd() is None
+        console.lamps_fd = None
+        console.__class__ = OtherConsole
+        assert console.native_idle_poll_fd() is None
+        console.__class__ = SerialConsole
+        console.closed = True
+        assert console.native_idle_poll_fd() is None
+    finally:
+        peer.close()
+        console.close()

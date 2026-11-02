@@ -2,7 +2,9 @@
 
 Success means courier-emu running on nanovax reports firmware-generated
 `CONNECT` after negotiating with the physical Courier at extension 100.
-SIP answer alone does not satisfy this criterion.
+Both endpoints must establish error correction (LAPM or MNP/ARQ). SIP answer,
+local carrier detection, and uncorrected connections do not satisfy this
+criterion. Error correction is also required in normal operation.
 
 ## Existing-settings baseline (2026-11-02)
 
@@ -154,3 +156,75 @@ Full evidence is `/tmp/courier-physical-a53-bell103-1` on nanovax and
 The success criterion therefore remains unmet. Further work must reduce
 training/media production cost, and future attempts must check the physical
 side as well as the emulator's CONNECT line.
+
+## Native terminal and catch-up pacing checks
+
+An additional 20-second training probe counted every return from
+`fast_clock_static`: all 2952 checks were eligible. The exchange/DSP static
+gates were therefore not the source of the frequent Python handbacks in
+that interval. The terminal polling deadline (8192 guest instructions) and
+SIP pacing check (approximately 2 ms of modeled board time) forced Python
+service even with no terminal input and a media timeline far behind wall time.
+
+The scheduled native exchange worker now tests the plain SerialConsole FD
+with nonblocking `poll`. It consumes no bytes and handles no output. Input,
+EOF, HUP, invalid descriptors and other errors hand the service to Python;
+only an empty poll advances the existing console debt/period. Pending
+terminal output, lamp delivery and subclasses such as SerialSim retain the
+Python boundary because their polls can have additional side effects.
+
+For SIP pacing, a native check uses CLOCK_MONOTONIC and the same
+`frame origin + buffered line samples / line rate` interpolation. A positive
+lead yields before committing service, preserving the Python wait. A late
+check advances only the pacing-check deadline, with no sleeping or skipped
+guest work. Full media frames still return to Python. This is enabled only
+when Python's actual clock implementation matches CLOCK_MONOTONIC.
+`COURIER_NATIVE_IDLE_CHECKS=0` restores both previous boundaries.
+
+The focused timer/read, worker, console/pacing, native interpreter and build
+run passes 91 tests. An additional invalid-FD case passes with the existing
+input/EOF and pacing checks. A 40M-instruction firmware comparison uses real
+bidirectional console FDs, a local SIP sink, a deliberately past media
+origin and a post-boot scheduled dial. CPU registers, full memory, timer
+state, interrupt totals, DSP, serial/codec, exchange and line-service state
+match, with native no-work counters explicitly exercised. Scheduled script
+input is not firmware echo output, so the test verifies decoded digits 100
+rather than expecting the command in the firmware result transcript.
+
+The controlled CPU measurement uses this same workload and fixed 40M guest
+instruction budget, including boot and dialing. No external subscriber is
+contacted. One notebook run warms caches, followed by off/on/on/off runs;
+mean process CPU falls from 8.483 to 6.819 seconds (19.6%). Each candidate
+run performs 3826 native empty-console polls and 4486 native pacing checks.
+The switches compare the paths in the same compiled candidate; this isolates
+the scheduling change, not compiler-layout effects against an older library.
+
+The native CAPI was forcibly rebuilt in `/tmp/courier-call-candidate` on
+A53; the unchanged x86 module was copied from the user's build. Configuration
+and ABI checks pass. `/proc/<worker>/maps` confirms both loaded modules come
+from that isolated candidate. The user's checkout and native build are
+unchanged.
+
+A subsequent physical call used firmware `AT&M5`, and ATI4 confirmed &M5
+before ATDT100. SIP answered, but the peer hung up without a modem
+connection. The runtime was then stopped: 349 line frames in a 137.55-second
+capture, peak lag 96.053 seconds, 3131 received and 900 transmitted RTP
+packets. The native scheduler performed 13260 empty terminal checks and
+15591 catch-up pacing checks. This remains a failed ARQ-only call; rates
+from this attempt should not be directly compared with the earlier &M4
+attempts as if the firmware settings were identical.
+
+The A53 off/on run takes 67.700/51.076 CPU seconds; a separate reverse-order
+on/off run takes 50.476/61.460 seconds. Their means are 64.580 versus 50.776
+seconds, a 21.4% reduction. The two processes balance which implementation
+pays cold setup, but temperature/governor variation still limits timing
+precision. All four records match memory, CPU, timers, DSP, serial and
+exchange state exactly. The same 3826/4486 native check counts occur on both
+hosts. [All scheduler measurement records](native-idle-check-results.json)
+include the discarded notebook warmup and both A53 orders.
+
+`tools/benchmark_native_idle.py --warmup` reproduces the notebook workload;
+`--order 0,1` and `--order 1,0` reproduce the two ARM orders. The retained
+measurements used the older &M4 fixture; subsequent runs with the new &M5
+profile should identify that settings change rather than merging results.
+The benchmark remains an idle/dialing measurement, not a connected call.
