@@ -124,20 +124,25 @@ sequenceDiagram
             N->>D: Advance owed DSP cycles
             D-->>N: Samples, mailbox and codec state
         end
+        opt Timer poll is due
+            N->>N: Advance shared counters and latch/deliver requests
+        end
         N-->>X: Register result, clocks or interrupt entry
     end
     X-->>P: Python-owned work, watched access or deadline
-    P->>P: UART/input, timer expiry, full frame, SIP or diagnostics
+    P->>P: UART/input, register programming, full frame, SIP or diagnostics
     P->>X: Prepare or safely reuse the native snapshot; resume
 ```
 
-Native port models, timer reads, interrupt entry, board ticks, deferred
-INT0/INT1 delivery and eligible DSP/resampling services can remain inside the
-C++ batch. Timer-counter expiry and its requests, UART work, complete media
-frames and other device transitions still require Python. ctypes structures
-carry shared worker state; several Python device attributes are still copied
-into and out of snapshots. Thus moving an individual callback to C++ does
-not eliminate the surrounding snapshot/arming cost.
+Native port models, timer reads, counter expiry/request delivery, interrupt
+entry, board ticks, deferred INT0/INT1 delivery and eligible DSP/resampling
+services can remain inside the C++ batch. The counters, mask bits and timer
+request queue use one permanent native-layout buffer with live Python views;
+there is no per-batch timer snapshot or counter publication step. Register
+programming and calibrated-delay grants retain Python logic on those fields.
+UART work, complete media frames and other device transitions still require
+Python. Other CPU/DSP/line attributes still cross snapshot boundaries, so
+moving an individual callback to C++ does not eliminate all arming cost.
 
 Watched memory also supports diagnostics. A watched access can stop native
 execution even when it changes only a trace. The worker currently reuses its
@@ -168,7 +173,8 @@ reference paths to check timing, memory, registers and device state.
 | x86 native execution and fallback | [x86_interpreter.cpp](../native/x86_interpreter.cpp), [x86_native.py](../courier_emu/x86_native.py), [x86_interpreter.py](../courier_emu/x86_interpreter.py) |
 | Native worker scheduling | [worker_poll.py](../courier_emu/worker_poll.py), [c5x_capi.cpp](../native/c5x_capi.cpp) |
 | ASIC/DSP bridge and DSP execution | [bridge.py](../courier_emu/bridge.py), [dsp.py](../courier_emu/dsp.py), [c5x_core.cpp](../native/c5x_core.cpp) |
-| Board devices | [timers.py](../courier_emu/timers.py), [uart.py](../courier_emu/uart.py), [nvram.py](../courier_emu/nvram.py), [panel.py](../courier_emu/panel.py) |
+| Timer state and reference model | [timers186.hpp](../native/timers186.hpp), [timers_native.py](../courier_emu/timers_native.py), [timers.py](../courier_emu/timers.py) |
+| Other board devices | [uart.py](../courier_emu/uart.py), [nvram.py](../courier_emu/nvram.py), [panel.py](../courier_emu/panel.py) |
 | Line and audio | [codec.py](../courier_emu/codec.py), [daa.py](../courier_emu/daa.py), [exchange.py](../courier_emu/exchange.py), [resample.py](../courier_emu/resample.py), [resample.hpp](../native/resample.hpp) |
 | Virtual ATA and SIP/RTP | [ata.py](../courier_emu/ata.py), [sip.py](../courier_emu/sip.py) |
 | Socket line and I-modem variants | [line.py](../courier_emu/line.py), [isdn.py](../courier_emu/isdn.py), [imodem_dsp.py](../courier_emu/imodem_dsp.py) |
