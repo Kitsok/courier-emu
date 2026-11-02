@@ -451,3 +451,28 @@ The larger goal remains unachieved until nanovax is rebuilt and an actual
 error-corrected connection to physical modem 100 is verified. No physical
 modem settings, nanovax temperatures or performance measurements were touched
 in this implementation/validation phase.
+
+## Nanovax rebuild and physical call after integration
+
+The checkout at `/home/kostik/work/courier-emu` had no unmerged index entries,
+but its committed merge contained conflict markers in `docs/architecture.md`.
+The only difference from the validated runtime revision was four extra
+architecture lines: markers and duplicated old text. Keeping the updated
+upstream wording resolved them in remote commit `50e4c8c`. The native
+`./build.sh` completed successfully and loaded both libraries. No parallel
+emulator process was running; the earlier test services were inactive.
+
+The configured EEPROM was copied into a temporary probe directory, and the
+emulator confirmed &M5 before dialing physical modem 100. SIP received 200
+and ACK, but the physical modem answered and reported NO CARRIER / No
+Connection. The emulator later reported BUSY after peer BYE. This is a
+failed modem connection, despite successful SIP setup.
+
+The worker averaged approximately 101.3% of one CPU over the sampled window.
+The run delivered 280 line frames and reached 78.6 seconds of media lag,
+with receive backlog peaking at 355840 samples. Native media, codec, interrupt
+and EOI paths were exercised. Real-time execution remains a blocker; these
+findings do not establish a causal explanation for every training failure.
+Evidence is summarized in `docs/native-physical-call-a53.json`, with the full
+probe/perf capture on nanovax at `/tmp/courier-native-physical-final-1`.
+Physical modem settings were not changed and no temperatures were collected.
