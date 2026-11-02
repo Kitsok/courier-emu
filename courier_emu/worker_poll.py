@@ -11,6 +11,8 @@ here, not the Python attributes, are the live ones.
 Scheduled mode 1 advances clocks only. Mode 2 also runs stable exchange DSP
 batches and resamples between complete frames, yielding before frame work or
 for the tail of a service that generated a DSP reply or loader transition.
+Scheduled modes can own board ticks and deferred INT0/INT1 delivery; timer
+counter expiries and Python-owned device work still bound the native run.
 """
 from __future__ import annotations
 

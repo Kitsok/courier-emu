@@ -379,3 +379,46 @@ The benchmark supports `--perf-control FIFO` with `perf stat -D -1
 ARM smoke test verifies enable/disable and counter output. This lets the
 next ARM comparison report host instructions and cycles alongside CPU time,
 without changing the governor or confusing warmup with steady work.
+
+### ARM window counters and final validation
+
+After packing, nanovax ran idle off/on/on/off and dialing off/on, counting
+only each measured 9,986,048-instruction window. Two PMU events fit without
+multiplexing (100% running time). The FIFO enable/disable commands exclude
+boot and final reports; their processing is asynchronous, so boundary
+precision is bounded by perf's command handling rather than a guest opcode.
+
+| A53 window | Python scheduling | Native scheduling | Reduction |
+| --- | ---: | ---: | ---: |
+| Idle host instructions (mean) | 5.290 billion | 5.158 billion | 2.48% |
+| Dialing host instructions | 7.600 billion | 7.405 billion | 2.57% |
+| Idle CPU seconds (mean) | 10.918 | 10.641 | 2.5%, frequency-sensitive |
+| Dialing CPU seconds | 14.340 | 14.378 | No gain |
+
+The two idle reference instruction counts differ by only 0.01%; the two
+native counts differ by about 0.1%. Thus the instruction-work reduction is
+more convincing than the CPU-time reduction. The idle reference CPU times
+range from 9.84 to 11.99 s as frequency changes. Temperatures at run
+boundaries range from 76.9 to 85.4 C. Cycle counts also fall, but external
+memory stalls consume different numbers of cycles at different frequencies;
+do not attribute their full reduction to code or promise a fixed-clock gain.
+
+All ARM guest memory/register, timer and interrupt-state comparisons match.
+The remote checkout is clean, both parallel test services remain inactive,
+and candidate code/libraries reside only in `/tmp/courier-worker`. Governor
+settings and other services were not changed. The notebook suite passes 58
+tests, plus two focused checks that the native exit reason is visible before
+return callbacks (a safety condition for diagnostic snapshot reuse).
+
+[Measurement records](standalone-worker-scheduler-results.json) retain all
+stages, including the initial regressions, raw PMU counter output and
+deduplicated guest/peripheral states. The final result is a small notebook
+CPU reduction and about 2.5% less host instruction work on A53, rather than
+a large or consistently observed ARM throughput gain.
+
+Remaining ownership boundaries: timer-counter max-count expiry and its
+requests, UART work, complete media frames and device transitions still
+return to Python. The timer deadline scan and snapshot publication also
+remain; removing those copies needs persistent native timer/device state,
+not merely additional native callbacks. Connected training/data capacity
+has not been established by these idle/dialing measurements.

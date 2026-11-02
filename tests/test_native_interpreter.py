@@ -173,6 +173,23 @@ def test_native_interrupt_rejects_an_undersized_vector_table():
         native.inject_interrupt(cpu, 0x21)
 
 
+@pytest.mark.parametrize("code,reason", [(bytes.fromhex('c7 06 00 20 34 12'), 4),
+                                       (bytes.fromhex('e4 10'), 8)])
+def test_native_exit_reason_is_published_before_return_callback(code, reason):
+    from courier_emu.x86_native import NativeInterpreter
+
+    cpu = x86.Uc(0, 0, profile='186eb')
+    cpu.mem_map(0, len(cpu.memory))
+    cpu.mem_write(0x1000, code)
+    cpu.regs[x86.UC_X86_REG_IP] = 0x1000
+    cpu.hook_add(x86.UC_HOOK_MEM_WRITE, lambda *args: None, None, 0x2000, 0x2001)
+    native = NativeInterpreter(cpu)
+    seen = []
+    cpu.native_after_run = lambda: seen.append(native.exit_reason)
+    native.execute(cpu, 1)
+    assert seen == [reason]
+
+
 @pytest.mark.parametrize("software", [False, True])
 def test_courier_native_interrupt_matches_reference_frames(software):
     from courier_emu.x86_native import NativeInterpreter

@@ -3337,7 +3337,9 @@ class CourierMachine:
             start of the batch after each service of its own, when every test
             fast_service makes of state only Python changes comes out the fast
             way, and sets a deadline before anything it cannot see coming: a
-            timer's max count, the board tick, typed input, the end of the run.
+            timer's max count, typed input, the end of the run. Scheduled
+            workers can own the board tick and its deferred interrupt queue;
+            the comparison path retains the board-tick deadline.
             Whatever the engine hands back, the fields come back first.
             """
             from .worker_poll import NO_LATCH, STACK_SLOTS, WorkerPoll
