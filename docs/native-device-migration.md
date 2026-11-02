@@ -1,0 +1,50 @@
+# Native standalone board and media migration
+
+The target is standalone analog403 Courier with DSP and SIP on nanovax,
+calling the physical modem at 100 with negotiated error correction. Physical
+modem settings must remain untouched. Do not collect temperatures. Complete
+the native migration before physical test calls or performance measurements;
+use local model and correctness checks during implementation. Commit each
+validated implementation milestone.
+
+## Persistent line devices
+
+`native/analog_devices.hpp` owns the DAA, exchange and DTMF receiver state and
+executes their logic. `courier_emu/analog_native.py` provides live Python
+interfaces for configuration and diagnostics. Adoption preserves the original
+Python object's identity, so existing board/control-plane references observe
+the native state. The ABI checks all three POD layouts. Exchange strings,
+directory, decoder buffers and frame continuations live in the native object;
+DAA storage uses a permanent buffer shared with the native implementation.
+The header is tracked by the native build dependency list.
+
+The native exchange covers every reference exchange state, hook transitions,
+pulse classification, DTMF debounce and held-key behavior, routing timers,
+ring cadence, outcomes and tone generation. A frame continuation preserves
+the exact 80-sample subframe and callback order when control-plane routing or
+a reference peer provider needs Python. The integrated native media provider
+will use this continuation directly, without per-subframe PCM callbacks.
+Floating-point contraction is disabled in the device implementation to retain
+the reference waveform and Goertzel operation order.
+
+Nineteen device-only comparisons pass: all DTMF keys with fragmented input,
+all call outcomes with multiple dial-tone plans, incoming ring/release,
+pulse scripts, randomized hook/outcome and DAA scripts, routing/peer callback
+order, live state, receiver replacement, directory mutations and independent copies. These tests
+make no calls and measure no throughput. The runtime is not yet switched to
+these models: activation belongs with the integrated board/frame owner.
+
+## Remaining implementation
+
+Move RTP socket handling, media clocks and PCM queues into persistent C++
+objects. Connect them directly to native exchange frame rendering, receive
+conversion and the DSP's codec FIFO. Move the remaining codec/device service
+and eligible CPU I/O transitions into the native board context so the normal
+worker no longer republishes those devices at batch boundaries. Keep Python
+SIP signalling, configuration, diagnostics and explicit reference models.
+
+After the full path is implemented, validate native/reference behavior and
+error-corrected data behavior locally, then build on A53 and perform the
+physical call and performance measurements. The physical success criterion
+requires both modems to establish error correction; local carrier detection
+or SIP answer alone is insufficient.

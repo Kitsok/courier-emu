@@ -3,6 +3,7 @@
 #include "bearer.hpp"
 #include "resample.hpp"
 #include "timers186.hpp"
+#include "analog_devices.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -3089,4 +3090,98 @@ extern "C" void courier_worker_poll_layout(uint64_t *out)
     out[1] = offsetof(WorkerPollState, debt);
     out[2] = offsetof(WorkerPollState, frame_ok);
     out[3] = offsetof(WorkerPollState, error);
+}
+
+// Persistent analog devices: allocation/configuration are control-plane work;
+// frame processing and all timing/state transitions are callable by the worker.
+extern "C" {
+void courier_analog_layout(uint64_t *out) {
+    out[0]=sizeof(courier::analog::Daa);
+    out[1]=sizeof(courier::analog::ExchangeStateData);
+    out[2]=sizeof(courier::analog::DecoderState);
+}
+int courier_analog_daa_action(void *handle,int action,int64_t value) {
+    if(!handle)return -1;
+    auto &d=*static_cast<courier::analog::Daa *>(handle);
+    switch(action) {
+    case 0:d.seize(value);break;
+    case 1:d.release();break;
+    case 2:if(d.off_hook)d.operation=courier::analog::Dialing;break;
+    case 3:if(d.off_hook)d.operation=value;break;
+    case 4:d.observe(value);break;
+    default:return -1;
+    }
+    return 0;
+}
+void courier_analog_daa_render(void *handle,int64_t count,int32_t *out) {
+    if(handle && out)static_cast<courier::analog::Daa *>(handle)->render(count,out);
+}
+void *courier_analog_exchange_create() { return new courier::analog::Exchange(); }
+void courier_analog_exchange_destroy(void *handle) { delete static_cast<courier::analog::Exchange *>(handle); }
+void *courier_analog_exchange_state(void *handle) {
+    return handle?&static_cast<courier::analog::Exchange *>(handle)->s:nullptr;
+}
+void *courier_analog_decoder_state(void *handle) {
+    return handle?&static_cast<courier::analog::Exchange *>(handle)->decoder.state:nullptr;
+}
+const char *courier_analog_exchange_string(void *handle,int field) {
+    if(!handle)return "";
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    return field==0?x.dialed.c_str():field==1?x.inbound_number.c_str():x.decoder.digits.c_str();
+}
+void courier_analog_exchange_set_string(void *handle,int field,const char *text) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    if(field==0)x.dialed=text;else if(field==1)x.inbound_number=text;else x.decoder.digits=text;
+}
+void courier_analog_exchange_directory(void *handle,const char *number,int64_t outcome) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    if(!number)x.directory.clear();else if(outcome<0)x.directory.erase(number);else x.directory[number]=outcome;
+}
+void courier_analog_exchange_tone(void *handle,const int32_t *values,size_t count) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    x.dial_tone.clear();if(count)x.dial_tone.assign(values,values+count);
+}
+int courier_analog_exchange_action(void *handle,int action,int64_t value,const char *text) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    switch(action) {
+    case 0:x.ring(text);break;
+    case 1:x.release();break;
+    case 2:x.answer();break;
+    case 3:x.set_outcome(value);break;
+    case 4:x.enter(int(value));break;
+    case 5:x.observe_hook(bool(value));break;
+    case 6:x.accept(char(value));break;
+    case 7:x.route();break;
+    case 8:x.advance();break;
+    default:return -1;
+    }
+    return x.event;
+}
+void courier_analog_exchange_begin(void *handle,int off_hook,const int32_t *data,size_t size,int64_t count) {
+    static_cast<courier::analog::Exchange *>(handle)->begin(bool(off_hook),data,size,count);
+}
+int courier_analog_exchange_resume(void *handle) { return static_cast<courier::analog::Exchange *>(handle)->resume(); }
+void courier_analog_exchange_route_result(void *handle,int64_t outcome) {
+    static_cast<courier::analog::Exchange *>(handle)->finish_route(outcome);
+}
+void courier_analog_exchange_peer_result(void *handle,const int32_t *data,size_t size) {
+    static_cast<courier::analog::Exchange *>(handle)->peer_result(data,size);
+}
+size_t courier_analog_exchange_vector(void *handle,int field,int32_t *out,size_t capacity) {
+    auto &x=*static_cast<courier::analog::Exchange *>(handle);
+    const auto &source=field==0?x.output:field==1?x.tx:x.decoder.pending;
+    const size_t first=field==1?std::min<size_t>(size_t(x.position),source.size()):0;
+    const size_t count=field==1?std::min<size_t>(size_t(x.step),source.size()-first):source.size();
+    if(out && count)std::copy_n(source.data()+first,std::min(count,capacity),out);
+    return count;
+}
+void courier_analog_decoder_pending(void *handle,const int32_t *data,size_t size) {
+    auto &pending=static_cast<courier::analog::Exchange *>(handle)->decoder.pending;
+    pending.clear();if(size)pending.assign(data,data+size);
+}
+const char *courier_analog_decoder_feed(void *handle,const int32_t *data,size_t size) {
+    static thread_local std::string result;
+    result=static_cast<courier::analog::Exchange *>(handle)->decoder.feed(data,size);
+    return result.c_str();
+}
 }
