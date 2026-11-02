@@ -5,6 +5,7 @@
 #include "stream_resample.hpp"
 #include "line_media.hpp"
 #include "sip_port.hpp"
+#include "board_media.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -3304,7 +3305,7 @@ void *courier_sip_port_create(void *exchange,void *media) {
                                              *static_cast<courier::media::Media *>(media)); }
     catch (...) { return nullptr; }
 }
-void courier_sip_port_destroy(void *handle) {delete static_cast<courier::analog::SipPort *>(handle);}
+void courier_sip_port_destroy(void *handle) {static_cast<courier::analog::SipPort *>(handle)->release_reference();}
 void *courier_sip_port_state(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->s;}
 void *courier_sip_port_control(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->control;}
 void *courier_sip_port_media(void *handle) {return &static_cast<courier::analog::SipPort *>(handle)->media;}
@@ -3338,6 +3339,40 @@ size_t courier_sip_port_spikes(void *handle,courier::analog::SipPort::Spike *out
     const auto &spikes=static_cast<courier::analog::SipPort *>(handle)->spikes;
     const size_t count=spikes.size(),n=std::min(count,capacity);
     if(out)std::copy_n(spikes.begin(),n,out);
+    return count;
+}
+}
+
+extern "C" {
+void *courier_board_media_create(void *port,void *daa,size_t samples,uint64_t period,uint64_t batch,int precise,int compensated) {
+    try {return new courier::analog::BoardMedia(*static_cast<courier::analog::SipPort *>(port),
+        static_cast<courier::analog::Daa *>(daa),samples,period,batch,bool(precise),bool(compensated));}
+    catch (...) {return nullptr;}
+}
+void courier_board_media_destroy(void *handle) {delete static_cast<courier::analog::BoardMedia *>(handle);}
+void *courier_board_media_state(void *handle) {return &static_cast<courier::analog::BoardMedia *>(handle)->s;}
+size_t courier_board_media_layout() {return sizeof(courier::analog::BoardMediaState);}
+int courier_board_media_begin(void *handle,void *core,int64_t instructions) {
+    try {static_cast<courier::analog::BoardMedia *>(handle)->begin(*static_cast<C5xCore *>(core),instructions);return 0;}
+    catch (...) {return -1;}
+}
+int courier_board_media_resume(void *handle,void *core) {
+    try {return static_cast<courier::analog::BoardMedia *>(handle)->resume(*static_cast<C5xCore *>(core));}
+    catch (...) {return -1;}
+}
+int courier_board_media_reset(void *handle,void *core,int rebuild) {
+    try {
+        auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+        if(rebuild)board.rebuild(*static_cast<C5xCore *>(core));else board.reset(true);
+        return 0;
+    } catch (...) {return -1;}
+}
+size_t courier_board_media_values(void *handle,int which,int16_t *out,size_t capacity,int consume) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    auto &queue=which==0?board.line_buffer:which==1?board.in_flight:board.deferred_rx;
+    const size_t count=queue.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(queue.begin(),n,out);
+    if(consume)queue.erase(queue.begin(),queue.begin()+n);
     return count;
 }
 }

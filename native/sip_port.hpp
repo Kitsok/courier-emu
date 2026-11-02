@@ -19,6 +19,9 @@ struct PortState {
     uint64_t clock_started=0;
 };
 struct SipPort {
+    size_t references=1;
+    void retain(){++references;}
+    void release_reference(){if(--references==0)delete this;}
     Exchange &exchange;
     LineMedia media;
     SipControl control;

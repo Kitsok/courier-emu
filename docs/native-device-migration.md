@@ -36,12 +36,16 @@ these models: activation belongs with the integrated board/frame owner.
 
 ## Remaining implementation
 
-Move RTP socket handling, media clocks and PCM queues into persistent C++
-objects. Connect them directly to native exchange frame rendering, receive
-conversion and the DSP's codec FIFO. Move the remaining codec/device service
-and eligible CPU I/O transitions into the native board context so the normal
-worker no longer republishes those devices at batch boundaries. Keep Python
-SIP signalling, configuration, diagnostics and explicit reference models.
+RTP, subscriber supervision and the codec/frame pipeline are implemented as
+persistent native components below. Runtime construction still needs to
+adopt them before any Python media thread starts. Connect the authoritative
+media fields and reset/rebuild edges to the bridge, then attach the pipeline
+to the native worker with exact signalling continuations. Move remaining
+eligible board/device I/O and clock state into the native board context so
+the normal worker no longer republishes those devices at batch boundaries.
+Keep Python SIP signalling, configuration, diagnostics and explicit reference
+models. Preserve optional recording/monitor behavior when choosing runtime
+eligibility or adding native sinks.
 
 After the full path is implemented, validate native/reference behavior and
 error-corrected data behavior locally, then build on A53 and perform the
@@ -173,3 +177,32 @@ publishes its correct minimum deadline. All 58 combined local checks pass.
 The readiness marker is consumed by a fake signalling handler: no SIP dialog,
 firmware/physical modem call or performance measurement was made. Runtime
 activation and direct codec/authoritative worker integration remain pending.
+
+## Direct native DSP codec and subscriber-frame pipeline
+
+`native/board_media.hpp` now reads the C5x transmit array directly, converts
+at the exact clock events that generated each segment, assembles complete
+line frames and resumes the native subscriber port. Receive PCM is converted
+and queued directly to the C5x FIFO. Line buffering, conversion history,
+peaks, the receive-start cushion, in-flight receive copies, deferred input
+and DAA observation stay native. Both the standalone preconverted receive
+path and clocked raw-line input preserve their reference behavior.
+
+Explicit reset and rebuild hooks reset output cursors, discard reset-era
+transmit buffering where required and replay in-flight receive words to a
+replacement DSP. The pipeline lends the current C5x for each service rather
+than retaining a core pointer that could become stale. It retains the native
+subscriber port independently of Python views. Signalling yields retain the
+current frame and reject an intervening reset; resumption does not replay
+codec audio. `courier_emu/board_media_native.py` supplies control/diagnostic
+interfaces, pins DAA storage and preserves final scalar diagnostics on close.
+
+Eight device-script checks compare native and Python paths using real C5x
+cores running a tiny controlled program, without modem firmware. They cover
+clock changes, a mixed-rate undrained batch, fallback cadence, clocked ADC,
+deferred input, reset, rebuild/replay and a signalling yield midway through
+a frame. PCM buffers, FIFO statistics, sample peaks, DAA status and delivered
+ADC registers match. Together with native components and existing codec/rate
+regressions, 77 checks pass. No SIP dialogs, modem calls or performance
+measurements were made. Runtime activation, bridge views and authoritative
+worker/board I/O integration remain outstanding before final validation.
