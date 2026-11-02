@@ -6,6 +6,7 @@
 #include "line_media.hpp"
 #include "sip_port.hpp"
 #include "board_media.hpp"
+#include "silicon_daa.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -3435,5 +3436,18 @@ void *courier_board_media_stream(void *handle,int receive) {
 const char *courier_board_media_digits(void *handle,const char *set) {
     auto &digits=static_cast<courier::analog::BoardMedia *>(handle)->dial_digits;
     if(set)digits=set;return digits.c_str();
+}
+}
+
+extern "C" {
+size_t courier_silicon_layout() {return sizeof(courier::analog::SiliconDaa);}
+int courier_silicon_action(void *handle,int action,int64_t a,int64_t b) {
+    auto &part=*static_cast<courier::analog::SiliconDaa *>(handle);
+    try {
+        switch(action){case 0:part.reset();break;case 1:part.elapse(a);break;
+        case 2:part.hook(bool(a));break;case 3:part.write(int(a),uint16_t(b));break;
+        case 4:return part.read(int(a));}
+        return 0;
+    } catch(...) {return -1;}
 }
 }

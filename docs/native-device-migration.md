@@ -268,3 +268,20 @@ The combined native component, worker, boot and codec checks pass: 120 passed,
 with five legacy firmware workloads explicitly deselected to defer dial/call
 validation until the migration is complete. No performance measurements or
 physical calls were made for this milestone.
+
+## Native silicon DAA register device
+
+`native/silicon_daa.hpp` implements the Si3021/Si3014 register model: reset
+values for both lines, PLL rate selection, power settling and readiness,
+isolation-barrier access errors, sticky status clearing, hook/current and
+ring/status inputs. `courier_emu/silicon_native.py` adopts the standard device
+in place with permanent shared storage and live register/configuration views.
+The opt-in native bridge now adopts its standard silicon device as well.
+Custom device implementations keep their existing model.
+
+Four checks compare two 2000-operation randomized register/line scripts and
+both ASIC bring-up variants against the reference. Combined with the native
+worker device checks and boot comparison, ten checks pass. A further boot
+comparison with native bridge adoption enabled also passes. No AT commands,
+SIP dialogs, modem calls or performance measurements were made. The ASIC
+bring-up scheduler and its worker clock remain to be moved into C++.

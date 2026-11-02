@@ -62,6 +62,11 @@ class NativeCourierDspBridge(CourierDspBridge):
         if bridge._exchange_tx_index or bridge._exchange_line_buffer or bridge._codec_in_flight:
             raise ValueError('adopt native media before servicing codec audio')
         line = NativeSipLine.adopt(bridge._sip_line)
+        if bridge.codec is not None:
+            from .codec import SiliconDaa
+            from .silicon_native import NativeSiliconDaa
+            if type(bridge.codec.codec) is SiliconDaa:
+                NativeSiliconDaa.adopt(bridge.codec.codec)
         owner = NativeBoardMedia(line, bridge.daa, bridge.batch)
         digits = bridge.dial_digits
         stats = bridge._line_service
