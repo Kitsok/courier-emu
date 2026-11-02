@@ -75,3 +75,20 @@ Together with the device/build checks, 37 checks pass. The native build now
 tracks the transport header and links its worker-thread dependency explicitly.
 Runtime activation and the complete native frame pipeline remain pending;
 no physical calls or performance measurements were made for this stage.
+
+## Native streaming rate adaptation
+
+`native/stream_resample.hpp` now owns kernel generation and caching, FIR
+history, residual position, clock-edge history and conversion output. It
+reuses the established native FIR arithmetic, including timed conversion
+across codec clock changes. Kernel rounding and accumulation follow the
+Python version's reference behavior. Initial equal-rate and unprogrammed
+pass-through retain the reference's counter and clock-state semantics.
+
+`courier_emu/resample_native.py` provides an explicit control-plane adapter;
+frame owners can call the C++ object directly without constructing Python
+kernel tables or sample lists. Nine local checks compare every coefficient
+of four complete kernel tables and exact PCM/state across fragmented fixed
+rates, output retunes, input-clock changes and unprogrammed pass-through.
+All pass. Runtime integration remains pending; no modem calls or performance
+measurements were performed for this milestone.

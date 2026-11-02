@@ -2,6 +2,7 @@
 #include "c5x_core.h"
 #include "bearer.hpp"
 #include "resample.hpp"
+#include "stream_resample.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -3240,5 +3241,28 @@ void courier_rtp_convert(int law,int encode,const int32_t *in,int32_t *out,size_
     for(size_t k=0;k<count;++k)out[k]=encode
         ? law?courier::media::encode_alaw(in[k]):courier::media::encode_ulaw(in[k])
         : law?courier::media::decode_alaw(uint8_t(in[k])):courier::media::decode_ulaw(uint8_t(in[k]));
+}
+}
+
+extern "C" {
+void *courier_stream_create(int precise,int compensated) {
+    try { return new courier::resample::Stream(bool(precise),bool(compensated)); }
+    catch (...) { return nullptr; }
+}
+void courier_stream_destroy(void *handle) { delete static_cast<courier::resample::Stream *>(handle); }
+int courier_stream_convert(void *handle,const int16_t *samples,size_t count,double input,double output) {
+    try { static_cast<courier::resample::Stream *>(handle)->convert(samples,count,input,output);return 0; }
+    catch (...) { return -1; }
+}
+const int16_t *courier_stream_output(void *handle,size_t *count) {
+    const auto &out=static_cast<courier::resample::Stream *>(handle)->out;
+    *count=out.size();return out.data();
+}
+void courier_stream_snapshot(void *handle,courier::resample::StreamState *out) {
+    *out=static_cast<courier::resample::Stream *>(handle)->s;
+}
+size_t courier_stream_layout() { return sizeof(courier::resample::StreamState); }
+const double *courier_stream_kernel(double cutoff,int compensated) {
+    return courier::resample::kernel_for(cutoff,bool(compensated))->data();
 }
 }
