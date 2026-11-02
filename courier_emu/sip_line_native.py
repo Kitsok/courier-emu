@@ -182,6 +182,11 @@ class NativeSipLine(SipLine):
     def _next_frame_at(self):
         return self._native_state.next_frame_at if self._native_state.clock_started else None
 
+    @_next_frame_at.setter
+    def _next_frame_at(self, value):
+        self._native_state.clock_started = value is not None
+        self._native_state.next_frame_at = 0 if value is None else value
+
     @property
     def _pending(self):
         if not self._native_finalizer.alive:

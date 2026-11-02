@@ -421,3 +421,33 @@ on/off. Forty runtime/audio/bridge checks also pass, including default native
 selection and the explicit reference switch. Implementation is ready for the
 step 4 local modem/data validation gate; no physical calls or performance
 measurements have been made.
+
+## Final local validation (step 4)
+
+The two local analog403 Courier instances both established
+`CONNECT 31200/ARQ/V34/LAPM/V42BIS`. Exact caller and answerer data markers
+were received in the opposite terminal. Both SIP/RTP peers were loopback,
+acquisition assistance was disabled and reports confirm native media,
+codec service and EOI handling were exercised at both ends. The retained
+structured evidence is `docs/native-migration-validation.json`.
+
+The full selected regression run, including the five previously deferred
+firmware workloads, passed 177 checks and found one adapter compatibility
+issue: a diagnostic caller sets `_next_frame_at` to a deliberately past
+origin, but the native view had no setter. A live setter now preserves the
+reference's writable/None origin semantics. The remaining 40-million-guest-
+instruction idle-pacing comparison passes after that correction. Thus all
+178 selected regression cases have passed, plus the separate local
+error-corrected data gate. These are correctness checks, not host performance
+measurements.
+
+Requested steps 1–4 are complete for the standard standalone workload. Native
+interrupt/service state and repeated EOI handling are integrated, runtime
+selection defaults to native with an explicit reference switch, recording and
+monitor behavior are preserved, and final local correctness/data checks pass.
+Cold reset/identification, terminal/configuration, SIP transactions and
+explicit alternate-device paths retain their control-plane implementations.
+The larger goal remains unachieved until nanovax is rebuilt and an actual
+error-corrected connection to physical modem 100 is verified. No physical
+modem settings, nanovax temperatures or performance measurements were touched
+in this implementation/validation phase.
