@@ -2394,6 +2394,8 @@ namespace {
 struct MachineServiceState {
     int64_t console_owed=0,timer_poll_owed=0,last_frame=0;
     uint64_t last_tick=0,ticks=0;
+    uint64_t int0_pending=0,int1_pending=0,timer_pending=0,timer_delivered=0,int0_in_service=0,stack_depth=0;
+    uint8_t stack[64]{};
 };
 
 struct WorkerPollState {
@@ -2549,25 +2551,29 @@ int worker_step(WorkerPollState &s, C5xCore *core, int64_t elapsed)
 // leaves the stack alone.
 void worker_apply_eois(WorkerPollState &s, const PollCpu &cpu)
 {
+    uint64_t &irq_int0_in_service=s.service_model?s.service_model->int0_in_service:s.int0_in_service;
+    uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
+    uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
+
     if (!cpu.mmio_events) return;
     for (uint64_t index = s.mmio_cursor; index < cpu.mmio_count; ++index) {
         uint8_t *event = cpu.mmio_events + 8 * index;
         const uint32_t address = uint32_t(event[0]) | uint32_t(event[1]) << 8
             | uint32_t(event[2]) << 16 | uint32_t(event[3]) << 24;
         const uint16_t value = uint16_t(event[4] | event[5] << 8);
-        if (address == 0xFF02 && s.stack_depth) {
+        if (address == 0xFF02 && irq_stack_depth) {
             unsigned completed;
-            if (value & 0x8000) completed = s.stack[--s.stack_depth];
+            if (value & 0x8000) completed = irq_stack[--irq_stack_depth];
             else {
                 completed = value & 0x1f;
-                for (uint64_t at = 0; at < s.stack_depth; ++at)
-                    if (s.stack[at] == completed) {
-                        std::memmove(s.stack + at, s.stack + at + 1, s.stack_depth - at - 1);
-                        --s.stack_depth;
+                for (uint64_t at = 0; at < irq_stack_depth; ++at)
+                    if (irq_stack[at] == completed) {
+                        std::memmove(irq_stack + at, irq_stack + at + 1, irq_stack_depth - at - 1);
+                        --irq_stack_depth;
                         break;
                     }
             }
-            if (completed == WORKER_INT0) s.int0_in_service = 0;
+            if (completed == WORKER_INT0) irq_int0_in_service = 0;
             s.dirty = 1;
         }
         event[7] = 1;
@@ -2702,16 +2708,25 @@ void worker_commit_frame(WorkerPollState &s, C5xCore *core, const int16_t *wire,
 
 extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, void *lent)
 {
+
     // Python's float arithmetic rounds after every operation.
 #pragma clang fp contract(off)
     WorkerPollState &s = *static_cast<WorkerPollState *>(context);
+    uint64_t &irq_int0_pending=s.service_model?s.service_model->int0_pending:s.int0_pending;
+    uint64_t &irq_int1_pending=s.service_model?s.service_model->int1_pending:s.int1_pending;
+    uint64_t &irq_timer_pending=s.service_model?s.service_model->timer_pending:s.timer_pending;
+    uint64_t &irq_timer_delivered=s.service_model?s.service_model->timer_delivered:s.timer_delivered;
+    uint64_t &irq_int0_in_service=s.service_model?s.service_model->int0_in_service:s.int0_in_service;
+    uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
+    uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
+
     if (!s.armed) return 0;
     const PollCpu &cpu = *static_cast<const PollCpu *>(lent);
     worker_apply_eois(s, cpu);
     const int64_t total = s.instruction_base + int64_t(now);
     if (uint64_t(total) >= s.elide_until) { s.armed = 0; return 0; }
     // The comparison path leaves deferred frame/INT1 delivery to Python.
-    if (!s.pending_native && (s.int0_pending || s.int1_pending || s.timer_pending)) { s.armed = 0; return 0; }
+    if (!s.pending_native && (irq_int0_pending || irq_int1_pending || irq_timer_pending)) { s.armed = 0; return 0; }
     // Lamp writes waiting for the harness's replay: harmless only if they
     // leave the latch as it is.
     for (uint64_t index = s.io_cursor; index < cpu.io_event_count; ++index) {
@@ -2776,7 +2791,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             && uint64_t(total) - service_last_tick >= s.tick_period;
         const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
         courier::Timers186 preview;
-        uint64_t timer_pending = s.timer_pending;
+        uint64_t timer_pending = irq_timer_pending;
         if (s.timer_model && timer_poll) {
             // Preflight expiries and priority without publishing an event or
             // touching a counter until all entry/service guards have passed.
@@ -2788,8 +2803,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         // The Python board tick is not generated while a timer request is
         // latched for delivery, including one collected by this service.
         tick_due = tick_due && !timer_pending;
-        if (timer_poll && s.int0_ok && !s.int0_pending
-            && !s.int0_in_service && (flags & WORKER_IF)
+        if (timer_poll && s.int0_ok && !irq_int0_pending
+            && !irq_int0_in_service && (flags & WORKER_IF)
             && total - service_last_frame >= int64_t(s.frame_instructions)) {
             if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
@@ -2798,16 +2813,16 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         const bool pending_due = s.pending_native && timer_poll && (flags & WORKER_IF)
-            && (s.int0_pending || s.int1_pending || timer_pending);
+            && (irq_int0_pending || irq_int1_pending || timer_pending);
         const bool enter_irq = tick_due || frame_edge || pending_due;
         const unsigned vector_number = tick_due ? unsigned(s.tick_vector)
-            : (frame_edge || s.int0_pending) ? WORKER_INT0
-            : s.int1_pending ? 13 : unsigned(timer_pending);
+            : (frame_edge || irq_int0_pending) ? WORKER_INT0
+            : irq_int1_pending ? 13 : unsigned(timer_pending);
         const bool deferred_entry = !tick_due && pending_due
-            && ((vector_number == WORKER_INT0 && s.int0_pending)
-                || (vector_number == 13 && s.int1_pending));
+            && ((vector_number == WORKER_INT0 && irq_int0_pending)
+                || (vector_number == 13 && irq_int1_pending));
         if (enter_irq) {
-            if (vector_number > 255 || s.stack_depth >= sizeof s.stack
+            if (vector_number > 255 || irq_stack_depth >= sizeof s.stack
                 || !worker_readable(cpu, vector_number * 4, 4)) { s.armed = 0; return 0; }
             for (unsigned k = 0; k < 3; ++k) {
                 slots[k] = ((r[REG_SS] & 0xffff) * 16
@@ -2924,14 +2939,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (service_timer_poll_owed <= 0) service_timer_poll_owed += int64_t(s.timer_poll_period);
         if (s.timer_model && timer_poll) {
             *s.timer_model = preview;
-            s.timer_pending = timer_pending;
+            irq_timer_pending = timer_pending;
             ++s.native_timer_polls;
         }
         if (frame_edge) {
             service_last_frame += int64_t(s.frame_instructions);
             if (total - service_last_frame >= int64_t(s.frame_instructions))
                 service_last_frame = total - int64_t(s.frame_instructions);
-            s.int0_pending = WORKER_INT0;
+            irq_int0_pending = WORKER_INT0;
         }
         if (enter_irq) {
             const uint32_t values[3] = {r[REG_FLAGS] & 0xffff, r[REG_CS] & 0xffff,
@@ -2945,15 +2960,15 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             const uint8_t *vector = cpu.memory + vector_number * 4;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
-            s.stack[s.stack_depth++] = uint8_t(vector_number);
+            irq_stack[irq_stack_depth++] = uint8_t(vector_number);
             if (!tick_due) {
                 if (vector_number == WORKER_INT0) {
-                    s.int0_pending = 0;
-                    s.int0_in_service = 1;
-                } else if (vector_number == 13) s.int1_pending = 0;
+                    irq_int0_pending = 0;
+                    irq_int0_in_service = 1;
+                } else if (vector_number == 13) irq_int1_pending = 0;
                 else {
-                    s.timer_pending = 0;
-                    ++s.timer_delivered;
+                    irq_timer_pending = 0;
+                    ++irq_timer_delivered;
                     ++s.native_timer_irqs;
                 }
                 if (deferred_entry) ++s.native_pending_irqs;
@@ -2964,7 +2979,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             ++service_ticks;
             ++s.native_ticks;
             if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
-                s.int1_pending = 13;
+                irq_int1_pending = 13;
         }
         ++s.polls;
         return 1;
@@ -2990,7 +3005,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint32_t *r = cpu.regs;
     const uint32_t sp = r[REG_SP] & 0xFFFF, ss = r[REG_SS] & 0xFFFF;
     uint32_t slots[3];
-    if (timer_poll && s.int0_ok && !s.int0_in_service && (flags & WORKER_IF)
+    if (timer_poll && s.int0_ok && !irq_int0_in_service && (flags & WORKER_IF)
         && total - service_last_frame >= int64_t(s.frame_instructions)) {
         if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
         const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
@@ -2999,7 +3014,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 slots[k] = (ss * 16 + ((sp - 2 * (k + 1)) & 0xFFFF)) & 0xFFFFF;
                 if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
             }
-            if (s.stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
+            if (irq_stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
             frame_edge = true;
         }
     }
@@ -3131,7 +3146,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             service_last_frame += int64_t(s.frame_instructions);
             if (total - service_last_frame >= int64_t(s.frame_instructions))
                 service_last_frame = total - int64_t(s.frame_instructions);
-            s.int0_in_service = 1;
+            irq_int0_in_service = 1;
             // dispatch_interrupt(INT0_VECTOR, software=False)
             const uint32_t flags16 = r[REG_FLAGS] & 0xFFFF;
             const uint32_t values[3] = {flags16, r[REG_CS] & 0xFFFF, r[REG_IP] & 0xFFFF};
@@ -3141,7 +3156,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
             r[REG_SP] = (sp - 6) & 0xFFFF;
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
-            s.stack[s.stack_depth++] = WORKER_INT0;
+            irq_stack[irq_stack_depth++] = WORKER_INT0;
             r[REG_FLAGS] = flags16 & ~WORKER_IF;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);

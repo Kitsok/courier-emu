@@ -143,13 +143,14 @@ class WorkerPoll:
         if s.service_model:
             s.instruction_base, s.elide_until, s.last_service = base, deadline, machine._last_service
             s.timer_poll_period, s.frame_instructions = timer_period, machine.frame_instructions
-            s.int0_ok, s.int0_in_service, s.stack_depth = machine._rom_tick, machine._int0_in_service, len(stack)
+            s.int0_ok = machine._rom_tick
         else:
             _CLOCK_PACK(s, _CLOCK_OFFSET, base, deadline, machine._last_service,
                     machine._timer_poll_owed, timer_period, machine._last_frame,
                     machine.frame_instructions, machine._rom_tick,
                     machine._int0_in_service, len(stack))
-        s.stack[:len(stack)] = stack
+        if not s.service_model:
+            s.stack[:len(stack)] = stack
         if scheduled == 3:
             s.codec_present = bridge.codec is not None
             s.line_frame_instructions, s.batch = line_period, bridge.batch
@@ -163,5 +164,6 @@ class WorkerPoll:
         _TICK_PACK(s, _TICK_OFFSET, tick_period, 0 if s.service_model else machine._last_tick,
                    machine.hardware_map.tick_vector, 0 if s.service_model else machine.ticks,
                    machine.timers.controller.enabled('int1'),
-                   machine._int0_pending or 0, machine._int1_pending or 0)
+                   0 if s.service_model else machine._int0_pending or 0,
+                   0 if s.service_model else machine._int1_pending or 0)
         s.pending_native = 1

@@ -349,3 +349,23 @@ cannot affect native service. All 38 selected worker/boot checks pass; five
 call workloads remain deselected. No modem calls or performance measurements
 were made. Pending interrupt requests, the in-service stack and remaining
 CPU/device I/O transitions are still migration work.
+
+## Shared interrupt requests and in-service state (step 1)
+
+The machine service buffer now also owns pending INT0/INT1/timer vectors,
+timer delivery count, INT0 in-service state and the interrupt stack. Python
+uses live scalar and list-compatible views; native entry and EOI processing
+operate on the same storage. Arming, diagnostic resumption and take-back no
+longer republish the shared interrupt data. The legacy worker snapshot stays
+available for comparison paths without shared machine storage.
+
+The stack retains the worker's 64-entry native limit. Python overflow entries
+remain representable and preserve the existing fallback above that limit;
+returning below it exposes the complete native prefix again. A targeted
+script verifies native request priority and EOI while stale legacy vectors
+remain untouched. Another checks overflow, removal and slice/list behavior.
+The boot regression compares the entire expanded shared machine buffer.
+All 40 selected worker/boot checks pass; five call workloads are deferred.
+No modem calls or performance measurements were made. User-requested steps
+2–4 (remaining device I/O, runtime finalization, then complete local validation)
+remain outstanding.

@@ -495,3 +495,39 @@ def test_shared_machine_service_phases_ignore_legacy_snapshots():
     assert (live.last_frame, live.last_tick, live.ticks) == (100, 200, 3)
     assert (s.console_owed, s.timer_poll_owed, s.last_frame, s.last_tick, s.ticks) == (
         9999, 8888, 7777, 6666, 5555)
+
+
+def test_shared_interrupt_requests_and_eoi_ignore_snapshot_state():
+    from courier_emu.service_native import ServiceState
+    poll, run, regs, memory, guard = tick_scheduled()
+    s = poll.state
+    live = ServiceState()
+    live.timer_poll_owed = 1024
+    live.int0_pending, live.int1_pending = 12, 13
+    s.service_model = c.addressof(live)
+    s.pending_native = 1;s.tick_period = 0;s.int0_ok = 0
+    s.int0_pending = 31;s.int1_pending = 30;s.timer_pending = 8
+    assert run(1024, 0x302) == 1
+    assert (live.int0_pending, live.int1_pending, live.stack_depth, live.int0_in_service) == (0, 13, 1, 1)
+    assert live.stack[0] == 12
+    event = (c.c_uint8 * 8)(2, 255, 0, 0, 0, 128, 2, 0)
+    poll.cpu.mmio_events = c.addressof(event);poll.cpu.mmio_count = 1
+    assert run(2048, 0x102) == 1
+    assert live.stack_depth == live.int0_in_service == 0
+    assert live.int1_pending == 13 and event[7] == 1
+    assert (s.int0_pending, s.int1_pending, s.timer_pending) == (31, 30, 8)
+
+
+def test_shared_stack_retains_python_overflow_and_list_semantics():
+    from courier_emu.service_native import ServiceState, NativeInterruptStack
+    expected = list(range(70))
+    live = ServiceState();stack = NativeInterruptStack(live, expected)
+    assert list(stack) == expected and stack == expected
+    assert live.stack_depth == 64
+    assert stack.pop() == expected.pop()
+    stack.remove(12);expected.remove(12)
+    stack[2:5] = [31];expected[2:5] = [31]
+    while len(expected) > 60:
+        assert stack.pop() == expected.pop()
+    assert list(stack) == expected and not stack.overflow
+    assert list(live.stack[:live.stack_depth]) == expected

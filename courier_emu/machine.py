@@ -3470,8 +3470,10 @@ class CourierMachine:
                 if next_service >= deadline:
                     return
                 state.timer_model = timers.address if timer_native else None
-                state.timer_pending = self._timer_interrupt_pending or 0
-                state.timer_delivered = self.timer_interrupts
+                if not state.service_model:
+                    state.timer_pending = self._timer_interrupt_pending or 0
+                if not state.service_model:
+                    state.timer_delivered = self.timer_interrupts
                 if pending_native:
                     poll.seed_snapshot(core.handle, self, bridge, instruction_base,
                                        deadline, scheduled, dsp_active,
@@ -3499,16 +3501,20 @@ class CourierMachine:
                         state.last_tick, state.ticks = self._last_tick, self.ticks
                     state.tick_vector = self.hardware_map.tick_vector
                     state.int1_enabled = timers.controller.enabled("int1")
-                    state.int0_pending = self._int0_pending or 0
-                    state.int1_pending = self._int1_pending or 0
+                    if not state.service_model:
+                        state.int0_pending = self._int0_pending or 0
+                    if not state.service_model:
+                        state.int1_pending = self._int1_pending or 0
                     state.pending_native = pending_native
                     state.frame_instructions = self.frame_instructions
                     state.int0_ok = bool(self._rom_tick)
                     state.int0_in_service = bool(self._int0_in_service)
                     stack = self._interrupt_stack
-                    state.stack_depth = len(stack)
+                    if not state.service_model:
+                        state.stack_depth = len(stack)
                     for index, vector in enumerate(stack):
-                        state.stack[index] = vector
+                        if not state.service_model:
+                            state.stack[index] = vector
                     if scheduled != 3:
                         state.bridge_instructions = bridge._instructions
                         state.probe_last = getattr(bridge, "_probe_clock_last", 0)
@@ -3720,13 +3726,20 @@ class CourierMachine:
                     # The watched store only recorded diagnostics. The native
                     # clocks, DSP and line snapshot remain current. EOI/panel
                     # logs replayed after the batch may have changed these.
-                    state.int0_in_service = self._int0_in_service
-                    state.stack_depth = len(self._interrupt_stack)
-                    state.stack[:state.stack_depth] = self._interrupt_stack
-                    state.int0_pending = self._int0_pending or 0
-                    state.int1_pending = self._int1_pending or 0
-                    state.timer_pending = self._timer_interrupt_pending or 0
-                    state.timer_delivered = self.timer_interrupts
+                    if not state.service_model:
+                        state.int0_in_service = self._int0_in_service
+                    if not state.service_model:
+                        state.stack_depth = len(self._interrupt_stack)
+                    if not state.service_model:
+                        state.stack[:state.stack_depth] = self._interrupt_stack
+                    if not state.service_model:
+                        state.int0_pending = self._int0_pending or 0
+                    if not state.service_model:
+                        state.int1_pending = self._int1_pending or 0
+                    if not state.service_model:
+                        state.timer_pending = self._timer_interrupt_pending or 0
+                    if not state.service_model:
+                        state.timer_delivered = self.timer_interrupts
                     latch = self.panel.latches.get(0x14)
                     state.panel_latch = NO_LATCH if latch is None else latch
                     state.io_cursor = state.mmio_cursor = 0
@@ -3753,8 +3766,10 @@ class CourierMachine:
                 if not state.dirty:
                     return
                 state.dirty = 0
-                self._int0_in_service = bool(state.int0_in_service)
-                self._interrupt_stack[:] = state.stack[:state.stack_depth]
+                if not state.service_model:
+                    self._int0_in_service = bool(state.int0_in_service)
+                if not state.service_model:
+                    self._interrupt_stack[:] = state.stack[:state.stack_depth]
                 if state.polls == seen[0]:
                     return
                 seen[0] = state.polls
@@ -3768,11 +3783,15 @@ class CourierMachine:
                 if state.tick_period or state.pending_native:
                     if not state.service_model:
                         self._last_tick, self.ticks = state.last_tick, state.ticks
-                    self._int0_pending = state.int0_pending or None
-                    self._int1_pending = state.int1_pending or None
+                    if not state.service_model:
+                        self._int0_pending = state.int0_pending or None
+                    if not state.service_model:
+                        self._int1_pending = state.int1_pending or None
                 if state.timer_model:
-                    self._timer_interrupt_pending = state.timer_pending or None
-                    self.timer_interrupts = state.timer_delivered
+                    if not state.service_model:
+                        self._timer_interrupt_pending = state.timer_pending or None
+                    if not state.service_model:
+                        self.timer_interrupts = state.timer_delivered
                 if state.scheduled:
                     if not state.service_model:
                         self._console_owed = state.console_owed
