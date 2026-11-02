@@ -7,10 +7,11 @@
 
 namespace courier::analog {
 struct BoardMediaState {
-    uint64_t tx_index=0,codec_last=0,idle=0,frames=0,tx_consumed=0,resampled=0,crossing_retune=0;
+    uint64_t tx_index=0,codec_last=0,idle=0,frames=0,tx_consumed=0,resampled=0,crossing_retune=0,reported_tx_index=0;
     int64_t peak_codec=0,peak_line=0,line_rx_peak=0,codec_in_peak=0,handed_peak=0;
     int64_t handed_at=0,handed_ever=0,queue_peak=0;
     uint64_t queue_input=1,clocked_input=0,replayed=0;
+    double cushion_rate=0;
 };
 struct BoardMedia {
     SipPort &port;
@@ -23,7 +24,7 @@ struct BoardMedia {
     std::vector<uint16_t> words;
     size_t frame_samples;
     uint64_t frame_instructions,batch;
-    double cushion_rate=0;
+    std::string dial_digits;
     int64_t instructions=0;
     bool active=false,in_frame=false,fallback=false;
     BoardMedia(SipPort &subscriber,Daa *device,size_t samples,uint64_t period,uint64_t quantum,
@@ -68,25 +69,25 @@ struct BoardMedia {
         chunk(data+offset,end-offset,rate);
         if(crossed)++s.crossing_retune;
         s.peak_codec=std::max(s.peak_codec,peak(data+start,end-start));
-        s.tx_consumed+=end-start;s.tx_index=end;
+        s.tx_consumed+=end-start;s.tx_index=s.reported_tx_index=end;
     }
-    void queue(C5xCore &core,const std::vector<int32_t> &input) {
+    void queue(C5xCore &core,const std::vector<int32_t> &input,bool frame_metrics=true) {
         if(input.empty())return;
         received.clear();for(const auto sample:input)received.push_back(int16_t(sample));
         const int64_t input_peak=peak(received.data(),received.size());
-        s.line_rx_peak=std::max(s.line_rx_peak,input_peak);
-        if(!s.queue_input) {deferred_rx.insert(deferred_rx.end(),received.begin(),received.end());return;}
+        if(frame_metrics)s.line_rx_peak=std::max(s.line_rx_peak,input_peak);
+        if(frame_metrics && !s.queue_input) {deferred_rx.insert(deferred_rx.end(),received.begin(),received.end());return;}
         s.codec_in_peak=std::max(s.codec_in_peak,input_peak);
-        s.queue_peak=std::max(s.queue_peak,input_peak);
+        if(frame_metrics)s.queue_peak=std::max(s.queue_peak,input_peak);
         const double rate=double(core.codec_sample_rate_millihz())/1000;
         const std::vector<int16_t> *converted=&received;
         if(!s.clocked_input) {
             rx_converter.convert(received.data(),received.size(),8000,rate);converted=&rx_converter.out;
-            if(!converted->empty() && rate>0 && rate!=cushion_rate) {
+            if(!converted->empty() && rate>0 && rate!=s.cushion_rate) {
                 const auto serial=core.serial_state();
                 const int64_t pending=int64_t(serial.codec_rx_queued)-int64_t(serial.codec_rx_consumed);
                 if(pending<32){words.assign(size_t(32-std::max<int64_t>(0,pending)),0);core.queue_codec_rx(words.data(),words.size());}
-                cushion_rate=rate;
+                s.cushion_rate=rate;
             }
         }
         if(!converted->empty()) {
@@ -124,6 +125,7 @@ struct BoardMedia {
             if(daa) {
                 daa->line_state=port.exchange.line_state();daa->observe(int64_t(frame_samples));
                 if(!port.exchange.dialed.empty() && daa->operation==Originate)daa->operation=Dialing;
+                dial_digits=port.exchange.dialed;
             }
             ++s.frames;in_frame=false;
             active=!fallback && line_buffer.size()>=frame_samples;
@@ -134,7 +136,7 @@ struct BoardMedia {
     // boundary. The analog stream and its FIR history survive the DSP reset.
     void reset(bool clear_buffer) {
         if(active || port.running)throw std::logic_error("cannot reset native media during a frame");
-        s.tx_index=0;cushion_rate=0;
+        s.tx_index=0;s.cushion_rate=0;
         if(clear_buffer)line_buffer.clear();
     }
     void rebuild(C5xCore &core) {

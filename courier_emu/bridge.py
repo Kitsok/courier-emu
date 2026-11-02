@@ -674,6 +674,18 @@ class CourierDspBridge:
         self.codec = codec
         self.ring = ring
         self.exchange = exchange
+        native_media = (
+            os.environ.get("COURIER_NATIVE_BOARD", "0") == "1"
+            and self.boot_rom_enabled and not self.is3453 and line is None
+            and type(sip) is SipSession and type(exchange) is LineExchange
+            and not legacy_carrier_fallback and not rx_acquisition_assist and not rx_samples
+            and not os.environ.get("COURIER_SIP_RECORD")
+            and not os.environ.get("COURIER_ASIC_TRANSPARENT"))
+        if native_media:
+            # Adopt before SipLine starts its media clock. Both the session
+            # and exchange preserve their externally visible identities.
+            from .media_native import NativeSipSession
+            NativeSipSession.adopt(sip)
         # With both a modeled loop and a SIP session, the loop goes in front
         # of the instrument: the number the exchange decodes off the line is
         # what places the INVITE, and the network's answer is what the loop
@@ -793,6 +805,9 @@ class CourierDspBridge:
         self._mirror_bytes = {}
         self._sip_rx_samples: deque[int] = deque()
         self._completion_probe = False
+        if native_media:
+            from .bridge_native import NativeCourierDspBridge
+            NativeCourierDspBridge.adopt(self)
 
     def codec_sample_rate(self) -> float:
         """What the codec's own registers say it is converting at.
@@ -2700,7 +2715,8 @@ class CourierDspBridge:
             # in the AC01 and on its serial link, outside the part being reset.
             # Without this the dial tone the supervisor is waiting for is
             # discarded 31 ms after it arrives, and every later frame with it.
-            if self._codec_in_flight and hasattr(self.core, "queue_codec_rx"):
+            if (not hasattr(self, "_native_media_owner") and self._codec_in_flight
+                    and hasattr(self.core, "queue_codec_rx")):
                 self._codec_replayed = len(self._codec_in_flight)
                 if self.boot_rom_enabled and self.line is not None:
                     self.core.queue_line_rx(list(self._codec_in_flight))

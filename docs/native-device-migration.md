@@ -206,3 +206,35 @@ ADC registers match. Together with native components and existing codec/rate
 regressions, 77 checks pass. No SIP dialogs, modem calls or performance
 measurements were made. Runtime activation, bridge views and authoritative
 worker/board I/O integration remain outstanding before final validation.
+
+## Bridge integration and reset ownership
+
+`courier_emu/bridge_native.py` now adapts the standard standalone bridge in
+place. Its scalar counters and transmit-service statistics read native board
+state; PCM queue and resampler views expose native storage for diagnostics
+and explicit control operations. Complete frame service and explicit
+transmit/receive operations use the native pipeline. Dialed digits and DAA
+state are updated by frame completion inside C++.
+
+The bridge constructor has a staging opt-in, `COURIER_NATIVE_BOARD=1`, for the
+standard standalone ROM/SIP/exchange path without recording, legacy carrier
+fallback, acquisition assistance or transparent ASIC experiments. It adopts
+SIP before `SipLine` starts the media clock. The default remains the reference
+bridge until worker integration is complete. The staging native bridge does
+not yet support a subsequently attached Python audio monitor.
+
+Actual shared-reset edges clear native output cursors and buffered output;
+core replacement replays in-flight ADC words once. The reference replay block
+is bypassed when the native owner handles it. Reset keeps the last reported
+transmit index separate from the current output cursor, matching reference
+diagnostics. The worker cannot borrow/republish native resampler history
+through its old timed-converter interface.
+
+Six additional local checks cover real bridge construction with the analog403
+image (without executing modem commands), identity and native media-clock
+ownership, authoritative views, queue/final diagnostics, core replacement,
+explicit codec delivery, frame-owned digits/DAA updates and the shared reset
+edge. Together with native/codec regressions, 83 checks pass. No SIP dialogs,
+modem calls or performance measurements were performed. Native worker service
+and authoritative remaining board/device I/O integration are still pending;
+the active goal is not yet achieved.

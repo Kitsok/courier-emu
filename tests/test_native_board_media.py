@@ -76,6 +76,7 @@ def pair(monkeypatch):
 
 def compare(bridge, native, cores):
     state = native.state
+    assert state.reported_tx_index == bridge._line_service['tx_index']
     assert native.values(0) == bridge._exchange_line_buffer
     assert native.values(1) == list(bridge._codec_in_flight)
     assert native.values(2) == bridge._exchange_rx_samples

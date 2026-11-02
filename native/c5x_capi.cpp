@@ -3376,3 +3376,30 @@ size_t courier_board_media_values(void *handle,int which,int16_t *out,size_t cap
     return count;
 }
 }
+
+extern "C" {
+int courier_board_media_collect(void *handle,void *core) {
+    try {static_cast<courier::analog::BoardMedia *>(handle)->collect(*static_cast<C5xCore *>(core));return 0;}
+    catch (...) {return -1;}
+}
+int courier_board_media_queue(void *handle,void *core,const int32_t *data,size_t count,int64_t instructions) {
+    try {
+        auto &board=*static_cast<courier::analog::BoardMedia *>(handle);board.instructions=instructions;
+        std::vector<int32_t> samples;if(count)samples.assign(data,data+count);
+        board.queue(*static_cast<C5xCore *>(core),samples,false);return 0;
+    } catch (...) {return -1;}
+}
+void courier_board_media_replace(void *handle,int which,const int16_t *data,size_t count) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    auto &queue=which==0?board.line_buffer:which==1?board.in_flight:board.deferred_rx;
+    queue.clear();if(count)queue.insert(queue.end(),data,data+count);
+}
+void *courier_board_media_stream(void *handle,int receive) {
+    auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+    return receive?&board.rx_converter.s:&board.tx_converter.s;
+}
+const char *courier_board_media_digits(void *handle,const char *set) {
+    auto &digits=static_cast<courier::analog::BoardMedia *>(handle)->dial_digits;
+    if(set)digits=set;return digits.c_str();
+}
+}
