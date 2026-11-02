@@ -2,6 +2,8 @@
 #pragma once
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
+#include "pcm_recording.hpp"
+#include <memory>
 #include <stdexcept>
 
 namespace courier::analog {
@@ -15,6 +17,12 @@ struct LineMedia {
     std::deque<int32_t> pending;
     std::vector<std::pair<uint64_t,uint64_t>> underruns;
     std::vector<int32_t> incoming,received;
+    std::unique_ptr<media::PcmRecording> tx_recording,rx_recording;
+    void record(const char *prefix) {
+        auto tx=std::make_unique<media::PcmRecording>(std::string(prefix)+"-tx.wav");
+        auto rx=std::make_unique<media::PcmRecording>(std::string(prefix)+"-rx.wav");
+        tx_recording=std::move(tx);rx_recording=std::move(rx);
+    }
     explicit LineMedia(Exchange &line,media::Media &rtp):exchange(line),transport(rtp) {
         if(line.s.sample_rate!=8000)throw std::invalid_argument("native SIP media requires an 8 kHz loop");
         if(line.native_peer)throw std::invalid_argument("exchange already has a native media owner");
@@ -49,6 +57,10 @@ struct LineMedia {
             if(underruns.size()<64)underruns.emplace_back(s.frames,count-copied);
         }
         line.peer_result(received.data(),received.size());
+        if(tx_recording) {
+            tx_recording->write(available?line.tx.data()+line.position:nullptr,available,count);
+            rx_recording->write(received.data(),received.size(),count);
+        }
     }
 };
 } // namespace courier::analog

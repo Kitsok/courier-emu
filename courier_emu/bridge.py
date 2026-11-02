@@ -679,7 +679,6 @@ class CourierDspBridge:
             and self.boot_rom_enabled and not self.is3453 and line is None
             and type(sip) is SipSession and type(exchange) is LineExchange
             and not legacy_carrier_fallback and not rx_acquisition_assist and not rx_samples
-            and not os.environ.get("COURIER_SIP_RECORD")
             and not os.environ.get("COURIER_ASIC_TRANSPARENT"))
         if native_media:
             # Adopt before SipLine starts its media clock. Both the session

@@ -121,6 +121,7 @@ class SipLine:
         # it was given back.
         self._recordings = None
         prefix = os.environ.get("COURIER_SIP_RECORD")
+        self._recording_prefix = prefix
         if prefix:
             self._recordings = []
             for side in ("tx", "rx"):

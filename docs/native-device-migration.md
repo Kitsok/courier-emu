@@ -389,3 +389,17 @@ run passed eight checks. Five legacy call workloads remain deferred. No
 modem calls or performance measurements were made. The remaining device I/O
 review, runtime recording/monitor support and final local validation are
 still outstanding under requested steps 2–4.
+
+## Native subscriber WAV recording (step 3 in progress)
+
+The native exchange/media provider now writes connected TX/RX PCM to WAV
+files directly. It preserves signed 16-bit clipping, short-transmit silence
+padding, receive underruns, mono 8 kHz format and final sample counts. Native
+port adoption closes the unused initial Python writers before opening native
+sinks, using the original configured prefix. Recorded standalone sessions
+are now eligible for native bridge adoption.
+
+Ten recording/provider/adapter checks pass. The recording script verifies
+exact output bytes and headers without SIP dialogs or modem calls. Speaker
+monitor integration, default activation and complete local validation remain
+pending. No performance measurements were made.

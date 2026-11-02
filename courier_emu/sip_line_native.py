@@ -73,6 +73,7 @@ def library():
         'reset': ([c.c_void_p], None),
         'append': ([c.c_void_p, c.POINTER(c.c_int32), c.c_size_t], None),
         'underruns': ([c.c_void_p, c.POINTER(c.c_uint64), c.c_size_t], c.c_size_t),
+        'record': ([c.c_void_p, c.c_char_p], c.c_int),
     }
     for name, (args, result) in signatures.items():
         fn = getattr(lib, 'courier_line_media_' + name)
@@ -88,8 +89,8 @@ class NativeSipLine(SipLine):
             return line
         if type(line) is not SipLine or not isinstance(line.sip, NativeSipSession):
             raise TypeError('native subscriber ports require the standard SIP line and native media')
-        if line.line_rate != 8000 or line._recordings is not None:
-            raise ValueError('native subscriber port requires an unrecorded 8 kHz loop')
+        if line.line_rate != 8000:
+            raise ValueError('native subscriber port requires an 8 kHz loop')
         if line.frames or line._pending:
             raise ValueError('adopt the subscriber port before servicing audio')
         exchange = NativeLineExchange.adopt(line.exchange)
@@ -106,6 +107,13 @@ class NativeSipLine(SipLine):
         line._native_state = state
         line._native_media_state = lib.courier_line_media_state(line._native_media_handle).contents
         line._native_finalizer = weakref.finalize(line, lib.courier_sip_port_destroy, handle)
+        if line._recordings is not None:
+            for recording in line._recordings:
+                recording.close()
+            line._recordings = None
+            if lib.courier_line_media_record(line._native_media_handle, line._recording_prefix.encode()):
+                line._native_finalizer()
+                raise OSError('cannot open native subscriber recordings: '+line._recording_prefix)
         line.__class__ = cls
         line.sip._native_port_view = weakref.ref(line)
         line._sync_control()

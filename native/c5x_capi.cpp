@@ -3522,3 +3522,8 @@ void courier_board_media_service_codec(void *handle) {static_cast<courier::analo
 }
 
 extern "C" size_t courier_service_layout(){return sizeof(MachineServiceState);}
+
+extern "C" int courier_line_media_record(void *handle,const char *prefix) {
+    try{static_cast<courier::analog::LineMedia *>(handle)->record(prefix);return 0;}
+    catch(...){return -1;}
+}
