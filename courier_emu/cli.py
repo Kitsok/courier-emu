@@ -1446,8 +1446,8 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME",
         help="attach deterministic in-memory settings: idsdl302 seeds the "
         "recovered settings records and +S block; idsdl403 uses the complete "
-        "captured 403 EEPROM; idsdl403-lapm uses S27=0 for normal V.42 "
-        "negotiation and S54=96 for the 3429-baud workaround",
+        "captured 403 EEPROM; idsdl403-lapm requires ARQ with &M5, uses S27=0 "
+        "for V.42 negotiation and S54=96 for the 3429-baud workaround",
     )
     run.add_argument(
         "--serial-input-on-ring",

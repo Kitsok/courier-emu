@@ -224,14 +224,17 @@ class CourierNvram:
 
     @classmethod
     def idsl403_lapm_fixture(cls) -> CourierNvram:
-        """Captured 403 provisioning with V.42 and the 3429-baud workaround.
+        """Captured 403 provisioning with required ARQ and lower symbol rates.
 
         Firmware-written EEPROM differences locate S27 at byte 0x29 and
         S54 at 0x3c. Clear S27's captured negotiation override and set S54
         bit 32 to disable 3429 baud while preserving its other settings.
-        Keep the raw capture available for historical diagnostic runs.
+        Firmware AT&M5&W changes byte 0x05 from 4 to 5: require error
+        correction rather than allowing &M4's non-ARQ fallback. Keep the raw
+        capture available for historical diagnostic runs.
         """
         device = cls.idsl403_fixture()
+        device.data[0x05] = 5
         device.data[0x29] = 0
         device.data[0x3C] |= 0x20
         device.data[CHECKSUM_BYTE] = settings_checksum(device.data)

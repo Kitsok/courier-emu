@@ -228,3 +228,45 @@ include the discarded notebook warmup and both A53 orders.
 measurements used the older &M4 fixture; subsequent runs with the new &M5
 profile should identify that settings change rather than merging results.
 The benchmark remains an idle/dialing measurement, not a connected call.
+
+
+## Required error correction and saved settings
+
+Normal operation now requires ARQ (&M5), rather than &M4's optional error
+correction. The new LAPM fixture matches original firmware after AT&M5&W:
+byte 0x05 changes from 4 to 5, and checksum 0xad becomes 0xae. Runtime
+migration validates the existing checksum, writes a unique exact backup,
+and atomically replaces only the mode byte and checksum. It preserves
+other settings, file ownership/permissions and configured symlinks. Existing
+ARQ-only files are unchanged. Invalid files or failed backups are never
+silently repaired or replaced. A configuration check reports pending
+migration without writing files.
+
+The configured notebook and nanovax EEPROMs were both migrated with backups,
+as requested. Both changed only byte 0x05 (4 to 5) and byte 0x1ff (0x15 to
+0x16). Their prior fixed-speed and other custom settings remain intact.
+The nanovax backup is
+`/home/kostik/work/courier-emu/artifacts/courier-emu-v32.nvram.pre-arq-zlynmowl.bak`;
+the notebook backup is
+`artifacts/courier-emu-v32.nvram.pre-arq-0twu3wk5.bak`. Backups remain local
+and are excluded from Git. The configured EEPROM itself is already tracked,
+so its two-byte migration is included in the policy commit.
+
+The runtime/migration suite passes 25 tests, including idempotence, exact
+backup retention, customized settings, symlinks, metadata, invalid checksums,
+backup failure and replacement failure. A stale path assertion was corrected
+to match the existing configured `courier-emu-v32.nvram` filename. The full
+native SIP data regression with the new ARQ-only defaults passes: original
+firmware at both ends negotiates LAPM/V.42bis and transfers exact marker
+lines in both directions. This notebook regression is not a successful
+physical A53 call.
+
+The physical modem's saved settings were not changed. An attempted settings
+inspection sent only AT, ATZ and ATI4; ATI4 did not complete, so no mode or
+save command was issued. Mgetty restarted and acknowledged its normal ATZ
+and AT&D2 initialization. The command log is retained at
+`nanovax:/tmp/courier-physical-arq-policy-20261102/commands.json`.
+Subsequent user instruction prohibits physical-modem settings changes;
+all further work is confined to the emulator and calls through the existing
+physical configuration. Temperature sampling on nanovax is also disabled
+as requested.

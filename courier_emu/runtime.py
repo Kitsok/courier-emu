@@ -8,9 +8,10 @@ import importlib.util
 import os
 from pathlib import Path
 import sys
+import tempfile
 
 from . import cli, dsp, x86_native
-from .nvram import CourierNvram
+from .nvram import CHECKSUM_BYTE, CourierNvram, settings_checksum
 
 
 KEYS = {
@@ -103,13 +104,71 @@ def read_config(path: Path) -> tuple[list[str], Path]:
     return arguments, paths["nvram"]
 
 
-def seed_nvram(path: Path) -> None:
+def validated_nvram(path: Path) -> CourierNvram:
+    device = CourierNvram.load(path)
+    if device.data[CHECKSUM_BYTE] != settings_checksum(device.data):
+        raise ValueError(f"{path}: EEPROM checksum is invalid; settings were not changed")
+    return device
+
+
+def sync_directory(path: Path) -> None:
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def seed_nvram(path: Path) -> Path | None:
+    """Seed new profiles or back up and migrate only the saved ARQ mode."""
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("xb") as output:
             output.write(CourierNvram.idsl403_lapm_fixture().data)
     except FileExistsError:
-        CourierNvram.load(path)  # Validate an existing file; never overwrite it.
+        path = path.resolve(strict=True)  # Preserve a configured symlink.
+        device = validated_nvram(path)
+        if device.data[0x05] == 5:
+            return None
+        original = bytes(device.data)
+        device.data[0x05] = 5
+        device.data[CHECKSUM_BYTE] = settings_checksum(device.data)
+        # Exclusive creation retains every pre-migration version, even if
+        # firmware later saves a different non-ARQ profile at the same path.
+        backup = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                    dir=path.parent, prefix=path.name + '.pre-arq-',
+                    suffix='.bak', delete=False) as output:
+                backup = Path(output.name)
+                output.write(original)
+                output.flush()
+                os.fsync(output.fileno())
+        except OSError:
+            if backup is not None:
+                backup.unlink(missing_ok=True)
+            raise
+        replacement = None
+        try:
+            metadata = path.stat()
+            with tempfile.NamedTemporaryFile(
+                    dir=path.parent, prefix=path.name + '.arq-', delete=False) as output:
+                replacement = Path(output.name)
+                os.fchown(output.fileno(), metadata.st_uid, metadata.st_gid)
+                os.fchmod(output.fileno(), metadata.st_mode & 0o777)
+                output.write(device.data)
+                output.flush()
+                os.fsync(output.fileno())
+            if path.read_bytes() != original:
+                raise RuntimeError(f"{path}: EEPROM changed during migration; original left intact")
+            sync_directory(path.parent)  # Persist the backup before replacement.
+            os.replace(replacement, path)
+            sync_directory(path.parent)
+        finally:
+            if replacement is not None:
+                replacement.unlink(missing_ok=True)
+        return backup
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -133,10 +192,15 @@ def main(argv: list[str] | None = None) -> int:
         dsp.load_library()
         if args.check_config:
             if nvram.exists():
-                CourierNvram.load(nvram)
+                device = validated_nvram(nvram)
+                if device.data[0x05] != 5:
+                    print("Existing EEPROM will migrate to required ARQ with a backup on launch")
             print("Analog Courier configuration and native build: OK")
             return 0
-        seed_nvram(nvram)
+        backup = seed_nvram(nvram)
+        if backup is not None:
+            print(f"courier-emu: required ARQ (&M5); original EEPROM backed up to {backup}",
+                  file=sys.stderr)
         return cli.main(arguments)
     except (OSError, ValueError, RuntimeError, ImportError, configparser.Error) as exc:
         print(f"courier-emu: {exc}", file=sys.stderr)
