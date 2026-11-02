@@ -491,3 +491,52 @@ The dialing samples vary more than idle; retain that uncertainty. Final
 guest memory, registers, all reported timer state and pending/in-service
 interrupt state match in every sample. ARM results are collected with
 isolated before/after source builds and windowed hardware counters.
+
+### Final A53 results and state validation
+
+Nanovax used independently compiled `/tmp/courier-timer-before` (`ed89410`)
+and `/tmp/courier-timer-after` (`ded6972`) source trees, with firmware linked
+from the unchanged checkout. Both used the same benchmark reporting harness.
+Each run warmed up for 30M instructions, then measured a 10M instruction
+window. `perf stat -D -1 --control=fifo:...` enabled user-mode instructions
+and cycles only during that window; both events report 100% running time.
+Idle order was before/after/after/before; dialing has one before/after pair.
+
+| A53 window | Before CPU | After CPU | CPU reduction | Before host instructions | After host instructions | Instruction reduction |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Idle (two samples each) | 10.307 s | 9.143 s | 11.3% | 5.097 billion | 4.687 billion | 8.0% |
+| Dialing (one sample each) | 14.440 s | 13.502 s | 6.5% | 7.357 billion | 7.099 billion | 3.5% |
+
+Mean cycle counts fell 8.9% at idle and 3.1% while dialing. The ondemand
+board reached 78.8–86.5°C across recorded endpoints and throttled; endpoint
+frequency readings do not establish a constant clock during a window.
+Consequently the CPU-time gains are observations, not fixed-clock promises.
+Host instruction reductions provide stronger evidence of reduced work.
+The single dialing pair warrants less confidence than the idle ABBA run.
+
+The benchmark now records final DSP registers/counters, DSP serial/codec
+state and terminal text outside the measured window. An additional notebook
+before/after pair for each workload and all six ARM runs match those fields,
+CPU registers, complete memory hash, timers and interrupt state exactly.
+The eight longer notebook runs also match every state field their earlier
+reporting harness captured. This establishes idle/dialing equivalence, not
+connected SIP training or data-call capacity.
+
+[All 18 measurement records](native-timer-results.json) preserve window
+statistics, raw ARM PMU output, temperature/frequency endpoints and
+content-deduplicated guest states. The remote checkout remains clean and
+both parallel test services remain inactive; candidate builds are confined
+to `/tmp`. No governor settings or unrelated services were changed.
+
+The resulting architecture uses authoritative native timer/controller state
+and native expiry/request delivery. Register programming and calibrated
+instruction grants still use Python views of that state. UART work, full
+media frames and other device transitions remain Python boundaries; these
+are candidates for subsequent profiling rather than proven gains from this
+change. See the updated [architecture](architecture.md) for ownership and
+execution flow.
+
+Final verification reran the timer model/read, worker deadline, native
+interpreter and build suites together: 77 tests passed in 70.89 seconds.
+Documentation links resolve, the reporting harness compiles, and
+`git diff --check` passes.
