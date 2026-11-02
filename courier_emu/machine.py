@@ -699,7 +699,7 @@ class CourierMachine:
             # The EB leaves IMASK bit 1 reserved: INT3 is bit 7, not the
             # legacy DMA-equipped controller's bit 6. The 2.3.x tick uses it.
             self.timers.controller = EbInterruptController()
-        if (self._rom_tick and with_dsp and cpu_engine == 'interpreter'
+        if (self._rom_tick and with_dsp and exchange is not None and cpu_engine == 'interpreter'
                 and os.environ.get('COURIER_X86_NATIVE', '1') != '0'
                 and os.environ.get('COURIER_NATIVE_TIMER_MODEL', '1') != '0'):
             from .timers_native import NativeTimerBlock
@@ -2393,7 +2393,7 @@ class CourierMachine:
             if fixed_refresh[0] is not None:
                 fixed_refresh[0]()
 
-        def timer_poll_static(*, pending_native: bool = False) -> bool:
+        def timer_poll_static(*, pending_native: bool = False, timer_native: bool = False) -> bool:
             """fast_service's timer-poll tests of state only Python changes,
             all coming out the way that leaves only the frame edge to take."""
             uart = self.uart
@@ -2403,11 +2403,11 @@ class CourierMachine:
                 or (uart is not None and uart.pending)
                 or self._external_interrupt_pending is not None
                 or (self._int1_pending is not None and not pending_native)
-                or self._timer_interrupt_pending is not None
+                or (self._timer_interrupt_pending is not None and not timer_native)
                 or self.quad_usart is not None or self._quad_profile
                 or self._service_resume or self.cpu_fault is not None
                 or self.interrupt is not None
-                or (self.timers._pending and self.timers.pending_interrupt() is not None)
+                or (not timer_native and self.timers._pending and self.timers.pending_interrupt() is not None)
                 or (self._int0_pending is not None and not pending_native)
             )
 
@@ -3355,6 +3355,8 @@ class CourierMachine:
             timers = self.timers
             seen = [0]
             native_board_tick = os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0"
+            native_timer_poll = (hasattr(timers, 'native_state')
+                                 and os.environ.get('COURIER_NATIVE_TIMER_POLL', '1') != '0')
             resume_ready, resume_requested = [False], [False]
 
             def first_instruction_at(tick: int) -> int:
@@ -3373,9 +3375,10 @@ class CourierMachine:
                 pending_native = bool(native_worker_irqs and native_board_tick
                                       and scheduled and self._rom_tick
                                       and not self._serial_in_handler and not self._timer_in_handler)
+                timer_native = bool(native_timer_poll and pending_native)
                 if (core is None or len(self._interrupt_stack) > STACK_SLOTS
                         or (scheduled and not scheduled_static())
-                        or not timer_poll_static(pending_native=pending_native)):
+                        or not timer_poll_static(pending_native=pending_native, timer_native=timer_native)):
                     return
                 next_service = instruction_base + uc._clock_next
                 elapsed = next_service - self._last_service
@@ -3415,7 +3418,9 @@ class CourierMachine:
                 if (self._rom_tick or self._quad_modem_tick) and self.tick_ms and not tick_native:
                     deadlines.append(
                         self._last_tick + self.tick_period_instructions)
-                if hasattr(timers, 'next_deadline'):
+                if timer_native:
+                    pass  # Native clock polling owns counter expiries and their requests.
+                elif hasattr(timers, 'next_deadline'):
                     timer_deadline = timers.next_deadline()
                     if timer_deadline is not None:
                         deadlines.append(timer_deadline)
@@ -3427,6 +3432,9 @@ class CourierMachine:
                 deadline = max(0, min(deadlines))
                 if next_service >= deadline:
                     return
+                state.timer_model = timers.address if timer_native else None
+                state.timer_pending = self._timer_interrupt_pending or 0
+                state.timer_delivered = self.timer_interrupts
                 if pending_native:
                     poll.seed_snapshot(core.handle, self, bridge, instruction_base,
                                        deadline, scheduled, dsp_active,
@@ -3671,6 +3679,8 @@ class CourierMachine:
                     state.stack[:state.stack_depth] = self._interrupt_stack
                     state.int0_pending = self._int0_pending or 0
                     state.int1_pending = self._int1_pending or 0
+                    state.timer_pending = self._timer_interrupt_pending or 0
+                    state.timer_delivered = self.timer_interrupts
                     latch = self.panel.latches.get(0x14)
                     state.panel_latch = NO_LATCH if latch is None else latch
                     state.io_cursor = state.mmio_cursor = 0
@@ -3712,12 +3722,16 @@ class CourierMachine:
                     self._last_tick, self.ticks = state.last_tick, state.ticks
                     self._int0_pending = state.int0_pending or None
                     self._int1_pending = state.int1_pending or None
+                if state.timer_model:
+                    self._timer_interrupt_pending = state.timer_pending or None
+                    self.timer_interrupts = state.timer_delivered
                 if state.scheduled:
                     self._console_owed = state.console_owed
                     bridge._exchange_instructions = state.exchange_ticks
-                    # No max count is crossed while armed. Bring the lazy
-                    # timer view to the last service before any Python use.
-                    timers.tick(total)
+                    if not state.timer_model:
+                        # Comparison path: max-count deadlines bound this
+                        # stretch. The native model already owns its clocks.
+                        timers.tick(total)
                     if state.scheduled == 2:
                         bridge._exchange_codec_last = state.exchange_codec_last
                         bridge._exchange_idle = state.exchange_idle
@@ -4170,7 +4184,9 @@ class CourierMachine:
                       "native_dsp_batches": worker_poll.state.dsp_batches,
                       "native_board_ticks": worker_poll.state.native_ticks,
                       "native_pending_irqs": worker_poll.state.native_pending_irqs,
-                      "native_diagnostic_resumes": worker_poll.diagnostic_resumes}
+                      "native_diagnostic_resumes": worker_poll.diagnostic_resumes,
+                      "native_timer_polls": worker_poll.state.native_timer_polls,
+                      "native_timer_irqs": worker_poll.state.native_timer_irqs}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

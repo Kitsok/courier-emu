@@ -87,6 +87,8 @@ class WorkerPollState(ctypes.Structure):
         ("ticks", U64), ("int1_enabled", U64),
         ("int0_pending", U64), ("int1_pending", U64), ("native_ticks", U64),
         ("pending_native", U64), ("native_pending_irqs", U64),
+        ("timer_model", ctypes.c_void_p), ("timer_pending", U64), ("timer_delivered", U64),
+        ("native_timer_polls", U64), ("native_timer_irqs", U64),
         ("error", ctypes.c_char * 512),
     ]
 

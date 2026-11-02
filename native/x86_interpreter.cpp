@@ -76,6 +76,7 @@ struct Core {
     TimerRead timer_reads[8]; unsigned nr=0;
     bool timer_read(uint32_t a, int n, uint32_t &value) {
         if ((!timers && !timer_model) || a < 0xff30 || a > 0xff46 || (a & 1) || (n != 1 && n != 2)) return false;
+        if (timer_model && !timer_model->answers_reads) return false;
         const unsigned offset=(a-0xff30)/2, timer=offset/4, field=offset%4;
         // Control reads may grant a calibrated delay; T2 has no compare B.
         if (field==3 || offset==10 || timer>2 || nr==8) return false;

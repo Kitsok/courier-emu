@@ -215,6 +215,73 @@ def test_new_frame_edge_precedes_deferred_int1():
     assert regs[12] == 0x300 and s.int1_pending == 0
 
 
+def timer_scheduled():
+    from courier_emu.timers import TimerBlock
+    from courier_emu.timers_native import NativeTimerBlock
+    poll, run, regs, memory, guard = tick_scheduled()
+    reference = TimerBlock(fast=False)
+    reference.timers[0].control, reference.timers[0].compare_a = 0xa001, 5
+    model = NativeTimerBlock(reference)
+    poll.state.timer_model = model.address
+    poll.state.pending_native = 1
+    poll.state.tick_period = 0
+    memory[32:36] = [0, 4, 0, 0x80]
+    return poll, run, regs, memory, guard, reference, model
+
+
+def test_native_timer_expiries_latch_while_masked_or_if_is_clear():
+    poll, run, regs, memory, guard, reference, model = timer_scheduled()
+    s = poll.state
+    reference.tick(1024)
+    assert run(1024, 0x302) == 1
+    assert model == reference and list(model._pending) == [8]
+    assert s.stack_depth == s.timer_delivered == 0
+    for block in (reference, model):
+        block.controller.masked['timer'] = False
+    reference.tick(2048)
+    assert run(2048, 0x102) == 1
+    assert model == reference and s.stack_depth == 0
+    reference.tick(3072)
+    assert reference.take_interrupt() == 8
+    assert run(3072, 0x302) == 1
+    assert model == reference
+    assert regs[12] == 0x400
+    assert s.timer_delivered == s.native_timer_irqs == 1
+    assert s.native_timer_polls == 3
+
+
+@pytest.mark.parametrize('watched', ['vector', 'stack'])
+def test_guarded_timer_expiry_does_not_commit_counter_or_request(watched):
+    poll, run, regs, memory, guard, reference, model = timer_scheduled()
+    model.controller.masked['timer'] = False
+    guard[35 if watched == 'vector' else 0x7fa] |= 16 if watched == 'vector' else 32
+    before = bytes(model.buffer), list(regs), bytes(memory)
+    assert run(1024, 0x302) == 0
+    assert (bytes(model.buffer), list(regs), bytes(memory)) == before
+    assert poll.state.polls == poll.state.native_timer_polls == 0
+
+
+def test_timer_request_suppresses_tick_generation_but_keeps_frame_int1_priority():
+    poll, run, regs, memory, guard, reference, model = timer_scheduled()
+    s = poll.state
+    model.controller.masked['timer'] = False
+    model.controller.masked['int1'] = False
+    s.tick_period, s.int0_ok, s.frame_instructions = 1024, 1, 1000
+    s.int1_pending = 13
+    memory[52:56] = [0, 3, 0, 0x80]
+    assert run(1024, 0x302) == 1
+    assert regs[12] == 0x100
+    assert (s.int0_pending, s.int1_pending, s.timer_pending) == (0, 13, 8)
+    assert model.interrupts == 1 and s.timer_delivered == 0
+    assert s.ticks == 0
+    model.timers[0].control &= ~0x8000
+    for at, offset in ((2048, 0x300), (3072, 0x400), (4096, 0x200)):
+        assert run(at, 0x302) == 1
+        assert regs[12] == offset
+    assert s.timer_delivered == s.native_timer_irqs == 1
+    assert s.timer_pending == 0 and model.interrupts == 1
+
+
 @pytest.mark.parametrize("serial_input", [b"", b"AT\rATI7\r", b"ATDT100\r", b"AT\rATZ\rAT\r"])
 def test_interactive_exchange_matches_python_services(monkeypatch, serial_input):
     from pathlib import Path
@@ -278,6 +345,7 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         monkeypatch.setenv("COURIER_NATIVE_WORKER_TICK", enabled)
         monkeypatch.setenv("COURIER_NATIVE_WORKER_IRQS", enabled)
         monkeypatch.setenv("COURIER_NATIVE_TIMER_MODEL", enabled)
+        monkeypatch.setenv("COURIER_NATIVE_TIMER_POLL", enabled)
         machine = CourierMachine(
             load_image(ROOT / ANALOG403_IMAGE), with_dsp=True,
             nvram=CourierNvram.idsl403_lapm_fixture(), board_id=7,
@@ -291,6 +359,8 @@ def test_interactive_exchange_matches_python_services(monkeypatch, serial_input)
         if enabled == "1":
             assert scheduler["native_dsp_batches"] > 0
             assert scheduler["native_board_ticks"] > 0
+            assert scheduler["native_timer_polls"] > 0
+            assert scheduler["native_timer_irqs"] > 0
         results.append(result)
         machines.append(machine)
     slow, fast = machines

@@ -146,3 +146,25 @@ def test_shared_native_mmio_reads_match_snapshot_reads_and_rollback():
         cpu.emu_start(0x1000, 0, count=3)
         states.append((cpu.memory, cpu.regs, block.reference() if shared else block, counts))
     assert states[0] == states[1]
+
+
+def test_shared_timer_read_view_leaves_unmodelled_registers_to_python():
+    from courier_emu import x86_interpreter as x86
+    from courier_emu.native_timers import NativeTimerReads
+
+    block = NativeTimerBlock(TimerBlock(fast=False, answers_reads=False))
+    counts = Counter()
+    cpu = x86.Uc(0, 0, profile='186eb')
+    cpu.mem_map(0, len(cpu.memory))
+    cpu.mem_write(0xff30, bytes.fromhex('cd ab'))
+    cpu.mem_write(0x1000, bytes.fromhex('a1 30 ff'))
+    cpu.native_timer_reads = NativeTimerReads(block, counts)
+
+    def read(cpu, _access, address, size, _value, _user):
+        counts[('read', address, size)] += 1
+        assert block.read(address, size, cpu.retired) is None
+
+    cpu.hook_add(x86.UC_HOOK_MEM_READ, read, None, 0xff30, 0xff47)
+    cpu.emu_start(0x1000, 0, count=1)
+    assert cpu.reg_read(x86.UC_X86_REG_AX) == 0xabcd
+    assert block.reads == counts[('read', 0xff30, 2)] == 1

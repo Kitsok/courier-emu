@@ -2458,6 +2458,8 @@ struct WorkerPollState {
     uint64_t tick_period, last_tick, tick_vector, ticks, int1_enabled;
     uint64_t int0_pending, int1_pending, native_ticks;
     uint64_t pending_native, native_pending_irqs;
+    courier::Timers186 *timer_model;
+    uint64_t timer_pending, timer_delivered, native_timer_polls, native_timer_irqs;
     char error[512];
 };
 
@@ -2677,7 +2679,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     const int64_t total = s.instruction_base + int64_t(now);
     if (uint64_t(total) >= s.elide_until) { s.armed = 0; return 0; }
     // The comparison path leaves deferred frame/INT1 delivery to Python.
-    if (!s.pending_native && (s.int0_pending || s.int1_pending)) { s.armed = 0; return 0; }
+    if (!s.pending_native && (s.int0_pending || s.int1_pending || s.timer_pending)) { s.armed = 0; return 0; }
     // Lamp writes waiting for the harness's replay: harmless only if they
     // leave the latch as it is.
     for (uint64_t index = s.io_cursor; index < cpu.io_event_count; ++index) {
@@ -2702,10 +2704,23 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         bool frame_edge = false;
         uint32_t slots[3];
         uint32_t *r = cpu.regs;
-        const bool tick_due = s.tick_period && (flags & WORKER_IF)
+        bool tick_due = s.tick_period && (flags & WORKER_IF)
             && uint64_t(total) >= s.last_tick
             && uint64_t(total) - s.last_tick >= s.tick_period;
         const bool timer_poll = s.timer_poll_owed - elapsed <= 0;
+        courier::Timers186 preview;
+        uint64_t timer_pending = s.timer_pending;
+        if (s.timer_model && timer_poll) {
+            // Preflight expiries and priority without publishing an event or
+            // touching a counter until all entry/service guards have passed.
+            preview = *s.timer_model;
+            preview.tick(uint64_t(total));
+            if ((flags & WORKER_IF) && !timer_pending && preview.pending_interrupt())
+                timer_pending = preview.take_interrupt();
+        }
+        // The Python board tick is not generated while a timer request is
+        // latched for delivery, including one collected by this service.
+        tick_due = tick_due && !timer_pending;
         if (timer_poll && s.int0_ok && !s.int0_pending
             && !s.int0_in_service && (flags & WORKER_IF)
             && total - s.last_frame >= int64_t(s.frame_instructions)) {
@@ -2716,10 +2731,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         const bool pending_due = s.pending_native && timer_poll && (flags & WORKER_IF)
-            && (s.int0_pending || s.int1_pending);
+            && (s.int0_pending || s.int1_pending || timer_pending);
         const bool enter_irq = tick_due || frame_edge || pending_due;
         const unsigned vector_number = tick_due ? unsigned(s.tick_vector)
-            : (frame_edge || s.int0_pending) ? WORKER_INT0 : 13;
+            : (frame_edge || s.int0_pending) ? WORKER_INT0
+            : s.int1_pending ? 13 : unsigned(timer_pending);
         const bool deferred_entry = !tick_due && pending_due
             && ((vector_number == WORKER_INT0 && s.int0_pending)
                 || (vector_number == 13 && s.int1_pending));
@@ -2804,6 +2820,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         s.timer_poll_owed -= elapsed;
         if (s.timer_poll_owed <= 0) s.timer_poll_owed += int64_t(s.timer_poll_period);
+        if (s.timer_model && timer_poll) {
+            *s.timer_model = preview;
+            s.timer_pending = timer_pending;
+            ++s.native_timer_polls;
+        }
         if (frame_edge) {
             s.last_frame += int64_t(s.frame_instructions);
             if (total - s.last_frame >= int64_t(s.frame_instructions))
@@ -2827,7 +2848,12 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 if (vector_number == WORKER_INT0) {
                     s.int0_pending = 0;
                     s.int0_in_service = 1;
-                } else s.int1_pending = 0;
+                } else if (vector_number == 13) s.int1_pending = 0;
+                else {
+                    s.timer_pending = 0;
+                    ++s.timer_delivered;
+                    ++s.native_timer_irqs;
+                }
                 if (deferred_entry) ++s.native_pending_irqs;
             }
         }
@@ -2835,7 +2861,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             s.last_tick = uint64_t(total);
             ++s.ticks;
             ++s.native_ticks;
-            if (s.int1_enabled) s.int1_pending = 13;
+            if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
+                s.int1_pending = 13;
         }
         ++s.polls;
         return 1;

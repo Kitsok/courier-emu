@@ -43,6 +43,8 @@ class WindowConsole:
                     native_board_ticks=getattr(poll.state, 'native_ticks', 0) if poll else 0,
                     native_pending_irqs=getattr(poll.state, 'native_pending_irqs', 0) if poll else 0,
                     native_diagnostic_resumes=getattr(poll, 'diagnostic_resumes', 0),
+                    native_timer_polls=getattr(poll.state, 'native_timer_polls', 0) if poll else 0,
+                    native_timer_irqs=getattr(poll.state, 'native_timer_irqs', 0) if poll else 0,
                     dsp_batches=poll.state.dsp_batches if poll else 0)
 
     def poll(self, limit):
@@ -182,7 +184,7 @@ def main():
                     window = {key: end[key] - start[key] for key in
                               ('instructions', 'batches', 'retired', 'zero_batches',
                                'polls', 'dsp_batches', 'native_board_ticks', 'native_pending_irqs',
-                               'native_diagnostic_resumes')}
+                               'native_diagnostic_resumes', 'native_timer_polls', 'native_timer_irqs')}
                     window.update(cpu_seconds=end['cpu'] - start['cpu'],
                                   wall_seconds=end['wall'] - start['wall'],
                                   start_instruction=start['instructions'],

@@ -448,3 +448,46 @@ including idle, identification, dialing and reset firmware comparisons.
 The shared header is a dependency of both native builds, and layout checks
 guard the Python/C++ ABI. Performance is assessed after moving the expiry
 boundary, rather than claiming a gain from the storage change alone.
+
+### Native counter expiry and timer request delivery
+
+The scheduled worker now advances the shared counters at the reference
+timer-poll boundary, latches requests while masked or with IF clear, and
+delivers timer interrupts through the native interrupt path. It no longer
+scans timer deadlines in Python or returns solely for a counter expiry.
+After-run bookkeeping does not tick or copy the authoritative counters.
+`COURIER_NATIVE_TIMER_POLL=0` retains the expiry boundary with shared state;
+`COURIER_NATIVE_TIMER_MODEL=0` restores the original model and read snapshots.
+Normal paired workers and alternate controller maps keep their existing path.
+
+Expiry is preflighted before committing the service. A guarded vector or
+stack therefore leaves counters and requests unchanged, so Python can run
+the service once. DSP reply/loader/error yields also leave timer completion
+to the existing Python continuation. Timer requests collected by a service
+remain pending behind frame/INT1 delivery when required.
+
+The first implementation diverged in full firmware despite passing isolated
+expiry tests. The reference suppresses *generation* of the board tick while
+a timer request is latched, including a request collected in that service.
+Treating that as ordinary delivery priority shifts the firmware's calibration
+and scheduling. The corrected implementation and a dedicated priority test
+preserve this distinction. The 10M and 30M idle checkpoints then match
+exactly, and all four firmware comparison cases pass with explicit assertions
+that native timer polling and delivery execute.
+
+The combined timer/worker/interpreter/build suite passes 76 tests; additional
+checks cover native delivery use and unmodelled-read fallback. A separately
+compiled pre-change source tree at `ed89410` is the performance reference,
+so the comparison includes the full model and compiler-layout change.
+Alternating before/after/after/before notebook runs use 30M measured
+instructions after 30M warmup:
+
+| Window | Before | After | Mean CPU reduction |
+| --- | ---: | ---: | ---: |
+| Idle | 5.929 s | 5.680 s | 4.2% |
+| Dialing | 6.455 s | 6.306 s | 2.3% |
+
+The dialing samples vary more than idle; retain that uncertainty. Final
+guest memory, registers, all reported timer state and pending/in-service
+interrupt state match in every sample. ARM results are collected with
+isolated before/after source builds and windowed hardware counters.
