@@ -125,6 +125,8 @@ struct Exchange {
     std::vector<int> dial_tone{350,440};
     std::string dialed,inbound_number;
     int event=0; // 1 route, 2 peer PCM
+    void (*native_peer)(void *,Exchange &)=nullptr;
+    void *native_peer_context=nullptr;
     std::vector<int32_t> tx,output;
     int64_t requested=0,position=0,step=0;
     std::string found;
@@ -266,8 +268,9 @@ struct Exchange {
             }
             if(phase==2) {
                 if(s.state==Connected) {
-                    if(s.has_peer){event=2;return event;}
-                    output.insert(output.end(),size_t(step),0);
+                    if(native_peer)native_peer(native_peer_context,*this);
+                    else if(s.has_peer){event=2;return event;}
+                    else output.insert(output.end(),size_t(step),0);
                 } else render(step);
                 phase=3;
             }

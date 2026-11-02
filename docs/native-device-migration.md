@@ -92,3 +92,21 @@ of four complete kernel tables and exact PCM/state across fragmented fixed
 rates, output retunes, input-clock changes and unprogrammed pass-through.
 All pass. Runtime integration remains pending; no modem calls or performance
 measurements were performed for this milestone.
+
+## Direct native exchange-to-RTP PCM
+
+`native/line_media.hpp` attaches a persistent native PCM provider to the
+exchange. Connected 80-sample subframes send directly to the native RTP
+queue and consume its receive queue. Pending receive audio, underrun
+counters and the bounded underrun log stay in C++. The provider preserves
+short transmit blocks, partial receive blocks, pending audio across frames
+and per-subframe silence padding. Routing still yields explicitly to SIP
+signalling. The initial provider requires the standalone 8 kHz loop; other
+loop rates are rejected rather than incorrectly relabelled.
+
+Three device-only checks cover exact reference output, transmit queues,
+pending input, underrun statistics and logs across varied block sizes,
+duplicate/rate validation, and bypass of Python peer callbacks. Combined
+with RTP, analog and streaming-converter checks, 44 checks pass. SIP dialog
+supervision, board/codec integration and runtime activation remain pending.
+No SIP dialogs, modem calls or performance measurements were performed.

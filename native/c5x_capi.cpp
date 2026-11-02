@@ -3,6 +3,7 @@
 #include "bearer.hpp"
 #include "resample.hpp"
 #include "stream_resample.hpp"
+#include "line_media.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -3264,5 +3265,34 @@ void courier_stream_snapshot(void *handle,courier::resample::StreamState *out) {
 size_t courier_stream_layout() { return sizeof(courier::resample::StreamState); }
 const double *courier_stream_kernel(double cutoff,int compensated) {
     return courier::resample::kernel_for(cutoff,bool(compensated))->data();
+}
+}
+
+extern "C" {
+void *courier_line_media_create(void *exchange,void *media) {
+    try { return new courier::analog::LineMedia(*static_cast<courier::analog::Exchange *>(exchange),
+                                               *static_cast<courier::media::Media *>(media)); }
+    catch (...) { return nullptr; }
+}
+void courier_line_media_destroy(void *handle) { delete static_cast<courier::analog::LineMedia *>(handle); }
+void courier_line_media_snapshot(void *handle,courier::analog::LineMediaState *out) {
+    *out=static_cast<courier::analog::LineMedia *>(handle)->s;
+}
+void courier_line_media_frames(void *handle,uint64_t frames) {
+    static_cast<courier::analog::LineMedia *>(handle)->s.frames=frames;
+}
+size_t courier_line_media_pending(void *handle,int32_t *out,size_t capacity,int consume) {
+    auto &queue=static_cast<courier::analog::LineMedia *>(handle)->pending;
+    const size_t count=queue.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(queue.begin(),n,out);
+    if(consume)queue.erase(queue.begin(),queue.begin()+n);
+    return count;
+}
+void courier_line_media_reset(void *handle) { static_cast<courier::analog::LineMedia *>(handle)->pending.clear(); }
+size_t courier_line_media_underruns(void *handle,uint64_t *out,size_t capacity) {
+    const auto &log=static_cast<courier::analog::LineMedia *>(handle)->underruns;
+    const size_t count=log.size(),n=std::min(count,capacity);
+    if(out)for(size_t k=0;k<n;++k){out[2*k]=log[k].first;out[2*k+1]=log[k].second;}
+    return count;
 }
 }

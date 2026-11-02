@@ -28,7 +28,8 @@ SOURCES = (
 LIBRARY_SOURCES = (SOURCES[:1] + (NATIVE_DIRECTORY / "c5x_capi.cpp",) + SOURCES[2:]
                    + (NATIVE_DIRECTORY / "bearer.hpp", NATIVE_DIRECTORY / "resample.hpp",
                       NATIVE_DIRECTORY / "timers186.hpp", NATIVE_DIRECTORY / "analog_devices.hpp",
-                      NATIVE_DIRECTORY / "rtp_media.hpp", NATIVE_DIRECTORY / "stream_resample.hpp"))
+                      NATIVE_DIRECTORY / "rtp_media.hpp", NATIVE_DIRECTORY / "stream_resample.hpp",
+                      NATIVE_DIRECTORY / "line_media.hpp"))
 _LIBRARY_HANDLE = None
 _SIZE_T_MAX = ctypes.c_size_t(-1).value
 
