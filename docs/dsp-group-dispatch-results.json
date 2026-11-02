@@ -1,0 +1,1454 @@
+{
+  "host": "nanovax Cortex-A53",
+  "decision": "Reject experimental grouped dispatch; retain existing implementation",
+  "method": "CPU 3 affinity; 8 reference/candidate pairs with order reversed each pair; fresh processes; 5 million modeled cycles per case; process CPU time; 10000 warmup cycles. No modem calls or temperature readings.",
+  "candidate": "BE/BF secondary tables hold plain/threaded handler pairs; only group threaded wrappers tail-dispatch to secondary threaded handler. Primary dispatch unchanged.",
+  "summary": {
+    "primary": {
+      "reference": 0.840308872,
+      "candidate": 0.835219728,
+      "cpu_reduction_percent": 0.605627783970375
+    },
+    "be": {
+      "reference": 0.8593401230000001,
+      "candidate": 0.8608254345,
+      "cpu_reduction_percent": -0.1728432619688025
+    },
+    "bf": {
+      "reference": 0.5034563315,
+      "candidate": 0.48894241500000013,
+      "cpu_reduction_percent": 2.882855094255554
+    }
+  },
+  "runs": {
+    "reference": [
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.770839707
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.771700413
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.4625389980000003
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8282566229999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8118961640000002
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.49903816700000014
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8204306249999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8487494119999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.492578623
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8283295390000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8398457050000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.500320624
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8549692050000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8727389999999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.5293744139999998
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.852288205
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8699308340000003
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.5504788289999998
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.861118704
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.878455958
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.506592039
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.888031662
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8800723719999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.5216630390000003
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      }
+    ],
+    "candidate": [
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.802230039
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8077008289999998
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.47085937000000033
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8146935380000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8307900429999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.46492249799999996
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.833211458
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.840757161
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.4915814140000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8258830349999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8590327080000002
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.4815165819999998
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8372279979999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8626181609999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.48630341600000015
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8601031219999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.867847161
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.499950498
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.8651025809999999
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.8850438270000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.5019320810000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      },
+      {
+        "primary": {
+          "cpu_seconds": [
+            0.9004044520000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 30721,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 29264,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 29264,
+            "indx": 29264
+          }
+        },
+        "be": {
+          "cpu_seconds": [
+            0.882422622
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48641,
+            "acc": -1,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 146,
+            "idle": false,
+            "instructions": 5010000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 0,
+            "ar1": 0,
+            "ar2": 0,
+            "ar3": 0,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 0,
+            "indx": 0
+          }
+        },
+        "bf": {
+          "cpu_seconds": [
+            0.5289757050000001
+          ],
+          "state": {
+            "pc": 29264,
+            "op": 48907,
+            "acc": 0,
+            "accb": 0,
+            "preg": 0,
+            "dp": 0,
+            "arp": 0,
+            "flags": 154,
+            "idle": false,
+            "instructions": 2505000,
+            "cycles": 5010000,
+            "io_events": 0,
+            "ar0": 1,
+            "ar1": 2,
+            "ar2": 3,
+            "ar3": 4,
+            "ar4": 0,
+            "ar5": 0,
+            "ar6": 0,
+            "ar7": 0,
+            "arcr": 1,
+            "indx": 1
+          }
+        }
+      }
+    ]
+  },
+  "benchmark_source": "import hashlib,json,struct,time,sys\nfrom courier_emu.dsp import NativeC5x\npatterns={'primary':[0x7801], 'be':[0xbe00,0xbe01,0xbe02,0xbe03,0xbe04,0xbe05],\n          'bf':[0xbf08,1,0xbf09,2,0xbf0a,3,0xbf0b,4]}\nresults={}\nfor name,pattern in patterns.items():\n    words=(pattern*((65536+len(pattern)-1)//len(pattern)))[:65536]\n    # Keep two-word operands aligned at the wrap.\n    program=struct.pack('<65536H',*words)\n    times=[];states=[]\n    for _ in range(1):\n        with NativeC5x.from_program(0,program) as core:\n            core.step_cycles(10000)\n            start=time.process_time();core.step_cycles(5000000);times.append(time.process_time()-start)\n            states.append(core.state())\n    assert all(state==states[0] for state in states)\n    results[name]={'cpu_seconds':times,'state':states[0]}\nprint(json.dumps(results))\n"
+}

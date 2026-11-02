@@ -488,3 +488,42 @@ attempts are not a controlled speedup measurement. Both delivered roughly
 candidates are DSP decode/dispatch, remaining Python callback work (requiring
 function attribution), and x86 dispatch. A change in profile share alone
 must not be presented as equivalent CPU-time savings.
+
+## DSP grouped dispatch experiment
+
+A candidate replaced the BE/BF secondary plain handler tables with paired
+plain/threaded entries. Only the grouped threaded wrappers tail-dispatched
+to the secondary threaded handler; the primary dispatch path was unchanged.
+An earlier candidate that selected secondary handlers at every instruction
+was rejected after slowing the notebook microbenchmarks.
+
+On nanovax, eight interleaved reference/candidate pairs, reversing order on
+each pair and pinned to CPU 3, produced these median process CPU times for
+five million modeled cycles (after 10000 warmup cycles):
+
+| Case | Reference | Candidate | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Primary | 0.8403 s | 0.8352 s | 0.6% |
+| BE group | 0.8593 s | 0.8608 s | -0.2% |
+| BF group | 0.5035 s | 0.4889 s | 2.9% |
+
+All final architectural states matched. Earlier sequential blocks drifted
+by roughly 10%, so small differences require caution. The modest BF-only
+gain does not establish an overall training improvement. The experimental
+native implementation is removed; the existing dispatch remains in use.
+Raw repetitions and the microbenchmark source are retained in
+`docs/dsp-group-dispatch-results.json`.
+
+Four grouped-dispatch boundary checks passed on the candidate. The selected
+cycle/MAC/interrupt/line-clock suite gave identical results on candidate and
+unchanged reference: 27 passed and five failed. All five existing failures
+involve an additional timer interrupt flag bit (8); this experiment does
+not change interrupt semantics. A notebook standalone boot comparison also
+matched memory hash, registers, DSP/serial state, timers and interrupts.
+No new physical call was made and no physical modem settings were changed.
+
+Next: attribute remaining Python function costs during a reproducible local
+training workload, then optimize the largest measured cost. Separate x86
+and DSP threads remain an investigation: shared mailbox, interrupt, reset
+and guest-clock ordering require explicit synchronization before concurrency
+can be evaluated safely.
