@@ -19,6 +19,7 @@ class BoardMediaState(c.Structure):
                   'handed_at', 'handed_ever', 'queue_peak')]
     _fields_ += [(name, c.c_uint64) for name in ('queue_input', 'clocked_input', 'replayed')]
     _fields_ += [('cushion_rate', c.c_double)]
+    _fields_ += [('codec_instructions', c.c_int64)]
 
 
 _LIBRARY = None
@@ -44,6 +45,8 @@ def library():
         'replace': ([c.c_void_p, c.c_int, c.POINTER(c.c_int16), c.c_size_t], None),
         'stream': ([c.c_void_p, c.c_int], c.POINTER(StreamState)),
         'digits': ([c.c_void_p, c.c_char_p], c.c_char_p),
+        'codec': ([c.c_void_p, c.c_void_p], None),
+        'service_codec': ([c.c_void_p], None),
     }
     for name, (args, result) in signatures.items():
         fn = getattr(lib, 'courier_board_media_' + name)
@@ -69,9 +72,10 @@ class NativeBoardMedia:
             raise RuntimeError('native board media allocation failed')
         # Pin only the DAA storage, not the Python device/line graph. Native
         # port references retain the other resources independently.
+        self._device_storage = [self.daa._native_buffer if self.daa is not None else None]
         self._finalizer = weakref.finalize(
             self, self._destroy, self._lib, self._handle,
-            self.daa._native_buffer if self.daa is not None else None)
+            self._device_storage)
         self.state = self._lib.courier_board_media_state(self._handle).contents
 
     @staticmethod
@@ -120,6 +124,13 @@ class NativeBoardMedia:
     def collect(self, core):
         if self._lib.courier_board_media_collect(self.handle, core.handle):
             raise RuntimeError('native transmit collection failed')
+
+    def attach_codec(self, master):
+        self._device_storage.append(master.codec._native_buffer)
+        self._lib.courier_board_media_codec(self.handle, master.native_handle)
+        self._native_codec_attached = True
+
+    def service_codec(self):self._lib.courier_board_media_service_codec(self.handle)
 
     def queue(self, core, samples, instructions):
         data = pcm(samples)

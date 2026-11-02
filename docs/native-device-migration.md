@@ -285,3 +285,29 @@ worker device checks and boot comparison, ten checks pass. A further boot
 comparison with native bridge adoption enabled also passes. No AT commands,
 SIP dialogs, modem calls or performance measurements were made. The ASIC
 bring-up scheduler and its worker clock remain to be moved into C++.
+
+## Native ASIC codec initialization and service clock
+
+`native/codec_bringup.hpp` implements the seven-step initialization master,
+including repeated readiness polling and the bounded service loop. The live
+Python adapter preserves master/device identity, configuration, index, poll
+count and the initialization trace. Standard native bridges now adopt the
+master and retain its silicon device storage for native service lifetime.
+
+The persistent native board owns the codec instruction clock. Scheduled
+worker mode 3 advances and consumes that clock directly, after exchange work
+and before the DSP step. Codec deadlines no longer force Python handoff for
+this path. A media yield leaves the shared clock intact so Python can finish
+any due codec service while resuming the same boundary. Reference/custom
+codec paths retain their existing service boundary.
+
+Three new master checks compare both line variants, step order, readiness
+polling, nondefault configuration, repeated initialization and adoption after
+partial progress. The boot regression compares complete codec status and
+asserts native codec services are exercised, in addition to CPU, timer,
+media and DSP equivalence through the injected DAA transition. Calls and
+performance measurements remain deferred until the migration is finalized.
+
+Validation: 58 master/device/worker/bridge checks pass; five legacy firmware
+call workloads are explicitly deselected. No modem calls or performance
+measurements were performed for this milestone.

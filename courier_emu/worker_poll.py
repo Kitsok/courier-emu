@@ -96,7 +96,7 @@ class WorkerPollState(ctypes.Structure):
         ("pacer_origin", F64), ("pacer_next", U64), ("pacer_period", U64),
         ("native_console_polls", U64), ("native_pacer_checks", U64),
         ("native_media", ctypes.c_void_p),
-        ("native_media_services", U64), ("native_media_yields", U64),
+        ("native_media_services", U64), ("native_media_yields", U64), ("native_codec_services", U64),
         ("error", ctypes.c_char * 512),
     ]
 

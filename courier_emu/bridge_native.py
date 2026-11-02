@@ -68,6 +68,12 @@ class NativeCourierDspBridge(CourierDspBridge):
             if type(bridge.codec.codec) is SiliconDaa:
                 NativeSiliconDaa.adopt(bridge.codec.codec)
         owner = NativeBoardMedia(line, bridge.daa, bridge.batch)
+        if bridge.codec is not None:
+            from .codec import CodecBringUp
+            from .codec_native import NativeCodecBringUp
+            if type(bridge.codec) is CodecBringUp:
+                NativeCodecBringUp.adopt(bridge.codec)
+                owner.attach_codec(bridge.codec)
         digits = bridge.dial_digits
         stats = bridge._line_service
         # Install the shared state before switching class, so descriptors can
@@ -108,6 +114,11 @@ class NativeCourierDspBridge(CourierDspBridge):
     def _take_line_audio(self):
         self._native_media_owner.collect(self.core)
 
+    def _service_codec(self):
+        from .codec_native import NativeCodecBringUp
+        if isinstance(self.codec, NativeCodecBringUp):self._native_media_owner.service_codec()
+        else:super()._service_codec()
+
     def _queue_line_audio(self, samples):
         self._native_media_owner.queue(self.core, samples, self._instructions)
 
@@ -147,5 +158,6 @@ for _python, _native in {
     '_line_rx_peak': 'line_rx_peak', '_codec_in_peak': 'codec_in_peak',
     '_codec_handed_peak': 'handed_peak', '_codec_handed_at': 'handed_at',
     '_codec_handed_ever': 'handed_ever', '_codec_queue_peak': 'queue_peak', '_codec_replayed': 'replayed',
+    '_codec_instructions': 'codec_instructions',
 }.items():
     setattr(NativeCourierDspBridge, _python, BoardField(_native))

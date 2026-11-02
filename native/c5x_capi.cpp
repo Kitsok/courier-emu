@@ -7,6 +7,7 @@
 #include "sip_port.hpp"
 #include "board_media.hpp"
 #include "silicon_daa.hpp"
+#include "codec_bringup.hpp"
 #include "timers186.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -2473,7 +2474,7 @@ struct WorkerPollState {
     double pacer_origin;
     uint64_t pacer_next, pacer_period, native_console_polls, native_pacer_checks;
     courier::analog::BoardMedia *native_media;
-    uint64_t native_media_services,native_media_yields;
+    uint64_t native_media_services,native_media_yields,native_codec_services;
     char error[512];
 };
 
@@ -2720,7 +2721,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         // Interactive/SIP operation: run only the services before the next
         // Python-owned event. In particular the exchange precedes the DSP
         // step, and input must be sampled on its original polling boundary.
-        if ((s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)
+        if ((s.codec_present && (s.scheduled==3?s.native_media->s.codec_instructions:s.codec_instructions) + elapsed >= s.line_frame_instructions
+             && !(s.scheduled==3 && s.native_media->codec))
             || (s.scheduled == 1 && (exchange_due || dsp_due))
             || s.bridge_instructions + elapsed - s.probe_last >= 200000) {
             s.armed = 0; return 0;
@@ -2832,7 +2834,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         s.dirty = 1;
         s.last_service = uint64_t(total);
         s.bridge_instructions += elapsed;
-        if (s.codec_present) s.codec_instructions += elapsed;
+        if (s.codec_present) {
+            if(s.scheduled==3)s.native_media->s.codec_instructions+=elapsed;
+            else s.codec_instructions+=elapsed;
+        }
         if (s.exchange_present) s.exchange_ticks += elapsed;
         if (s.dsp_active) s.x86_ticks += elapsed;
         if (s.console_present) s.console_owed -= elapsed;
@@ -2880,6 +2885,12 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             s.tx_index = produced;
             s.resampled += timed->out.size();
             ++s.line_calls;
+        }
+        if(s.scheduled==3 && s.native_media->codec) {
+            while(s.native_media->s.codec_instructions>=s.line_frame_instructions) {
+                s.native_media->s.codec_instructions-=s.line_frame_instructions;
+                s.native_media->service_codec();++s.native_codec_services;
+            }
         }
         if (dsp_due) {
             s.debt += double(s.x86_ticks) * s.cycles_per_x86;
@@ -3450,4 +3461,27 @@ int courier_silicon_action(void *handle,int action,int64_t a,int64_t b) {
         return 0;
     } catch(...) {return -1;}
 }
+}
+
+extern "C" {
+void *courier_bringup_create(void *part) {
+    try{return new courier::analog::CodecBringUp(*static_cast<courier::analog::SiliconDaa *>(part));}catch(...){return nullptr;}
+}
+void courier_bringup_destroy(void *handle){static_cast<courier::analog::CodecBringUp *>(handle)->release();}
+size_t courier_bringup_layout(){return sizeof(courier::analog::BringUpState);}
+void *courier_bringup_state(void *handle){return &static_cast<courier::analog::CodecBringUp *>(handle)->s;}
+int courier_bringup_step(void *handle){return static_cast<courier::analog::CodecBringUp *>(handle)->step();}
+void courier_bringup_service(void *handle,int64_t frames){static_cast<courier::analog::CodecBringUp *>(handle)->service(frames);}
+size_t courier_bringup_steps(void *handle,int32_t *out,size_t capacity,int replace) {
+    auto &steps=static_cast<courier::analog::CodecBringUp *>(handle)->steps;
+    if(replace){steps.clear();if(capacity)steps.assign(out,out+capacity);return steps.size();}
+    const size_t n=std::min(capacity,steps.size());if(out)std::copy_n(steps.begin(),n,out);return steps.size();
+}
+}
+
+extern "C" {
+void courier_board_media_codec(void *handle,void *master) {
+    static_cast<courier::analog::BoardMedia *>(handle)->attach_codec(static_cast<courier::analog::CodecBringUp *>(master));
+}
+void courier_board_media_service_codec(void *handle) {static_cast<courier::analog::BoardMedia *>(handle)->service_codec();}
 }

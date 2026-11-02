@@ -3429,6 +3429,7 @@ class CourierMachine:
                         and bridge._exchange_instructions + elapsed >= bridge.batch)
                     or (scheduled == 1 and dsp_active and bridge._x86_ticks + elapsed >= bridge.batch)
                     or (bridge.codec is not None
+                        and not (scheduled == 3 and getattr(media_owner, '_native_codec_attached', False))
                         and bridge._codec_instructions + elapsed >= LINE_FRAME_INSTRUCTIONS)
                 ):
                     # This batch cannot elide even its first service. Avoid
@@ -3771,7 +3772,8 @@ class CourierMachine:
                         bridge._exchange_codec_last = state.exchange_codec_last
                         bridge._exchange_idle = state.exchange_idle
                 bridge._instructions = state.bridge_instructions
-                bridge._codec_instructions = state.codec_instructions
+                if state.scheduled != 3:
+                    bridge._codec_instructions = state.codec_instructions
                 bridge._x86_ticks = state.x86_ticks
                 if state.scheduled != 1:
                     bridge._dsp_cycle_debt = state.debt
@@ -4236,7 +4238,8 @@ class CourierMachine:
                       "native_console_polls": worker_poll.state.native_console_polls,
                       "native_pacer_checks": worker_poll.state.native_pacer_checks,
                       "native_media_services": worker_poll.state.native_media_services,
-                      "native_media_yields": worker_poll.state.native_media_yields}
+                      "native_media_yields": worker_poll.state.native_media_yields,
+                      "native_codec_services": worker_poll.state.native_codec_services}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

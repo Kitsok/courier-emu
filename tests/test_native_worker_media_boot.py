@@ -66,8 +66,10 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch):
     assert bytes(left._native_media_owner.state) == bytes(right._native_media_owner.state)
     assert left.exchange.status() == right.exchange.status()
     assert left.daa.status() == right.daa.status()
+    assert left.codec.status() == right.codec.status()
     assert list(left._codec_in_flight) == list(right._codec_in_flight)
     assert list(left._exchange_line_buffer) == list(right._exchange_line_buffer)
     assert results[1].scheduler['native_media_services'] > 0
     assert results[1].scheduler['native_dsp_batches'] > 0
     assert results[1].scheduler['native_media_yields'] > 0
+    assert results[1].scheduler['native_codec_services'] > 0

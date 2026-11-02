@@ -4,6 +4,7 @@
 #include "c5x_core.h"
 #include "sip_port.hpp"
 #include "stream_resample.hpp"
+#include "codec_bringup.hpp"
 
 namespace courier::analog {
 struct BoardMediaState {
@@ -12,10 +13,12 @@ struct BoardMediaState {
     int64_t handed_at=0,handed_ever=0,queue_peak=0;
     uint64_t queue_input=1,clocked_input=0,replayed=0;
     double cushion_rate=0;
+    int64_t codec_instructions=0;
 };
 struct BoardMedia {
     SipPort &port;
     Daa *daa;
+    CodecBringUp *codec=nullptr;
     BoardMediaState s;
     resample::Stream tx_converter,rx_converter;
     std::deque<int16_t> line_buffer,in_flight,deferred_rx;
@@ -34,7 +37,17 @@ struct BoardMedia {
         if(!samples || !period || !quantum)throw std::invalid_argument("invalid native line cadence");
         port.retain();
     }
-    ~BoardMedia(){port.release_reference();}
+    ~BoardMedia(){if(codec)codec->release();port.release_reference();}
+    void attach_codec(CodecBringUp *master) {
+        if(master)master->retain();if(codec)codec->release();codec=master;
+    }
+    void service_codec() {
+        if(!codec)throw std::logic_error("native codec master not attached");
+        auto &part=codec->codec;
+        if(daa){part.line_connected=daa->connected();part.hook(bool(daa->off_hook));}
+        part.ring_positive=part.ring_negative=port.exchange.ringing();
+        codec->service();
+    }
     BoardMedia(const BoardMedia &)=delete;
     BoardMedia &operator=(const BoardMedia &)=delete;
     static int64_t peak(const int16_t *data,size_t count) {
