@@ -119,6 +119,10 @@ struct ExchangeStateData {
 // provider. The continuation retains its exact subframe and callback order.
 // The native SIP board uses a native provider and needs no audio callbacks.
 struct Exchange {
+    // Native frame owners pin the device independently of Python views.
+    size_t references=1;
+    void retain() {++references;}
+    void release_reference() {if(--references==0)delete this;}
     ExchangeStateData s;
     Decoder decoder;
     std::map<std::string,int64_t> directory;

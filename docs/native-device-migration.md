@@ -134,3 +134,24 @@ were no SIP dialogs, firmware modem calls, physical calls or performance
 measurements. Runtime adapters, codec/board integration and replacing the
 remaining per-batch worker snapshots remain outstanding before final call
 and measurement validation.
+
+## Live subscriber-port interfaces and native lifetimes
+
+`courier_emu/sip_line_native.py` adapts the standard SIP line in place before
+its first frame. Port state, frame deadlines, counters, receive backlog,
+underrun history and lateness history are live native views. Signalling
+control events invoke the existing SIP session methods and resume the native
+continuation. Explicit Python frame callers remain supported while the
+forthcoming native board will invoke the same port directly. The adapter
+currently accepts the normal unrecorded 8 kHz loop with native SIP media;
+recorded/custom lines retain their reference implementation.
+
+Native frame owners retain exchange and media objects independently of
+Python views. Destroying a view cannot leave a port with dangling device
+references, and cyclic Python line/session references remain collectible.
+Final diagnostic values survive explicit close. Four additional local checks
+validate identity and live status, native PCM/backlog views and final status,
+continued native operation after both Python device views close, and cycle
+collection. All 56 combined local checks pass. No SIP messages, modem calls
+or performance measurements were performed. Runtime activation and codec /
+authoritative board-worker integration are still outstanding.

@@ -67,6 +67,9 @@ struct State {
 
 class Media {
 public:
+    size_t references=1;
+    void retain() {++references;}
+    void release_reference() {if(--references==0)delete this;}
     std::recursive_mutex mutex;
     State state;
 private:

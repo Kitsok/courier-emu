@@ -3121,7 +3121,7 @@ void courier_analog_daa_render(void *handle,int64_t count,int32_t *out) {
     if(handle && out)static_cast<courier::analog::Daa *>(handle)->render(count,out);
 }
 void *courier_analog_exchange_create() { return new courier::analog::Exchange(); }
-void courier_analog_exchange_destroy(void *handle) { delete static_cast<courier::analog::Exchange *>(handle); }
+void courier_analog_exchange_destroy(void *handle) { static_cast<courier::analog::Exchange *>(handle)->release_reference(); }
 void *courier_analog_exchange_state(void *handle) {
     return handle?&static_cast<courier::analog::Exchange *>(handle)->s:nullptr;
 }
@@ -3200,7 +3200,7 @@ void *courier_rtp_create(int fd) {
     try { return new courier::media::Media(fd); }
     catch(const std::exception &e) { rtp_error=e.what();return nullptr; }
 }
-void courier_rtp_destroy(void *handle) { delete static_cast<courier::media::Media *>(handle); }
+void courier_rtp_destroy(void *handle) { static_cast<courier::media::Media *>(handle)->release_reference(); }
 void courier_rtp_stop(void *handle) { static_cast<courier::media::Media *>(handle)->stop(); }
 int courier_rtp_clock(void *handle,uint64_t samples) {
     try { static_cast<courier::media::Media *>(handle)->clock(samples);return 0; }
@@ -3325,5 +3325,19 @@ void courier_sip_port_ack(void *handle,int route) {
 }
 size_t courier_sip_port_layout(int control) {
     return control?sizeof(courier::analog::SipControl):sizeof(courier::analog::PortState);
+}
+}
+
+extern "C" {
+void *courier_line_media_state(void *handle) {return &static_cast<courier::analog::LineMedia *>(handle)->s;}
+void courier_line_media_append(void *handle,const int32_t *values,size_t count) {
+    auto &pending=static_cast<courier::analog::LineMedia *>(handle)->pending;
+    pending.insert(pending.end(),values,values+count);
+}
+size_t courier_sip_port_spikes(void *handle,courier::analog::SipPort::Spike *out,size_t capacity) {
+    const auto &spikes=static_cast<courier::analog::SipPort *>(handle)->spikes;
+    const size_t count=spikes.size(),n=std::min(count,capacity);
+    if(out)std::copy_n(spikes.begin(),n,out);
+    return count;
 }
 }

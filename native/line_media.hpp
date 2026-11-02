@@ -18,10 +18,12 @@ struct LineMedia {
     explicit LineMedia(Exchange &line,media::Media &rtp):exchange(line),transport(rtp) {
         if(line.s.sample_rate!=8000)throw std::invalid_argument("native SIP media requires an 8 kHz loop");
         if(line.native_peer)throw std::invalid_argument("exchange already has a native media owner");
+        line.retain();rtp.retain();
         line.native_peer_context=this;line.native_peer=&dispatch;
     }
     ~LineMedia() {
         if(exchange.native_peer_context==this){exchange.native_peer=nullptr;exchange.native_peer_context=nullptr;}
+        exchange.release_reference();transport.release_reference();
     }
     LineMedia(const LineMedia &)=delete;
     LineMedia &operator=(const LineMedia &)=delete;
