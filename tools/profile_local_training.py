@@ -85,7 +85,7 @@ def launch(config, instrument):
     return run_console(args, command, cli._worker_environment(args))
 
 
-def capture(output, timeout, instrument, batch_exits):
+def capture(output, timeout, instrument, batch_exits, rate_index=None):
     output.mkdir(parents=True, exist_ok=False)
     reservations = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for _ in range(4)]
     try:
@@ -135,7 +135,10 @@ def capture(output, timeout, instrument, batch_exits):
                 path = output/role/'modem.tty'
                 if role not in fds and path.exists():
                     fds[role] = os.open(path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-                    os.write(fds[role], b'ATS0=1\r' if role == 'answerer' else b'AT\r')
+                    command = 'ATS0=1' if role == 'answerer' else 'AT'
+                    if rate_index is not None:
+                        command += f'&N{rate_index}&M5'
+                    os.write(fds[role], (command+'\r').encode('ascii'))
             ready = select.select(list(fds.values()), [], [], .05)[0]
             for role, fd in fds.items():
                 if fd in ready:
@@ -171,6 +174,7 @@ def capture(output, timeout, instrument, batch_exits):
     success = sent and all(markers[peer] in data[role]
                            for role, peer in [('caller', 'answerer'), ('answerer', 'caller')])
     summary = dict(instrumented=instrument, batch_exits_counted=batch_exits,
+                   rate_index=rate_index, mandatory_arq=rate_index is not None,
                    exact_bidirectional_data=success,
                    elapsed_seconds=time.monotonic()-started, endpoints={})
     for role, value in data.items():
@@ -190,6 +194,8 @@ def main():
     parser.add_argument('--profile', action='store_true')
     parser.add_argument('--batch-exits', action='store_true',
                         help='count native exits and capture window boundaries')
+    parser.add_argument('--rate-index', type=int, choices=(3, 6),
+                        help='temporary &N3 (2400) or &N6 (9600), with &M5 ARQ')
     parser.add_argument('--worker', type=Path, help=argparse.SUPPRESS)
     parser.add_argument('--execute', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -200,7 +206,8 @@ def main():
         return launch(args.worker, args.profile)
     if args.output is None or args.timeout <= 0:
         parser.error('--output and a positive --timeout are required')
-    return capture(args.output.resolve(), args.timeout, args.profile, args.batch_exits)
+    return capture(args.output.resolve(), args.timeout, args.profile,
+                   args.batch_exits, args.rate_index)
 
 
 if __name__ == '__main__':

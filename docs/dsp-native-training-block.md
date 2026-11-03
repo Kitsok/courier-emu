@@ -172,3 +172,21 @@ The synthetic 40.24% block-kernel cycle reduction therefore must not be
 reported as a whole-call gain. DSP still accounts for 65.42% of sampled
 user cycles in the interior training interval. See the physical-call
 report and `physical-call-native-block-20261103.json` for evidence.
+
+## Notebook workload at the physical call rate
+
+The loopback capture tool now accepts --rate-index 6 (9600 bps) or 3
+(2400 bps). It sends the corresponding &N setting with &M5 to each
+emulator before dialing; all settings remain in temporary profiles.
+No saved profile or physical modem is addressed by this tool.
+
+One bounded notebook check with the block opt-in enabled succeeds at
+CONNECT 9600/ARQ/V34/LAPM/V42BIS on both endpoints, with exact marker
+data in both directions. Total setup/training/data time is 32.83 seconds.
+This checks the workload selection and functional behavior; it is not a
+controlled speed comparison. No cProfile or additional trace hook was
+active. Raw results are in `dsp-native-block-local-9600.json`.
+
+This matches the fixed rate and ARQ requirement of the physical attempt.
+It remains a Courier-to-Courier loopback and cannot establish physical
+modem interoperability or identical instruction frequencies.

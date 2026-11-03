@@ -1,0 +1,92 @@
+{
+  "instrumented": false,
+  "batch_exits_counted": false,
+  "rate_index": 6,
+  "mandatory_arq": true,
+  "exact_bidirectional_data": true,
+  "elapsed_seconds": 32.829293172981124,
+  "endpoints": {
+    "caller": {
+      "terminal": "AT&N6&M5\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+      "window": {
+        "start": {
+          "wall": 446112.652878768,
+          "cpu": 9.223178307,
+          "instructions": 38622208,
+          "batches": 100927,
+          "zero_batches": 23290,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        },
+        "end": {
+          "wall": 446133.313257893,
+          "cpu": 25.036671992,
+          "instructions": 108721750,
+          "batches": 115641,
+          "zero_batches": 23874,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        }
+      }
+    },
+    "answerer": {
+      "terminal": "ATS0=1&N6&M5\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+      "window": {
+        "start": {
+          "wall": 446112.653579196,
+          "cpu": 8.883382897,
+          "instructions": 38622208,
+          "batches": 109442,
+          "zero_batches": 23613,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        },
+        "end": {
+          "wall": 446133.314172989,
+          "cpu": 23.711324026,
+          "instructions": 109029375,
+          "batches": 122985,
+          "zero_batches": 24253,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        }
+      }
+    }
+  }
+}
