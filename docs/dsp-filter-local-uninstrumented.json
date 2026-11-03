@@ -1,0 +1,96 @@
+{
+  "instrumented": false,
+  "batch_exits_counted": false,
+  "dsp_work_profiled": false,
+  "rate_index": null,
+  "mandatory_arq": true,
+  "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+  "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+  "modem_failure": null,
+  "exact_bidirectional_data": true,
+  "elapsed_seconds": 27.855868784012273,
+  "endpoints": {
+    "caller": {
+      "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+      "window": {
+        "start": {
+          "wall": 453749.806021423,
+          "cpu": 9.141041351,
+          "instructions": 38901760,
+          "batches": 100852,
+          "zero_batches": 23277,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        },
+        "end": {
+          "wall": 453765.741990228,
+          "cpu": 20.283566709,
+          "instructions": 93066857,
+          "batches": 112622,
+          "zero_batches": 23786,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        }
+      }
+    },
+    "answerer": {
+      "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+      "window": {
+        "start": {
+          "wall": 453749.80869611,
+          "cpu": 9.156266617,
+          "instructions": 38794240,
+          "batches": 109396,
+          "zero_batches": 23684,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        },
+        "end": {
+          "wall": 453765.742366087,
+          "cpu": 19.681125915,
+          "instructions": 93213696,
+          "batches": 120553,
+          "zero_batches": 24271,
+          "worker_yields": {
+            "native": {},
+            "arm": {},
+            "pacer": {
+              "waits": 0,
+              "wakeups": 0,
+              "waited": 0.0,
+              "port_waited": 0.0
+            }
+          },
+          "exits": []
+        }
+      }
+    }
+  }
+}

@@ -58,3 +58,27 @@ FIFO smoke comparison preserves the architectural digest and records
 SARAM controls also match. See `dsp-filter-repeat-counter-smoke.json`.
 This adds no runtime change and makes the dominant repeat shape directly
 reproducible in the pending A53 comparison.
+
+## A53 and non-instrumented notebook validation
+
+The isolated GCC A53 library compares against the preceding V32 native
+entry build with its existing opt-in enabled. Three alternating orders
+of reference/new-disabled/new-enabled run on CPU 3 with acknowledged
+user-cycle/instruction hardware counters. Every per-case architectural
+digest matches; enabled filter cases record positive native hits.
+
+Enabled median host cycles fall by 51.24% for standalone DARAM, 51.80%
+for standalone SARAM and 56.77% for the four-body repeat. Host instructions
+fall by 43.14%, 44.48% and 48.50%, respectively. Existing arithmetic,
+complex, DMOV and address controls vary from 1.10% slower to 0.18% faster
+in cycles, with effectively unchanged host instruction counts. This
+validates the measured tradeoff without establishing all-workload gains.
+Full runs and build identity are in `dsp-filter-arm.json`.
+
+The normal notebook variant, without cProfile, DSP work profiling or
+extra hit hooks, establishes 9600/ARQ/V32/LAPM/V42BIS on both ends and
+exchanges exact markers. Total setup/training/data time is 27.86 seconds.
+This single functional run is not a controlled timing comparison.
+Raw results are in `dsp-filter-local-uninstrumented.json`. The next
+physical attempt will use the isolated non-instrumented A53 library;
+whole-call throughput and physical connection success remain unproven.
