@@ -24,10 +24,20 @@ def worker(args):
         code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
     if args.case == 'training':
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
+    if args.case in ('madd-circular', 'mads-circular'):
+        opcode = 0xab90 if args.case == 'madd-circular' else 0xaa90
+        code = [0xbf0f,0x330,0x8b8f,0xbb04,opcode,0x7980,0x6000]
     with NativeC5x.from_program(0x6000, struct.pack('<%dH' % len(code), *code)) as core:
         for address in range(0x2f0, 0x310):
             core.set_data(address, address ^ 0x55aa)
         core.set_pc(0x6000)
+        if args.case in ('madd-circular', 'mads-circular'):
+            core.host_write(7,0x30);core.host_write(0x26,0x10)
+            core.host_write(0x1e,0xef)
+            core.host_write(0x1a,0x340);core.host_write(0x1b,0x300)
+            core.host_write(0x1f,0x7000)
+            core.load_program(struct.pack('<5H',1,3,5,7,9),0x7000)
+            for a in range(0x300,0x340):core.set_data(a,(a*137)^0xaaaa)
         if args.case == 'training':
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,args.cbcr)
@@ -54,7 +64,9 @@ def worker(args):
                 elapsed = time.process_time() - start
             finally:
                 command('disable')
-        addresses=range(0x300,0x380) if args.case=='training' else range(0x2f0,0x310)
+        addresses=(range(0x300,0x380) if args.case=='training' else
+                   range(0x300,0x340) if args.case in ('madd-circular','mads-circular')
+                   else range(0x2f0,0x310))
         state = [core.state(), core.serial_state(), core.memory_map(),
                  [core.data(a) for a in addresses],
                  [core.data_write_count(a) for a in addresses]]
@@ -65,7 +77,8 @@ def worker(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--case', choices=['dmov', 'address', 'training'], default='dmov')
+    parser.add_argument('--case', choices=['dmov', 'address', 'training',
+                                         'madd-circular', 'mads-circular'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,
                         help='circular-buffer configuration for the training case')
@@ -88,7 +101,8 @@ def main():
                    '--case', args.case, '--cycles', str(args.cycles), '--cbcr', str(args.cbcr)]
         subprocess.run(command, check=True, timeout=60)
         result = json.loads((folder / 'kernel.json').read_text())
-        result.update(case=args.case, modeled_cycles=args.cycles, cbcr=args.cbcr,
+        result.update(case=args.case, modeled_cycles=args.cycles,
+                      cbcr=0xef if args.case in ('madd-circular','mads-circular') else args.cbcr,
                       measurement_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       library_sha256=hashlib.sha256(args.library.read_bytes()).hexdigest(),
                       perf_csv=(folder / 'stat').read_text())

@@ -1,0 +1,359 @@
+{
+  "scope": "Three one-batch PC trace windows per endpoint, after SIP answer; hardware-repeat taps and delay-slot internals are not individual entries. These are candidate counts, not full-call frequencies or CPU shares. Trace hook active despite cProfile disabled.",
+  "result": {
+    "instrumented": false,
+    "batch_exits_counted": false,
+    "rate_index": 6,
+    "mandatory_arq": true,
+    "exact_bidirectional_data": true,
+    "elapsed_seconds": 32.31596072000684,
+    "endpoints": {
+      "caller": {
+        "terminal": "AT&N6&M5\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 446188.605511827,
+            "cpu": 9.243246039,
+            "instructions": 38722560,
+            "batches": 100834,
+            "zero_batches": 23274,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 446208.766544687,
+            "cpu": 24.20632017,
+            "instructions": 107124324,
+            "batches": 114761,
+            "zero_batches": 23800,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          }
+        }
+      },
+      "answerer": {
+        "terminal": "ATS0=1&N6&M5\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 446188.606273089,
+            "cpu": 9.025670973,
+            "instructions": 38622208,
+            "batches": 109343,
+            "zero_batches": 23613,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 446208.769907395,
+            "cpu": 23.294497503,
+            "instructions": 107321343,
+            "batches": 122637,
+            "zero_batches": 24189,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          }
+        }
+      }
+    }
+  },
+  "windows": [
+    {
+      "file": "courier-9600-sequences-662913.json",
+      "windows": [
+        {
+          "after_answer": 2.013240122003481,
+          "entries": 4096
+        },
+        {
+          "after_answer": 3.014441276958678,
+          "entries": 4096
+        },
+        {
+          "after_answer": 4.021825048956089,
+          "entries": 4096
+        }
+      ]
+    },
+    {
+      "file": "courier-9600-sequences-662914.json",
+      "windows": [
+        {
+          "after_answer": 2.0069783120416105,
+          "entries": 1296
+        },
+        {
+          "after_answer": 3.0100402180105448,
+          "entries": 2470
+        },
+        {
+          "after_answer": 4.0233797809924,
+          "entries": 4096
+        }
+      ]
+    }
+  ],
+  "frequent_sites": [
+    {
+      "pc": "0x8ab1",
+      "opcode": "0x7804",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab2",
+      "opcode": "0xbe59",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab3",
+      "opcode": "0xbb04",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab4",
+      "opcode": "0xaa90",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab5",
+      "opcode": "0xbe04",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab6",
+      "opcode": "0x7805",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab7",
+      "opcode": "0x7790",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab8",
+      "opcode": "0x7780",
+      "count": 204
+    },
+    {
+      "pc": "0x8ab9",
+      "opcode": "0xa080",
+      "count": 204
+    },
+    {
+      "pc": "0x8aba",
+      "opcode": "0x2f7b",
+      "count": 204
+    },
+    {
+      "pc": "0x8abb",
+      "opcode": "0x9880",
+      "count": 204
+    },
+    {
+      "pc": "0x8aae",
+      "opcode": "0x81f",
+      "count": 203
+    },
+    {
+      "pc": "0x8aaf",
+      "opcode": "0xb805",
+      "count": 203
+    },
+    {
+      "pc": "0x8ab0",
+      "opcode": "0x881f",
+      "count": 203
+    },
+    {
+      "pc": "0x8a7d",
+      "opcode": "0x881f",
+      "count": 195
+    },
+    {
+      "pc": "0x8a7e",
+      "opcode": "0x7804",
+      "count": 195
+    },
+    {
+      "pc": "0x8a7f",
+      "opcode": "0xbe59",
+      "count": 195
+    },
+    {
+      "pc": "0x8a80",
+      "opcode": "0xbb04",
+      "count": 195
+    },
+    {
+      "pc": "0x8a81",
+      "opcode": "0xab90",
+      "count": 195
+    },
+    {
+      "pc": "0x8a82",
+      "opcode": "0xbe04",
+      "count": 194
+    },
+    {
+      "pc": "0x8a83",
+      "opcode": "0x7804",
+      "count": 194
+    },
+    {
+      "pc": "0x8a84",
+      "opcode": "0xa080",
+      "count": 194
+    },
+    {
+      "pc": "0x8a85",
+      "opcode": "0xff00",
+      "count": 194
+    },
+    {
+      "pc": "0x879d",
+      "opcode": "0x528a",
+      "count": 192
+    },
+    {
+      "pc": "0x879e",
+      "opcode": "0x8d7d",
+      "count": 192
+    },
+    {
+      "pc": "0x879f",
+      "opcode": "0x8c7e",
+      "count": 192
+    },
+    {
+      "pc": "0x87a0",
+      "opcode": "0x7304",
+      "count": 192
+    },
+    {
+      "pc": "0x87a1",
+      "opcode": "0x557e",
+      "count": 192
+    },
+    {
+      "pc": "0x87a2",
+      "opcode": "0x8d7e",
+      "count": 192
+    },
+    {
+      "pc": "0x87a3",
+      "opcode": "0x547d",
+      "count": 192
+    },
+    {
+      "pc": "0x87a4",
+      "opcode": "0xbe03",
+      "count": 192
+    },
+    {
+      "pc": "0x87a5",
+      "opcode": "0x627e",
+      "count": 192
+    },
+    {
+      "pc": "0x87a6",
+      "opcode": "0x61a0",
+      "count": 192
+    },
+    {
+      "pc": "0x87a7",
+      "opcode": "0x6290",
+      "count": 192
+    },
+    {
+      "pc": "0x87a8",
+      "opcode": "0xff00",
+      "count": 192
+    },
+    {
+      "pc": "0x80e8",
+      "opcode": "0x880",
+      "count": 174
+    },
+    {
+      "pc": "0x80e9",
+      "opcode": "0xef00",
+      "count": 174
+    },
+    {
+      "pc": "0x8bbc",
+      "opcode": "0x667e",
+      "count": 128
+    },
+    {
+      "pc": "0x8bbd",
+      "opcode": "0x657d",
+      "count": 128
+    },
+    {
+      "pc": "0x8bbe",
+      "opcode": "0xe311",
+      "count": 128
+    },
+    {
+      "pc": "0x8bc3",
+      "opcode": "0xbe14",
+      "count": 128
+    },
+    {
+      "pc": "0x8abc",
+      "opcode": "0xef00",
+      "count": 122
+    },
+    {
+      "pc": "0x8aa2",
+      "opcode": "0x8809",
+      "count": 121
+    },
+    {
+      "pc": "0x8aa3",
+      "opcode": "0x7804",
+      "count": 121
+    },
+    {
+      "pc": "0x8aa4",
+      "opcode": "0xbe59",
+      "count": 121
+    }
+  ],
+  "raw_sha256": "d908166f31ca59ddaec135b400403267a43093b20fd3fdcf852bc24e1799f712"
+}

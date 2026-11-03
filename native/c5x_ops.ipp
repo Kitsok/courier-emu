@@ -1958,7 +1958,7 @@ void C5xCore::op_lts()
 // All four load TREG0 with the data operand.
 
 // Direct spans are borrowed only while the whole repeated operation has
-// no mapped-register, tracing, circular-address or codec-write side effects.
+// no mapped-register, tracing, circular-wrap or codec-write side effects.
 bool C5xCore::mac_data_span(uint16_t first, unsigned words, MacSpan &span)
 {
     const unsigned kind = m_dmap[first] & 0x3f;
@@ -2050,14 +2050,22 @@ bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
         return false;
     const unsigned mode = (m_op >> 3) & 15, arp = m_st0.arp;
     if (mode != 0 && mode != 2 && mode != 4) return false;
-    if (((m_cbcr & 8) && arp == (m_cbcr & 7))
-        || ((m_cbcr & 0x80) && arp == ((m_cbcr >> 4) & 7))) return false;
     const int step = mode == 2 ? -1 : mode == 4 ? 1 : 0;
     const uint16_t ea = m_ar[arp];
     const unsigned taps = unsigned(m_rptc) + 1;
     const int last = int(ea) + step * int(taps - 1);
     const int low = std::min(int(ea), last), high = std::max(int(ea), last) + int(move);
     if (low < 0 || high >= 65536) return false;
+    // An enabled circular buffer only changes an update made while AR is
+    // exactly at its end. Borrow a linear span when none of the taps can
+    // trigger that wrap, including the final tap's address update. With *
+    // there is no update at all. Buffer 1 takes precedence, as in UPDATE_AR.
+    if (step) {
+        int end = -1;
+        if ((m_cbcr & 8) && arp == (m_cbcr & 7)) end = m_cber1;
+        else if ((m_cbcr & 0x80) && arp == ((m_cbcr >> 4) & 7)) end = m_cber2;
+        if (end >= low && end <= std::max(int(ea), last)) return false;
+    }
     if (move && m_call_tdm_active && m_line_dac_slot >= low + 1
         && m_line_dac_slot <= high) return false;
     MacSpan data, program;

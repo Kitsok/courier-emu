@@ -51,3 +51,35 @@ def test_saram_repeat_preserves_live_coefficient_aliases(model, pfirst, dma):
                 data=[core.data(base+i) for i in range(24)],
                 writes=[core.data_write_count(base+i) for i in range(24)]))
     assert snapshots[0] == snapshots[1]
+
+
+@pytest.mark.parametrize('opcode', [0xa290, 0xa3a0, 0xab90, 0xaa80])
+@pytest.mark.parametrize('buffer', [1, 2, 3])
+@pytest.mark.parametrize('end', [0x300, 0x310, 0x309, 0x317, 0x320])
+def test_circular_repeat_matches_general_path(opcode, buffer, end):
+    snapshots = []
+    for trace in (False, True):
+        code = [0xbf08, 0x310, 0x8b88, 0xbb07, opcode]
+        if opcode >> 8 in (0xa2, 0xa3):
+            code.append(0x7000)
+        with NativeC5x.from_program(0x6000, words(code)) as core:
+            core.host_write(7, 0x30)
+            core.host_write(0x1f, 0x7000)
+            # Both selectors can name AR0. Buffer 1 wins when both enable.
+            core.host_write(0x1a, 0x318)
+            core.host_write(0x1b, end)
+            core.host_write(0x1c, 0x308)
+            core.host_write(0x1d, end)
+            core.host_write(0x1e, (8 if buffer & 1 else 0) |
+                            (0x80 if buffer & 2 else 0))
+            core.load_program(words(range(1, 9)), 0x7000)
+            for a in range(0x2f0, 0x330):
+                core.set_data(a, (a*137)^0xaaaa)
+            core.trace_data_writes(trace)
+            core.set_pc(0x6000)
+            core.step(4)
+            snapshots.append(dict(state=core.state(), mapping=core.memory_map(),
+                regs=[core.register(r) for r in range(0xc, 0x20)],
+                data=[core.data(a) for a in range(0x2f0, 0x330)],
+                writes=[core.data_write_count(a) for a in range(0x2f0, 0x330)]))
+    assert snapshots[0] == snapshots[1]
