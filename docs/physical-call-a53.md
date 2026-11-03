@@ -548,3 +548,11 @@ in addition to A53 optimization. It does not yet identify a specific
 register or establish whether the latest code caused the local failure;
 a preserved-library control is the next check. Physical settings remain
 outside the scope of these temporary emulator experiments.
+
+The subsequent exact-profile notebook controls negotiate V.32 ARQ/LAPM.
+The preserved older library loses part of one data marker and carrier;
+the current build succeeds with exact bidirectional data both with the
+block disabled and in one enabled repeat. Thus the first local failure
+is intermittent and does not establish an optimization regression or
+an intrinsically unusable saved profile. Preserve the complete profile
+for future attribution; details are in `dsp-exact-profile-notebook.md`.

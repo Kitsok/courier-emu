@@ -1,0 +1,393 @@
+{
+  "scope": "Exact copied physical-call emulator EEPROM on notebook, mandatory ARQ; full bidirectional data required by the loopback tool. One result per configuration does not establish causality.",
+  "source_eeprom_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+  "libraries": {
+    "candidate": "8676cba40b37a9668668fad82759f9202e0f5d17d5eb4205bc9d71cb4c3373f0",
+    "preserved_reference": "74b7a9005afc15fd292f023e0bbad75359de823138666d1e9237d4dc048d0a4c"
+  },
+  "runs": {
+    "candidate_enabled_first": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "exact_bidirectional_data": false,
+      "elapsed_seconds": 90.48540675605182,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nNO CARRIER\r\n",
+          "window": {
+            "start": {
+              "wall": 447436.55433652,
+              "cpu": 8.962873908,
+              "instructions": 38607872,
+              "batches": 100989,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447515.691731109,
+              "cpu": 60.108351115,
+              "instructions": 307329023,
+              "batches": 241758,
+              "zero_batches": 33465,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nNO CARRIER\r\n",
+          "window": {
+            "start": {
+              "wall": 447436.554335293,
+              "cpu": 8.729408772,
+              "instructions": 38622208,
+              "batches": 109573,
+              "zero_batches": 23693,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447515.756306062,
+              "cpu": 74.403761373,
+              "instructions": 307450879,
+              "batches": 239855,
+              "zero_batches": 33290,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        }
+      }
+    },
+    "preserved_reference": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "modem_failure": {
+        "role": "caller",
+        "result": "NO CARRIER"
+      },
+      "exact_bidirectional_data": false,
+      "elapsed_seconds": 54.19874293799512,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n\r\nNO CARRIER\r\n",
+          "window": {
+            "start": {
+              "wall": 447622.633030519,
+              "cpu": 9.320523257,
+              "instructions": 39597056,
+              "batches": 101154,
+              "zero_batches": 23266,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447638.583938593,
+              "cpu": 20.504462634,
+              "instructions": 93796975,
+              "batches": 112932,
+              "zero_batches": 23775,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MA",
+          "window": {
+            "start": {
+              "wall": 447622.631467922,
+              "cpu": 9.191818541,
+              "instructions": 39417856,
+              "batches": 109657,
+              "zero_batches": 23697,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447638.584102774,
+              "cpu": 20.164111191,
+              "instructions": 93901823,
+              "batches": 120782,
+              "zero_batches": 24285,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        }
+      }
+    },
+    "candidate_disabled": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "modem_failure": null,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 31.597886511008255,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nRINGING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 447728.338574477,
+              "cpu": 11.677488648,
+              "instructions": 43380735,
+              "batches": 100137,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447746.374610818,
+              "cpu": 25.664684287,
+              "instructions": 104610395,
+              "batches": 113303,
+              "zero_batches": 24105,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 447728.339807218,
+              "cpu": 10.613963004,
+              "instructions": 43381760,
+              "batches": 109775,
+              "zero_batches": 23673,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447746.37474369,
+              "cpu": 24.218489117,
+              "instructions": 104956927,
+              "batches": 122517,
+              "zero_batches": 24586,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        }
+      }
+    },
+    "candidate_enabled_repeat": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "modem_failure": null,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 33.75656752596842,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 447842.23756887,
+              "cpu": 9.199950218,
+              "instructions": 38643712,
+              "batches": 100914,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447861.243298525,
+              "cpu": 23.255365793,
+              "instructions": 103249618,
+              "batches": 116337,
+              "zero_batches": 24387,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 447842.238597891,
+              "cpu": 9.095869287,
+              "instructions": 38765568,
+              "batches": 109515,
+              "zero_batches": 23697,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 447861.24337852,
+              "cpu": 22.687775355,
+              "instructions": 103631959,
+              "batches": 124211,
+              "zero_batches": 24882,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        }
+      }
+    }
+  },
+  "interpretation": "Current candidate succeeds with exact V32 profile with opt-in disabled and enabled; initial enabled failure is intermittent. Preserved reference negotiates but loses data. These few runs do not establish failure rates or a causal regression."
+}

@@ -7,12 +7,14 @@ these profiles attribute function work and do not measure unprofiled speed.
 """
 import argparse
 import configparser
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import select
 import signal
+import shutil
 import socket
 import subprocess
 import sys
@@ -85,7 +87,7 @@ def launch(config, instrument):
     return run_console(args, command, cli._worker_environment(args))
 
 
-def capture(output, timeout, instrument, batch_exits, rate_index=None):
+def capture(output, timeout, instrument, batch_exits, rate_index=None, nvram_source=None):
     output.mkdir(parents=True, exist_ok=False)
     reservations = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for _ in range(4)]
     try:
@@ -100,11 +102,14 @@ def capture(output, timeout, instrument, batch_exits, rate_index=None):
     markers = {'caller': b'CALLER-DATA-MARKER\r\n',
                'answerer': b'ANSWERER-DATA-MARKER\r\n'}
     dialed = sent = False
+    modem_failure = None
     started = time.monotonic()
     try:
         for role, port, rtp, peer in [('caller', a, ar, b), ('answerer', b, br, a)]:
             folder = output/role
             folder.mkdir()
+            if nvram_source is not None:
+                shutil.copyfile(nvram_source, folder/'nvram')
             settings = configparser.ConfigParser(interpolation=None)
             settings.read(ROOT/'courier-emu.ini')
             settings['sip'].update(server=f'127.0.0.1:{peer}',
@@ -146,6 +151,14 @@ def capture(output, timeout, instrument, batch_exits, rate_index=None):
             if not dialed and all(b'OK' in value for value in data.values()):
                 os.write(fds['caller'], b'ATDT100\r')
                 dialed = True
+            if dialed:
+                for role, value in data.items():
+                    failure = re.search(rb'\r\n(NO CARRIER|BUSY|NO DIAL TONE|NO ANSWER)\r\n', value)
+                    if failure:
+                        modem_failure = dict(role=role, result=failure[1].decode('ascii'))
+                        break
+                if modem_failure:
+                    break
             if not sent and all(re.search(rb'CONNECT[^\r\n]*/LAPM/V42BIS\r\n', value)
                                 for value in data.values()):
                 for role, process in processes.items():
@@ -174,7 +187,11 @@ def capture(output, timeout, instrument, batch_exits, rate_index=None):
     success = sent and all(markers[peer] in data[role]
                            for role, peer in [('caller', 'answerer'), ('answerer', 'caller')])
     summary = dict(instrumented=instrument, batch_exits_counted=batch_exits,
-                   rate_index=rate_index, mandatory_arq=rate_index is not None,
+                   rate_index=rate_index, mandatory_arq=True,
+                   nvram_source=str(nvram_source) if nvram_source else None,
+                   nvram_source_sha256=(hashlib.sha256(nvram_source.read_bytes()).hexdigest()
+                                        if nvram_source else None),
+                   modem_failure=modem_failure,
                    exact_bidirectional_data=success,
                    elapsed_seconds=time.monotonic()-started, endpoints={})
     for role, value in data.items():
@@ -196,6 +213,8 @@ def main():
                         help='count native exits and capture window boundaries')
     parser.add_argument('--rate-index', type=int, choices=(3, 6),
                         help='temporary &N3 (2400) or &N6 (9600), with &M5 ARQ')
+    parser.add_argument('--nvram', type=Path,
+                        help='copy this complete emulator EEPROM into both temporary profiles')
     parser.add_argument('--worker', type=Path, help=argparse.SUPPRESS)
     parser.add_argument('--execute', nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -206,8 +225,12 @@ def main():
         return launch(args.worker, args.profile)
     if args.output is None or args.timeout <= 0:
         parser.error('--output and a positive --timeout are required')
+    if args.nvram is not None:
+        from courier_emu.runtime import validated_nvram
+        args.nvram = args.nvram.resolve()
+        validated_nvram(args.nvram)
     return capture(args.output.resolve(), args.timeout, args.profile,
-                   args.batch_exits, args.rate_index)
+                   args.batch_exits, args.rate_index, args.nvram)
 
 
 if __name__ == '__main__':
