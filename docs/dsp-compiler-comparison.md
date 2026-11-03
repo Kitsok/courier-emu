@@ -70,3 +70,26 @@ calls and matching checks are in `dsp-gcc-inline-diagnostic.json`. This
 partial code integration justifies a bounded kernel comparison, with
 unaffected controls, before deciding whether any larger validation is
 worthwhile. Clang installation remains pending the user's preference.
+
+## Reject the GCC flag variant on kernel controls
+
+Three alternating reference/candidate pairs, pinned to CPU 3, used
+500000 modeled cycles per case with matching final architecture, serial
+state, access counters, data and write counts. SARAM MADD improves by
+8.28%, but MACD-DARAM regresses by 4.88%, DMOV-DARAM by 5.35%, LTD-SARAM
+by 5.07%, and the primary-instruction control by 11.83%. Other cases vary
+from a 2.44% improvement to a 1.83% regression. Short MAC timings have
+limited precision; these are kernel observations, not full-training
+performance estimates.
+
+This mixed result and the control regressions do not justify replacing
+the active library or making another physical call. Reject this flag
+combination for adoption. The separate artifact remains under /tmp for
+inspection; no runtime rollback is needed because it was never deployed.
+Raw results are in `dsp-gcc-inline-kernels.json`. The normal source and
+compiler flags are unchanged.
+
+Clang is still absent and the installation preference remains unanswered.
+It would exercise the statement-level forced integration intended by the
+existing executor, rather than this GCC heuristic change. No installation
+or physical-modem setting change is authorized by elapsed waiting time.
