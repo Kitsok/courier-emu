@@ -317,3 +317,22 @@ temperatures were read. All probe/emulator processes stopped afterward.
 Structured evidence is in `docs/physical-call-rebuilt-20261103.json`.
 Full remote capture: `/tmp/courier-physical-rebuilt-20261103-092544`.
 The error-corrected physical connection goal remains unmet.
+
+## Training-only attribution and subsequent kernel work
+
+A later slice of this same capture, correlated with the retained failure
+journal's realtime/monotonic clock anchor, changes the optimization
+priority. Safely inside modem training, C5x/device code accounts for 66.83%
+of sampled user cycles, native x86 for 22.84%, and Python for 8.52%.
+Two overlapping interior windows support that result. Whole-attempt Python
+and yield totals include boot/setup and should not determine training
+priorities. See `docs/a53-training-hotspots.md`.
+
+Cached on-chip region checks in DSP delay-line operations are validated:
+selected A53 MAC kernels improve roughly 9–13%, with exact state/counters,
+69 focused checks, fixed-work boot equality and local LAPM/data transfer.
+This is a kernel result, not a measured full-call gain. A separate x86
+checkpoint-elision candidate is rejected because A53 memory/traced controls
+regress by roughly 6–8%. Its runtime changes are removed. Details are in
+`docs/dsp-delay-move-optimization.md` and `docs/x86-checkpoint-experiment.md`.
+No additional physical call or nanovax deployment occurred in that work.
