@@ -160,3 +160,19 @@ state, map counters, data and write counts across all load/store shifts,
 positive/negative input, SXM and tracing. Snapshot hashes match:
 `8b69e914ecd5e99814ab37dcf3542abb67a570a4606f6751e8c1cfb4a7916405`.
 No target speedup is claimed before the next ARM build and measurement.
+
+### ARM validation of the follow-up batch
+
+Nanovax rebuilt `e204d19` successfully. Twelve small threaded checks against
+the preserved `86ba8ff` library match the notebook snapshot digest. A
+1-million-cycle LACC/SACH/SACL loop, three alternating reference/candidate
+pairs pinned to CPU 3, takes median 0.192438 versus 0.181899 CPU seconds
+(5.48% reduction). All six timed runs match state/counter/memory digests.
+The unchanged MAC caller guard is not exercised by this load/store kernel.
+This short measurement does not estimate whole-training savings.
+
+The new ARM symbol table contains the three threaded wrappers and no
+separate LACC-memory/SACH/SACL bodies, confirming their integration. Raw
+measurements are in `dsp-hot-inline-arm-results.json`. No temperature
+queries were made. A lower-rate physical call is a separate experiment
+using only temporary emulator settings authorized by the user.

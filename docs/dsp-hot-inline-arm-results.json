@@ -1,0 +1,42 @@
+{
+  "scope": "One million modeled cycles of LACC/SACH/SACL; three alternating pairs pinned to CPU 3; no full-training speedup inferred",
+  "checks": {
+    "reference": "8b69e914ecd5e99814ab37dcf3542abb67a570a4606f6751e8c1cfb4a7916405",
+    "candidate": "8b69e914ecd5e99814ab37dcf3542abb67a570a4606f6751e8c1cfb4a7916405"
+  },
+  "runs": {
+    "reference": [
+      {
+        "cpu_seconds": 0.18938295800000005,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      },
+      {
+        "cpu_seconds": 0.21571258400000004,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      },
+      {
+        "cpu_seconds": 0.19243816400000002,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      }
+    ],
+    "candidate": [
+      {
+        "cpu_seconds": 0.17967658200000003,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      },
+      {
+        "cpu_seconds": 0.18424524999999992,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      },
+      {
+        "cpu_seconds": 0.18189878999999998,
+        "sha256": "c1d9c60ec0241601d35434e0381e47efb1145117d9139d1c948fdb8bf3b7859a"
+      }
+    ]
+  },
+  "medians": {
+    "reference": 0.19243816400000002,
+    "candidate": 0.18189878999999998
+  },
+  "cpu_reduction_percent": 5.4767587576859516
+}
