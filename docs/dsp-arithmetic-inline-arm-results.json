@@ -1,0 +1,94 @@
+{
+  "initial": {
+    "scope": "One million modeled cycles of ADD/ADDS/LT plus store controls; three alternating pairs pinned to CPU 3; no full-training speedup inferred",
+    "checks": {
+      "reference": "305935aed66b6c6a165c166450741de784634a77210f1265704048cd055b2201",
+      "candidate": "305935aed66b6c6a165c166450741de784634a77210f1265704048cd055b2201"
+    },
+    "runs": {
+      "reference": [
+        {
+          "cpu_seconds": 0.19687470699999998,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        },
+        {
+          "cpu_seconds": 0.20068824899999993,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        },
+        {
+          "cpu_seconds": 0.22466179099999994,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.21720387600000002,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        },
+        {
+          "cpu_seconds": 0.19572,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        },
+        {
+          "cpu_seconds": 0.18866545700000004,
+          "sha256": "a84617157ba6852084bcf3c889bad61f07e70d5d3d7fc64357a6a4e47c1675eb"
+        }
+      ]
+    },
+    "medians": {
+      "reference": 0.20068824899999993,
+      "candidate": 0.19572
+    },
+    "cpu_reduction_percent": 2.4756053355171392
+  },
+  "warmed": {
+    "scope": "One million modeled cycles of ADD/ADDS/LT plus store controls; four alternating pairs after one million warmup cycles pinned to CPU 3; no full-training speedup inferred",
+    "checks": {
+      "reference": "305935aed66b6c6a165c166450741de784634a77210f1265704048cd055b2201",
+      "candidate": "305935aed66b6c6a165c166450741de784634a77210f1265704048cd055b2201"
+    },
+    "runs": {
+      "reference": [
+        {
+          "cpu_seconds": 0.188477915,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.20570433300000002,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.20136550099999995,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.22941128899999996,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.203792749,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.175210875,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.20180271000000005,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        },
+        {
+          "cpu_seconds": 0.205891292,
+          "sha256": "c556a957feb73431cc5325bfcc6b157a87fc729db0f0f44c9c560921586c351a"
+        }
+      ]
+    },
+    "medians": {
+      "reference": 0.20353491699999998,
+      "candidate": 0.20279772950000002
+    },
+    "cpu_reduction_percent": 0.36219215398798354
+  }
+}

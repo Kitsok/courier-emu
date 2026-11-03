@@ -197,3 +197,19 @@ This stage is not yet rebuilt or measured on ARM. Explicit inlining can
 increase instruction-cache pressure, so no target or full-training gain
 is claimed from correctness alone. Group target validation with subsequent
 suitable candidates before making another physical call.
+
+### Reject arithmetic inlining after ARM timing
+
+Nanovax rebuilt `9b490b4`; differential snapshots and all timed state
+digests match. The first three alternating pairs show a 2.48% median
+reduction with substantial overlap. A brief four-pair control with one
+million warmup cycles reduces the median difference to 0.36%, with
+individual pairs in both directions. This does not establish a reliable
+benefit. Remove the ADD-memory, ADDS and LT annotations introduced in
+`9b490b4`, leaving the previously validated LACC/SACH/SACL change intact.
+Raw runs are retained in `dsp-arithmetic-inline-arm-results.json`.
+
+No new physical call or settings change was needed. Arithmetic semantics
+never changed; the restored definitions match the pre-candidate source.
+This rejects the optimization claim rather than claiming that the
+connection or real-time deficit has been resolved.
