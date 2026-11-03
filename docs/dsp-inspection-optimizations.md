@@ -78,3 +78,43 @@ products.
 
 Validation: native build and 38 focused MAC checks pass. No benchmark or
 call was run.
+
+## Final reread and completion
+
+Both inspection passes are complete for this batch. The final reread
+checked the complete change against the original address helpers, memory
+classifiers, access counters, repeated-instruction retirement and event
+handling. Span bounds keep direct accesses inside one backing allocation;
+coefficient loads remain live across overlapping delay-line writes. General
+register, circular, indexed and bit-reversed cases retain dynamic handling.
+
+No further inspection-only change was selected. In particular:
+
+- Event, interrupt, delayed-condition and repeat-edge bookkeeping still
+  carries architectural state and cannot simply be removed or postponed.
+- Extending direct spans to general block transfers would need additional
+  treatment of overlapping storage, mapped registers and per-word effects.
+- A full decoded-instruction cache would need invalidation for downloaded
+  code, overlays and aliased program/data writes. The implemented operand
+  predecode is local to one executing instruction and needs no such cache.
+- Caching reversed INDX values would add a comparison, branch and cache
+  state to rare addressing. Its target benefit is uncertain; it was not
+  added on the assumption that a cache is inherently faster.
+
+These remain possible future investigations, rather than unvalidated
+changes in this batch. Runtime commits, in implementation order:
+
+| Pass | Commit | Change |
+| --- | --- | --- |
+| First | `4c8a698` | Decode repeat operands once |
+| First | `483a86d` | Guarded direct-span MAC execution |
+| First | `b3e9741` | Hoist invariant MAC work |
+| Second | `e7c8192` | Extend spans to SARAM and review alias bounds |
+| Second | `4586a54` | Reuse initial operand and cached timing state |
+
+Each runtime stage was built and received short focused checks. The last
+runtime stage passed 38 checks in 0.24 seconds with the already-built native
+library. No additional test campaign was introduced for this final review.
+There is no measured speedup or new physical-modem connection result from
+this batch; ARM build, normal-workload performance and end-to-end call
+validation remain outstanding.
