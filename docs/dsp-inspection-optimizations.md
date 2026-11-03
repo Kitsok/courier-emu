@@ -35,3 +35,19 @@ Validation: native build and 25 focused checks pass. Sixteen small filters
 compare direct and tracing-forced general paths across all product-scaling
 modes, saturation, MAC variants and auxiliary-register updates. No timing
 measurement or call was performed.
+
+## First pass — hoist invariant MAC work
+
+The eligible direct-span kernel now selects product scaling and data-move
+behavior once. Accumulator/product intermediates stay local; temporary
+registers, auxiliary-register position and access counters are committed
+once at the end. Per-address write counts and live coefficient/data loads
+remain ordered in the loop. These hoists are restricted to the side-effect-
+free span guards introduced in the preceding stage; the general path still
+performs each dynamic action normally. AR0's NDX-clear mirrors are retained.
+
+Validation: native build and 29 focused checks pass, including AR0 mirror
+updates, all product modes, saturation and tracing-forced fallback. No
+measurement or call was performed. The first implementation pass is now
+complete; the next stage rereads the changed code before making additional
+optimizations.

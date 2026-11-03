@@ -2004,6 +2004,39 @@ bool C5xCore::mac_program_span(uint16_t first, unsigned words, MacSpan &span)
     }
 }
 
+template<unsigned PM, bool Move>
+void C5xCore::repeat_mac_kernel(MacSpan data, MacSpan program, uint16_t first,
+                               int step, unsigned arp, unsigned taps, bool load_temps)
+{
+    int32_t acc = m_acc, preg = m_preg;
+    uint16_t value = 0, address = first;
+    uint16_t *source = data.values;
+    for (unsigned index = 0; index < taps; ++index) {
+        value = *source;
+        uint32_t scaled;
+        if constexpr(PM == 0) scaled = uint32_t(preg);
+        else if constexpr(PM == 1) scaled = uint32_t(preg) << 1;
+        else if constexpr(PM == 2) scaled = uint32_t(preg) << 4;
+        else scaled = uint32_t(preg >> 6);
+        acc = ADD(uint32_t(acc), scaled, false);
+        // Keep coefficient loads live: the data move may alias a later one.
+        preg = int32_t(int16_t(value)) * int32_t(int16_t(program.values[index]));
+        if constexpr(Move) {
+            ++m_data_write_counts[uint16_t(address+1)];
+            source[1] = value;
+            address = uint16_t(address+step);
+        }
+        if (index+1 < taps) source += step;
+    }
+    m_acc = acc; m_preg = preg; m_treg0 = value;
+    if (load_temps) m_treg1 = m_treg2 = value;
+    *data.reads += taps; *program.reads += taps;
+    if (step) {
+        m_ar[arp] = uint16_t(int(first)+step*int(taps));
+        if (arp == 0 && !m_pmst.ndx) m_arcr = m_indx = m_ar[0];
+    }
+}
+
 bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
                             unsigned &count, uint16_t &dma)
 {
@@ -2024,27 +2057,28 @@ bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
     MacSpan data, program;
     if (!mac_data_span(uint16_t(low), unsigned(high-low+1), data)
         || !mac_program_span(pma, taps, program)) return false;
-    uint16_t *source = data.values + (int(ea)-low);
-    uint16_t address = ea;
-    dma = ea; count = 0;
-    do {
-        const uint16_t value = *source;
-        ++*data.reads;
-        m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
-        m_treg0 = value;
-        if (c2x && !m_pmst.trm) m_treg1 = m_treg2 = value;
-        const uint16_t coefficient = program.values[count];
-        ++*program.reads;
-        m_preg = int32_t(int16_t(value)) * int32_t(int16_t(coefficient));
-        if (move) {
-            source[1] = value;
-            ++m_data_write_counts[uint16_t(address+1)];
-        }
-        if (step) UPDATE_AR(arp, step);
-        ++count;
-        // Do not form an out-of-array pointer after the last descending tap.
-        if (m_rptc > 0) { source += step; address = uint16_t(address+step); }
-    } while (m_rptc-- > 0);
+    data.values += int(ea)-low;
+    dma = ea; count = taps;
+    const bool load_temps = c2x && !m_pmst.trm;
+    // Select stable flags once, rather than checking them for every tap.
+    switch (m_st1.pm & 3) {
+    case 0:
+        if (move) repeat_mac_kernel<0,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<0,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 1:
+        if (move) repeat_mac_kernel<1,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<1,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 2:
+        if (move) repeat_mac_kernel<2,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<2,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 3:
+        if (move) repeat_mac_kernel<3,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<3,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    }
     m_rptc = 0;
     return true;
 }

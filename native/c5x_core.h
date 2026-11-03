@@ -843,6 +843,9 @@ private:
     struct MacSpan { uint16_t *values; uint64_t *reads; };
     bool mac_data_span(uint16_t first, unsigned words, MacSpan &span);
     bool mac_program_span(uint16_t first, unsigned words, MacSpan &span);
+    template<unsigned PM, bool Move>
+    void repeat_mac_kernel(MacSpan data, MacSpan program, uint16_t first,
+                           int step, unsigned arp, unsigned taps, bool load_temps);
     bool try_repeat_mac(uint16_t pma, bool move, bool c2x,
                         unsigned &count, uint16_t &dma);
     uint16_t GET_ADDRESS();

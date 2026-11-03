@@ -8,13 +8,13 @@ def words(values):
     return struct.pack('<%dH' % len(values), *values)
 
 
-@pytest.mark.parametrize('opcode', [0xa290, 0xa3a0, 0xab90, 0xaa80])
+@pytest.mark.parametrize('opcode,arp', [(0xa290, 1), (0xa3a0, 1), (0xab90, 1), (0xaa80, 1), (0xaa90, 0)])
 @pytest.mark.parametrize('pm', range(4))
-def test_repeated_mac_matches_general_path(opcode, pm):
+def test_repeated_mac_matches_general_path(opcode, arp, pm):
     snapshots = []
     for trace in (False, True):
         dma, pma = 0x310, 0x7000
-        code = [0xbf09, dma, 0x8b89, 0xbf00 | pm, 0xbe43,
+        code = [0xbf08 | arp, dma, 0x8b88 | arp, 0xbf00 | pm, 0xbe43,
                 0xbf8f, 0x7fff, 0xbe09, 0xbb07, opcode]
         if opcode >> 8 in (0xa2, 0xa3):code.append(pma)
         with NativeC5x.from_program(0x6000, words(code)) as core:
