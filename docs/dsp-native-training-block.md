@@ -108,3 +108,25 @@ reference and candidate. Snapshots match. The observed ef configuration
 is now eligible with respect to this guard, but positive actual-training
 hits and revised target cost are still unmeasured. No physical call or
 modem setting change was made for this refinement.
+
+## Refined guard enters actual loopback training
+
+One notebook run at be8c340, with the opt-in enabled, completes in 32.18
+seconds including setup and sampled diagnostics. Both endpoints report
+CONNECT 31200/ARQ/V34/LAPM/V42BIS and exchange exact marker data.
+This is a functional and eligibility check, not an alternating performance
+comparison with the prior run. No whole-call speedup is inferred.
+
+The caller records 694807 hits at its first SIP-connected sample and
+1241893 seven seconds later: at least 547086 additional block executions
+during the connected training window. Pre-answer hits must not be counted
+as training gains. The answerer rises from zero to 35411 hits, resets
+to zero with its core lifecycle, then reaches 164125 hits. The sampled
+CBCR remains ef. These are observed counter epochs, not a guaranteed
+aggregate count across resets. Both paths therefore execute the block
+in real training rather than only a synthetic kernel.
+
+Raw samples and exact terminal results are in
+`dsp-native-block-refined-local.json`. A low-frequency hit sampler was
+enabled even though the profiling tool's cProfile flag is false. Revised
+A53 measurements and a physical call remain outstanding.
