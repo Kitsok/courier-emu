@@ -147,3 +147,31 @@ from 68601 to 68627 per million modeled cycles because more repeat/run
 entries can be admitted. These are eligibility checks without hardware
 perf events; target cost remains outstanding for this follow-up.
 Raw smoke results are in `dsp-native-entry-counter-smoke.json`.
+
+## Corrected-entry A53 and notebook validation
+
+The corrected entry wrappers rebuild successfully in a separate A53
+library. Three alternating reference/disabled/enabled orders per case
+again retain matching architectural digests and positive native hits.
+Against the preceding condition-reuse library, median enabled cycles
+fall by 72.94% in DARAM complex work, 74.44% in observed mixed memory
+and 52.50% in the original arithmetic kernel. Host instructions fall by
+69.46%, 71.04% and 52.99%, respectively.
+
+The unrelated address control is now 0.33% lower in cycles, with 0.91%
+fewer instructions: the prior 4.67% regression is absent in this short
+comparison. DMOV cycles are 9.26% lower, with 0.76% fewer instructions.
+Do not interpret the near-zero address timing as a precise gain or
+attribute all layout-sensitive cycle changes to instruction counts.
+Raw runs and manifest are in `dsp-v32-entry-arm.json`.
+
+The final notebook build's hit-instrumented run returns NO CARRIER,
+whereas a subsequent run without that extra Python hook establishes
+9600/ARQ/V32/LAPM/V42BIS on both ends and exchanges exact data in 32.81
+seconds including setup. Keep both outcomes in `dsp-v32-entry-local.json`.
+This does not prove that instrumentation alone caused the failure; the
+known timing sensitivity and few runs preclude a reliability estimate.
+The final physical attempt will omit that extra Python hook while still
+recording media, packets and low-frequency perf samples. These narrow
+kernel results do not establish a physical connection or real-time
+whole-training throughput. No physical call has run for this batch yet.
