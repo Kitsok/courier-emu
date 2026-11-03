@@ -1247,8 +1247,10 @@ void C5xCore::op_bcnd()
 		CYCLES(4);
 
 		// clear overflow
-		if (m_op & 0x2)
+		if (m_op & 0x2) {
 			m_st0.ov = 0;
+			m_condition_start = condition_state();
+		}
 	}
 	else
 	{
@@ -1342,8 +1344,10 @@ void C5xCore::op_cc()
 		CYCLES(4);
 
 		// clear overflow
-		if (m_op & 0x2)
+		if (m_op & 0x2) {
 			m_st0.ov = 0;
+			m_condition_start = condition_state();
+		}
 	}
 	else
 	{

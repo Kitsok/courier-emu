@@ -65,3 +65,45 @@ def test_address_update_in_last_delay_slot_preserves_xc(address_op):
     with run((0xbe4f, 0x7d80, 0x6005, 0x7800, address_op,
               0xf711, 0xae60, 0xaaaa), 4) as core:
         assert core.data(0x60) == 0xaaaa
+
+
+@pytest.mark.parametrize('branch', [0xe322, 0xeb22])
+def test_threaded_continuation_samples_post_branch_overflow_clear(branch):
+    # Taken BCND/CC clears OV after CYCLES. A one-cycle predecessor of XC
+    # must sample the cleared architectural OV, not the old cycle snapshot.
+    code = (0x6a60, 0x6161, branch, 0x6004, 0x7800, 0xf702, 0xae62, 0xaaaa)
+    snapshots = []
+    for threaded in (False, True):
+        with NativeC5x.from_program(0x6000, struct.pack('<8H', *code)) as core:
+            core.set_data(0x60, 0x7fff)
+            core.set_data(0x61, 1)  # Overflow 7fff0000 + 00010000.
+            core.set_pc(0x6000)
+            if threaded:
+                core.step_cycles(10)
+            else:
+                core.step(6)
+            assert core.data(0x62) == 0xaaaa
+            snapshots.append((core.state(), core.memory_map()))
+    assert snapshots[0] == snapshots[1]
+
+
+@pytest.mark.parametrize('code,steps', [
+    ((0xb900,0xb807,0xf788,0xae60,0xeeee),4),
+    ((0xbe4f,0x8b00,0xbe4e,0xf711,0xae60,0xaaaa),5),
+    ((0xbe4b,0x8b00,0xbe4a,0xf500,0xae60,0xaaaa),5),
+    ((0x7d80,0x6004,0xb900,0xb807,0xf788,0xae60,0xeeee),3),
+    ((0xb903,0xba14,0xb900,0xe744,0xb801),5),
+])
+def test_threaded_condition_samples_match_instruction_steps(code, steps):
+    snapshots = []
+    budget = None
+    for threaded in (False, True):
+        with NativeC5x.from_program(0x6000, struct.pack('<%dH'%len(code), *code)) as core:
+            core.set_pc(0x6000)
+            if threaded:
+                core.step_cycles(budget)
+            else:
+                core.step(steps)
+                budget = core.state()['cycles']
+            snapshots.append((core.state(), core.memory_map(), core.data(0x60)))
+    assert snapshots[0] == snapshots[1]

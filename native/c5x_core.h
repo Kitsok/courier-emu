@@ -536,7 +536,7 @@ private:
     bool step_front_rare();
     void step_inline();
     bool step_is_rare() const;
-    void step_begin();
+    void step_begin(bool sample_conditions = true);
     void step_repeat_edge();
     void step_retire();
     uint16_t m_previous_pc = 0;

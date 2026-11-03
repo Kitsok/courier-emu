@@ -1953,7 +1953,7 @@ inline __attribute__((always_inline)) bool C5xCore::step_is_rare() const
 }
 
 // The common step up to the dispatch.
-inline __attribute__((always_inline)) void C5xCore::step_begin()
+inline __attribute__((always_inline)) void C5xCore::step_begin(bool sample_conditions)
 {
     if (m_pmst.braf && m_pc == m_paer) {
         if (m_brcr > 0) CHANGE_PC(m_pasr);
@@ -1961,7 +1961,7 @@ inline __attribute__((always_inline)) void C5xCore::step_begin()
     }
     m_previous_pc = m_pc;
     m_op = ROPCODE();
-    m_condition_start = condition_state();
+    if (sample_conditions) m_condition_start = condition_state();
 }
 
 // And after it.
@@ -2037,7 +2037,10 @@ void C5xCore::threaded(C5xCore *core)
         && core->try_training_block(core->m_run_target)
         && core->m_cycles >= core->m_run_target)
         return;
-    core->step_begin();
+    // consume_cycles left the architectural conditions for this next step.
+    // General/run entry still samples afresh; BCND/CC explicitly refresh
+    // after their post-cycle overflow clear. Events do not alter ALU flags.
+    core->step_begin(false);
     [[clang::musttail]] return s_opcode_table[core->m_op >> 8].threaded(core);
 }
 
