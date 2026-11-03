@@ -1,0 +1,113 @@
+{
+  "date": "2026-11-03",
+  "source_revision": "3b0390a",
+  "dsp_library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+  "x86_library_sha256": "550fe67084effbc4a38a26065e4f79f64a1c3f52a38d409e2e732bedc9b552d4",
+  "x86_unchanged": true,
+  "native_blocks_opt_in": true,
+  "extra_python_hooks": false,
+  "mandatory_arq": true,
+  "result": {
+    "result": "modem-failure",
+    "elapsed": 67.71751800300262,
+    "dial": 28.331927330997132,
+    "connected": null,
+    "returncode": 0,
+    "worker": 11823
+  },
+  "terminal_result": "BUSY",
+  "physical_result": "NO CARRIER/A_FAIL",
+  "physical_answer": "2026-11-03 17:47:50 Europe/Amsterdam",
+  "physical_failure": "2026-11-03 17:47:59 Europe/Amsterdam",
+  "worker_cpu_percent_over_probe": 101.67278315475764,
+  "sip_frames": 143,
+  "peak_late_ms": 41273.5,
+  "pending_peak": 43680,
+  "pacing": {
+    "input_wakeups": 0,
+    "waited_seconds": 0.0,
+    "waits": 0
+  },
+  "sip_events": [
+    "tx REGISTER cseq=1",
+    "rx REGISTER 200",
+    "tx INVITE cseq=1",
+    "rx 100",
+    "rx 180",
+    "rx 200",
+    "tx ACK cseq=1",
+    "tx re-INVITE response",
+    "tx re-INVITE response",
+    "rx BYE"
+  ],
+  "media_timing": {
+    "method": "PCMU deduplicated by direction/SSRC/sequence/timestamp; first capture retained; packet RMS >500; no modulation classification",
+    "streams": [
+      {
+        "direction": "rx",
+        "ssrc": 1309501789,
+        "packets": 1,
+        "audio_seconds": 0.02,
+        "first": 1793724471.248572,
+        "last": 1793724471.248572,
+        "wall_span": 0.0,
+        "active_onset": null,
+        "active_onset_after_first": null,
+        "active_packets": 0,
+        "max_packet_gap": 0
+      },
+      {
+        "direction": "rx",
+        "ssrc": 2400755448,
+        "packets": 458,
+        "audio_seconds": 9.16,
+        "first": 1793724471.268132,
+        "last": 1793724480.408038,
+        "wall_span": 9.13990592956543,
+        "active_onset": 1793724473.028067,
+        "active_onset_after_first": 1.7599351406097412,
+        "active_packets": 319,
+        "max_packet_gap": 0.02049994468688965
+      },
+      {
+        "direction": "tx",
+        "ssrc": 2412657804,
+        "packets": 190,
+        "audio_seconds": 3.8,
+        "first": 1793724471.49187,
+        "last": 1793724480.39789,
+        "wall_span": 8.906020164489746,
+        "active_onset": 1793724479.076489,
+        "active_onset_after_first": 7.584619045257568,
+        "active_packets": 25,
+        "max_packet_gap": 0.4411940574645996
+      }
+    ],
+    "response_seconds": 6.048421859741211,
+    "receive_seconds_remaining": 1.3315489292144775
+  },
+  "perf": {
+    "window_monotonic_seconds": [
+      34329,
+      34334
+    ],
+    "samples": 244,
+    "lost_samples": 0,
+    "dso_percent": {
+      "DSP_devices": 45.44,
+      "x86": 34.01,
+      "Python": 16.84
+    },
+    "clock_anchor": {
+      "epoch": 1793724515.0271297,
+      "monotonic": 34371.958852223
+    },
+    "reports": {
+      "training-dso.txt": "# To display the perf.data header info, please use --header/--header-only options.\n#\n#\n# Total Lost Samples: 0\n#\n# Samples: 244  of event 'cycles:u' (time slices: 34329,34334)\n# Event count (approx.): 4866678680\n#\n# Overhead  Shared Object                               \n# ........  ............................................\n#\n    45.44%  libcourier-c5x-return-final.so              \n    34.01%  _x86_native.cpython-311-aarch64-linux-gnu.so\n    16.84%  python3.11                                  \n     3.28%  libc.so.6                                   \n     0.43%  _ctypes.cpython-311-aarch64-linux-gnu.so    \n\n\n#\n# (Tip: To show IPC for sampling periods use perf record -e '{cycles,instructions}:S' and then browse context)\n#\n",
+      "training-symbols.txt": "# To display the perf.data header info, please use --header/--header-only options.\n#\n#\n# Total Lost Samples: 0\n#\n# Samples: 244  of event 'cycles:u' (time slices: 34329,34334)\n# Event count (approx.): 4866678680\n#\n# Overhead  Shared Object                                 Symbol                                                              IPC   [IPC Coverage]\n# ........  ............................................  ..................................................................  ....................\n#\n    29.19%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] run_batch<true>                                                 -      -            \n     6.22%  python3.11                                    [.] _PyEval_EvalFrameDefault                                        -      -            \n     3.34%  libcourier-c5x-return-final.so                [.] courier::C5xCore::try_madd_block                                -      -            \n     2.17%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_group_be>      -      -            \n     2.08%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::read                         -      -            \n     1.72%  libcourier-c5x-return-final.so                [.] courier::resample::Timed::run                                   -      -            \n     1.67%  libcourier-c5x-return-final.so                [.] courier::resample::Stream::convert                              -      -            \n     1.65%  libcourier-c5x-return-final.so                [.] courier::C5xCore::try_filter_block                              -      -            \n     1.63%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_mar>           -      -            \n     1.30%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_group_bf>      -      -            \n     1.30%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_add_s16_mem>   -      -            \n     1.28%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_sacl>          -      -            \n     1.27%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_call>          -      -            \n     1.26%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_lar_limm>         -      -            \n     1.22%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_sach>          -      -            \n     1.21%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_samm>          -      -            \n     1.21%  libc.so.6                                     [.] __memcpy_generic                                                -      -            \n     1.21%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lamm>          -      -            \n     1.12%  python3.11                                    [.] _PyObject_GetMethod                                             -      -            \n     0.86%  libcourier-c5x-return-final.so                [.] courier::C5xCore::try_training_block                            -      -            \n     0.85%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_adds                                       -      -            \n     0.84%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_retc>          -      -            \n     0.83%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_xc>            -      -            \n     0.83%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::pop                          -      -            \n     0.82%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lar_mem>       -      -            \n     0.81%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_splk>             -      -            \n     0.81%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_mpy_mem>       -      -            \n     0.80%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_bd>            -      -            \n     0.80%  libcourier-c5x-return-final.so                [.] courier::C5xCore::IO_READ16                                     -      -            \n     0.79%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::alu                          -      -            \n     0.79%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_calld>         -      -            \n     0.79%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_lt                                         -      -            \n     0.74%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::ea                           -      -            \n     0.46%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_spl>           -      -            \n     0.45%  python3.11                                    [.] PyObject_RichCompare                                            -      -            \n     0.45%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_mpya                                       -      -            \n     0.45%  python3.11                                    [.] _PyObject_GenericGetAttrWithDict                                -      -            \n     0.45%  python3.11                                    [.] PyObject_IsInstance                                             -      -            \n     0.45%  python3.11                                    [.] _PyObject_MakeTpCall                                            -      -            \n     0.45%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_sqra                                       -      -            \n     0.44%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_sar                                        -      -            \n     0.44%  libc.so.6                                     [.] __strlen_generic                                                -      -            \n     0.44%  libcourier-c5x-return-final.so                [.] courier::C5xCore::cpuregs_w                                     -      -            \n     0.44%  libcourier-c5x-return-final.so                [.] courier::C5xCore::mac_program_span                              -      -            \n     0.43%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_sub_s16_mem>   -      -            \n     0.43%  python3.11                                    [.] 0x000000000009c4bc                                              -      -            \n     0.43%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_group_bf>         -      -            \n     0.43%  libc.so.6                                     [.] __GI_____strtod_l_internal                                      -      -            \n     0.43%  python3.11                                    [.] 0x0000000000109a10                                              -      -            \n     0.43%  libcourier-c5x-return-final.so                [.] courier::C5xCore::internal_data                                 -      -            \n     0.43%  python3.11                                    [.] 0x000000000008b440                                              -      -            \n     0.43%  _ctypes.cpython-311-aarch64-linux-gnu.so      [.] 0x00000000000162f0                                              -      -            \n     0.43%  python3.11                                    [.] PyObject_Malloc                                                 -      -            \n     0.43%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_sbrk>          -      -            \n     0.43%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_sub_simm>         -      -            \n     0.42%  python3.11                                    [.] 0x00000000000795c0                                              -      -            \n     0.42%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_bcnd>          -      -            \n     0.42%  python3.11                                    [.] 0x00000000000797a0                                              -      -            \n     0.42%  libcourier-c5x-return-final.so                [.] courier::C5xCore::advance_timer                                 -      -            \n     0.42%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_spac>             -      -            \n     0.42%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_add_s16_mem                                -      -            \n     0.42%  python3.11                                    [.] PySlice_New                                                     -      -            \n     0.41%  python3.11                                    [.] 0x00000000000c7758                                              -      -            \n     0.41%  python3.11                                    [.] PyBytes_FromStringAndSize                                       -      -            \n     0.41%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacc_s16_mem>  -      -            \n     0.41%  python3.11                                    [.] 0x0000000000176dc0                                              -      -            \n     0.41%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_sph                                        -      -            \n     0.41%  python3.11                                    [.] PyObject_Vectorcall                                             -      -            \n     0.40%  python3.11                                    [.] 0x0000000000079714                                              -      -            \n     0.40%  libc.so.6                                     [.] malloc                                                          -      -            \n     0.40%  libc.so.6                                     [.] str_to_mpn.part.0.constprop.0                                   -      -            \n     0.40%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lt>            -      -            \n     0.40%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_rptb>             -      -            \n     0.40%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_abs>              -      -            \n     0.40%  python3.11                                    [.] 0x0000000000079698                                              -      -            \n     0.40%  python3.11                                    [.] 0x00000000000bf4b0                                              -      -            \n     0.39%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_out>           -      -            \n     0.39%  libc.so.6                                     [.] __GI___printf_fp_l                                              -      -            \n     0.39%  python3.11                                    [.] 0x0000000000243df4                                              -      -            \n     0.39%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_mpya>          -      -            \n     0.39%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_add_limm>         -      -            \n     0.39%  python3.11                                    [.] 0x000000000011ab2c                                              -      -            \n     0.39%  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::push                         -      -            \n     0.39%  python3.11                                    [.] 0x0000000000090580                                              -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacl_simm>     -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::delay_slot                                    -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_mpy_limm>         -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lst_st0>       -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_mpy_simm>      -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_bit                                        -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacc_mem>      -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_sub_mem                                    -      -            \n     0.38%  python3.11                                    [.] PyObject_GetAttr                                                -      -            \n     0.38%  libcourier-c5x-return-final.so                [.] courier::C5xCore::threaded<&courier::C5xCore::op_or_mem>        -      -            \n     0.37%  libcourier-c5x-return-final.so                [.] courier::C5xCore::thunk<&courier::C5xCore::op_setc_ov>          -      -            \n     0.37%  libcourier-c5x-return-final.so                [.] courier::C5xCore::op_lacc_s16_mem                               -      -            \n     0.35%  libcourier-c5x-return-final.so                [.] snprintf@plt                                                    -      -            \n     0.34%  python3.11                                    [.] _PyObject_GenericSetAttrWithDict                                -      -            \n\n\n#\n# (Tip: To show IPC for sampling periods use perf record -e '{cycles,instructions}:S' and then browse context)\n#\n"
+    }
+  },
+  "configuration_unchanged": true,
+  "physical_modem_commands_by_agent": false,
+  "evidence_host": "nanovax:/tmp/courier-physical-batch-20261103"
+}

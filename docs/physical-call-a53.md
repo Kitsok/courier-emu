@@ -684,3 +684,48 @@ Next, use the remaining early-handshake opcode work and current source
 to select another bounded native block, prioritizing repeated return/
 delay-slot and resident DSP work. A53 remains CPU-bound; connection to
 physical modem 100 is still the acceptance criterion.
+
+
+## DSP return and Python batch validation, November 3
+
+The final batch uses DSP/Python source 3b0390a and the isolated
+`/tmp/libcourier-c5x-return-final.so`, with native blocks explicitly
+opted in. Both attempted x86 changes were rejected; the rebuilt x86
+library is byte-for-byte identical to the preceding runtime binary.
+The normal DSP library also retains its previous hash. The copied
+emulator EEPROM remains &M5/&N6 with identical V32 overrides; normal
+configuration and source EEPROM hashes remain unchanged. No agent
+commands go to the physical modem. The existing mgetty service remains
+active and retains its automatic diagnostics and reinitialization.
+
+The single final batch call still fails: SIP registers and answers,
+physical autoanswer at 17:47:50 ends with NO CARRIER/A_FAIL at 17:47:59,
+and the emulator returns BUSY. Probe duration is 67.72 seconds with no
+modem CONNECT. Worker CPU over the sampled probe interval is 101.67%,
+approximately one A53 core. This does not demonstrate real-time headroom.
+
+During a five-second interior answer interval, 244 user-cycle samples
+attribute 45.44% to DSP/devices, 34.01% to x86 and 16.84% to Python, with
+zero lost samples. These are short samples of a different call; the
+shares cannot establish a controlled reduction in absolute call CPU.
+The 42.26% returning-kernel cycle reduction and 23.64% configured-wrapper
+microbenchmark improvement remain separate results.
+
+Deduplicated PCMU contains 3.80 seconds sent and 9.18 seconds received,
+including one initial PBX packet. The RMS>500 outgoing activity onset
+follows incoming activity by 6.048 seconds, leaving 1.332 seconds of
+incoming audio. Maximum outgoing packet gap is 441 ms; incoming gap is
+20.5 ms. The preceding attempt observed 5.276 seconds response delay;
+this attempt supplies no evidence of a whole-call response improvement.
+Different call durations and uncontrolled conditions prevent attributing
+that difference to the batch. Waveforms are not classified as modulation.
+
+The cumulative scheduler reports 143 frames, 41.27 seconds peak lateness
+and 43,680 pending samples, including pre-call delays; pacing waits are
+zero. The packet-aligned results confirm continued media lag. Structured
+raw findings and compact profiles are in
+`physical-call-batch-20261103.json`. The next measurement must establish
+CPU time per fixed audio interval and native coverage on the actual
+physical training path before further kernel percentages can be used to
+predict whether the emulator will meet its RTP deadlines. Connection to
+physical modem 100 remains outstanding.
