@@ -25,7 +25,7 @@ def worker(args):
     if args.case == 'training':
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
     complex_case=args.case in ('complex','complex-mixed')
-    filter_case=args.case in ('filter','filter-saram')
+    filter_case=args.case in ('filter','filter-saram','filter-repeat')
     if filter_case:
         code=[0xbc06,0xbf00,0xbe42,0x8b89]
     if complex_case:
@@ -42,13 +42,18 @@ def worker(args):
             base,pma=(0x810,0x2200) if args.case=='filter-saram' else (0x310,0x7000)
             filter_addresses=sorted(set(range(0x300,0x380))|set(range(base-8,base+24)))
             for a in filter_addresses:core.set_data(a,((a*137)^0xaaaa)&65535)
-            core.load_program(struct.pack('<5H',30000,0xb9b0,0x7fff,0x8000,73),pma)
+            coefficients=[30000,0xb9b0,0x7fff,0x8000,73]*4
+            core.load_program(struct.pack('<20H',*coefficients),pma)
             core.step(4)
             helper=[0x081f,0xb805,0x881f,0x7804,0xbe59,0xbb04,0xaa90,
                     0xbe04,0x7805,0x7790,0x7780,0xa080,0x2f7b,0x9880,0xef00]
             header=[0xbf09,base,0xbf80,pma-5,0x881f,0x7a80,0x8aae,0x7980,0x6000]
+            if args.case=='filter-repeat':
+                header=[0xbf09,base,0xbf80,pma-5,0x881f,0xb903,0x8809,
+                        0x7a80,0x8aac,0x7980,0x6000]
+                core.load_program(struct.pack('<2H',0xbec6,0x8abb),0x8aac)
             core.load_program(struct.pack('<15H',*helper),0x8aae)
-            core.load_program(struct.pack('<9H',*header),0x6000);core.set_pc(0x6000)
+            core.load_program(struct.pack('<%dH'%len(header),*header),0x6000);core.set_pc(0x6000)
         if complex_case:
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,args.cbcr)
@@ -139,7 +144,7 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex', 'complex-mixed',
                                          'madd-circular', 'mads-circular',
-                                         'filter', 'filter-saram'], default='dmov')
+                                         'filter', 'filter-saram', 'filter-repeat'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,
                         help='circular-buffer configuration for training/complex cases')

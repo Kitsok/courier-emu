@@ -50,3 +50,11 @@ answerer coverage rises as well. Frequencies are not CPU shares and
 instrumented run durations are not controlled speed comparisons.
 A53 performance and physical initial-response improvement remain
 unmeasured. No physical call was made for this milestone.
+
+The target counter tool also includes filter-repeat: a four-body RPTB
+with the observed end at 8abb and RETC outside it. Its small notebook
+FIFO smoke comparison preserves the architectural digest and records
+41236 native bodies per million modeled cycles. Standalone DARAM and
+SARAM controls also match. See `dsp-filter-repeat-counter-smoke.json`.
+This adds no runtime change and makes the dominant repeat shape directly
+reproducible in the pending A53 comparison.
