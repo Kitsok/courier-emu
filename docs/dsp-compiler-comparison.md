@@ -128,3 +128,22 @@ reports 227 MB additional installed space. Its installation is in progress.
 A tiny source probe will require both statement always_inline and musttail
 with unknown/ignored attributes treated as errors before another full DSP
 build is started. The active GCC runtime remains untouched.
+
+## Compatible Clang 16 probe passed
+
+The authorized toolchain comparison installed Clang 16.0.6
+(1:16.0.6-15~deb12u1) and the six reviewed packages successfully. There
+were no upgrades or removals. Clang 14 remains available as a distinct
+compiler baseline; neither compiler changes the deployed runtime.
+
+Before another full build, Clang 16 compiled a tiny syntax probe containing
+both statement-level always_inline and musttail with
+-Werror=unknown-attributes and -Werror=ignored-attributes. It passed.
+The isolated full DSP build is now running at
+`/tmp/libcourier-c5x-clang16.so`, with unknown attributes treated as errors
+so the earlier compatibility problem cannot be silently accepted.
+
+The probe verifies annotation acceptance, not actual opcode integration,
+correctness or speed. Those remain separate emitted-code and runtime
+checks. The deployed library hash is still the recorded GCC reference.
+No physical call or modem-setting change was made during this stage.
