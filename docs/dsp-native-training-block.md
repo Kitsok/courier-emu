@@ -190,3 +190,27 @@ active. Raw results are in `dsp-native-block-local-9600.json`.
 This matches the fixed rate and ARQ requirement of the physical attempt.
 It remains a Courier-to-Courier loopback and cannot establish physical
 modem interoperability or identical instruction frequencies.
+
+## Direct arithmetic translation of the existing block
+
+The eleven-instruction 879d block now executes directly in C++, using the
+existing ADD and product-scaling helpers without per-instruction opcode
+calls or cycle/condition bookkeeping. Admission guards are unchanged.
+Keep all seven DARAM reads ordered with the three original writes, so
+live aliases observe identical values. Preserve PM/OVM/TRM semantics,
+temporary registers, final PREG and ARP/ARB, and aggregate the exact
+memory/fetch/write counters and eleven modeled cycles.
+
+XC must sample the state before the final ADDS, so capture that sample
+after ADD16 and separately commit the final next-start sample. The two
+AR2 updates cancel because circular AR2 updates remain excluded. No
+intermediate register-mapped, device or diagnostic observer is admitted.
+New differential checks execute following XC conditions with all product
+modes and TRM states, in addition to the existing alias/boundary checks.
+Target gains and complete-profile training coverage remain unmeasured
+for this translation. The opt-in stays off by default. No physical call
+was made during this stage.
+
+The notebook build and 277 focused arithmetic-block, complex-loop, XC and
+MAC checks pass in 1.78 seconds for the combined source. This is focused
+architectural validation, not an A53 or whole-training speed measurement.

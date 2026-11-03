@@ -12,12 +12,12 @@ def words(values):
     return struct.pack('<%dH' % len(values), *values)
 
 
-def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False, cbcr=0):
+def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False, cbcr=0, trm=False, xc=None):
     monkeypatch.setenv('COURIER_C5X_TRAINING_BLOCK', str(enabled))
     setup = [0xbf08,0x320,0xbf0a,0x37d if alias else 0x330,0xbc06,0xbf00|pm,
              0xbe43 if ovm else 0xbe42,0xbf8f,0x7fff]
     with NativeC5x.from_program(0x6000, words(setup)) as core:
-        core.host_write(7,0x30)
+        core.host_write(7,0x30 | (2 if trm else 0))
         if not near_event:core.host_write(0x26,0x10) # Admit an event-free window.
         for a in range(0x300,0x380):core.set_data(a,(a*137)^0xaaaa)
         core.set_pc(0x6000);core.step(6)
@@ -26,7 +26,8 @@ def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_
         core.host_write(0x1e,cbcr)
         code = list(BLOCK)
         if changed:code[8] = 0x7800
-        core.load_program(words([0x8b00,*code,*([0x7800]*16)]),0x879c)
+        tail=[xc,0xae60,0xaaaa] if xc is not None else [0x7800]*16
+        core.load_program(words([0x8b00,*code,*tail]),0x879c)
         core.trace_data_writes(trace);core.set_pc(0x879c)
         core.step_cycles(budget)
         query=core.library.courier_c5x_training_block_hits
@@ -34,7 +35,8 @@ def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_
         hits=query(core.handle)
         snapshot=(core.state(),core.serial_state(),core.memory_map(),
                   [core.data(a) for a in range(0x300,0x380)],
-                  [core.data_write_count(a) for a in range(0x300,0x380)])
+                  [core.data_write_count(a) for a in range(0x300,0x380)],
+                  [core.register(a) for a in (0xc,0xd,0xe)])
         return snapshot,hits
 
 
@@ -76,3 +78,13 @@ def test_block_only_rejects_circular_updates_on_ar2(monkeypatch,cbcr,expected_hi
     actual,hits=run(monkeypatch,1,12,0,False,cbcr=cbcr)
     assert actual==expected
     assert hits==expected_hits
+
+
+@pytest.mark.parametrize('xc',[0xf788,0xf702,0xf711,0xf500])
+@pytest.mark.parametrize('pm',range(4))
+@pytest.mark.parametrize('trm',[False,True])
+def test_translated_block_preserves_xc_pipeline_sample(monkeypatch,xc,pm,trm):
+    expected,_=run(monkeypatch,0,15,pm,True,trm=trm,xc=xc)
+    actual,hits=run(monkeypatch,1,15,pm,True,trm=trm,xc=xc)
+    assert actual==expected
+    assert hits==1

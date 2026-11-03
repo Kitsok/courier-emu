@@ -1561,22 +1561,32 @@ bool C5xCore::try_training_block(uint64_t target)
         return false;
     ++m_training_block_hits;
     m_map.program_external += 11;
-    m_condition_start = condition_state();
-    // Each original handler updates the next condition snapshot in CYCLES.
-    // No event, diagnostic, code write or register-mapped memory is admitted.
-#define BLOCK_OP(op, handler) m_previous_pc=m_pc++; m_op=op; handler();
-    BLOCK_OP(0x528a,op_sqra)
-    BLOCK_OP(0x8d7d,op_sph)
-    BLOCK_OP(0x8c7e,op_spl)
-    BLOCK_OP(0x7304,op_lt)
-    BLOCK_OP(0x557e,op_mpyu)
-    BLOCK_OP(0x8d7e,op_sph)
-    BLOCK_OP(0x547d,op_mpy_mem)
-    BLOCK_OP(0xbe03,op_pac)
-    BLOCK_OP(0x627e,op_adds)
-    BLOCK_OP(0x61a0,op_add_s16_mem)
-    BLOCK_OP(0x6290,op_adds)
-#undef BLOCK_OP
+    auto store = [&](uint16_t address, uint16_t value) {
+        ++m_data_write_counts[address]; m_data[address] = value;
+    };
+    // Keep reads ordered with the original stores: indexed and direct
+    // operands can alias these destinations even within ordinary DARAM.
+    const uint16_t square=m_data[first];
+    int32_t acc=ADD(uint32_t(m_acc),uint32_t(PREG_PSCALER(m_preg)),false);
+    int32_t preg=int32_t(int16_t(square))*int32_t(int16_t(square));
+    const uint32_t scaled=uint32_t(PREG_PSCALER(preg));
+    store(high,uint16_t(scaled>>16)); store(low,uint16_t(scaled));
+    const uint16_t temp=m_data[m_st0.dp|4];
+    preg=int32_t(uint32_t(temp)*uint32_t(m_data[low]));
+    store(low,uint16_t(uint32_t(PREG_PSCALER(preg))>>16));
+    preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[high]));
+    acc=PREG_PSCALER(preg);
+    acc=ADD(uint32_t(acc),m_data[low],false);
+    acc=ADD(uint32_t(acc),uint32_t(m_data[indexed])<<16,true);
+    m_acc=acc; m_xc_condition=condition_state();
+    m_acc=ADD(uint32_t(acc),m_data[uint16_t(indexed+1)],false);
+    m_preg=preg; m_treg0=temp;
+    if (!m_pmst.trm) m_treg1=m_treg2=temp;
+    m_st1.arb=m_st0.arp; m_st0.arp=2;
+    m_condition_start=condition_state();
+    m_map.data_daram+=7;
+    m_pc=0x87a8; m_previous_pc=0x87a7; m_op=0x6290;
+    m_cycles+=11;
     m_instructions += 11;
     m_tail_cycle = m_cycles;
     return true;
