@@ -80,3 +80,16 @@ separate global memory and code-alias rejection against ordinary stepping,
 including matching memory/fetch counters. Full initial failure and hit
 samples are in `dsp-v32-loop-guard-evidence.json`. Real-workload admission
 and A53 performance of the refined path remain outstanding.
+
+## Actual training admission after refinement
+
+The exact-profile notebook run at be07260 negotiates
+9600/ARQ/V32/LAPM/V42BIS on both endpoints and exchanges both exact data
+markers. A once-per-second hit sampler records 237621 caller and 237339
+answerer complex bodies by the final connected sample, with no observed
+complex-counter reset in either endpoint's samples. Both counters begin
+at zero in this connected interval. Existing arithmetic blocks also run.
+Total setup/training/data time is 29.73 seconds, but this is not a
+controlled whole-training comparison and includes the hit sampler.
+Raw outcome and samples are in `dsp-v32-mapped-local.json`. This verifies
+real V.32 use of the refined path; A53 performance remains outstanding.
