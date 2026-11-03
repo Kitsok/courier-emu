@@ -44,3 +44,23 @@ identity guards or complete invalidation coverage before adoption. This
 is a larger implementation stage; another unchecked inlining or dispatch
 cache claim would not address the measured deficit. The physical ARQ
 connection remains unestablished.
+
+## Available sequence evidence
+
+The retained physical diagnostic report's `dsp_pc_trace` is not an
+instruction trace: it contains a `probe_clock` object, with instruction/
+clock samples. It must not be interpreted as adjacent guest opcodes.
+There is consequently no observed instruction-pair ranking in that
+capture from which to select fused block patterns.
+
+The current core already supports `set_pc_trace_range` and `pc_trace`,
+returning PC/opcode/accumulator entries through the existing native API.
+It routes enabled tracing through the diagnostic front path and retains
+a bounded 4096-entry window. This can collect a short actual training
+sequence without introducing counters or branches into normal execution.
+A future capture must be taken during training, before hangup resets the
+DSP, and distinguish a complete range from filtered/noncontiguous PCs.
+Only observed opcode sequences, with their control-flow boundaries, should
+drive a fused-block prototype. Timings from enabled tracing cannot measure
+normal throughput. No new call or runtime behavior change was made while
+checking these facilities.
