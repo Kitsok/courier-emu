@@ -22,7 +22,7 @@ def worker(args):
     code = [0xbf09, 0x301, 0x8b89, 0x7790, 0x7780, 0x7980, 0x6000]
     if args.case == 'address':
         code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
-    if args.case == 'training':
+    if args.case in ('training','training-return'):
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
     complex_case=args.case in ('complex','complex-mixed')
     filter_case=args.case in ('filter','filter-saram','filter-repeat')
@@ -107,7 +107,7 @@ def worker(args):
             core.host_write(0x1f,0x7000)
             core.load_program(struct.pack('<5H',1,3,5,7,9),0x7000)
             for a in range(0x300,0x340):core.set_data(a,(a*137)^0xaaaa)
-        if args.case == 'training':
+        if args.case in ('training','training-return'):
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,args.cbcr)
             for a in range(0x300,0x380):core.set_data(a,(a*137)^0xaaaa)
@@ -115,6 +115,10 @@ def worker(args):
             block=[0x8b00,0x528a,0x8d7d,0x8c7e,0x7304,0x557e,0x8d7e,
                    0x547d,0xbe03,0x627e,0x61a0,0x6290,0x7980,0x879c]
             core.load_program(struct.pack('<14H',*block),0x879c);core.set_pc(0x879c)
+            if args.case=='training-return':
+                core.load_program(struct.pack('<3H',0xff00,0x98a0,0x9099),0x87a8)
+                header=[0x8b88,0x7a80,0x879d,0x7980,0x6000]
+                core.load_program(struct.pack('<5H',*header),0x6000);core.set_pc(0x6000)
         query=getattr(core.library,'courier_c5x_training_block_hits',None)
         if query:
             query.argtypes=[ctypes.c_void_p];query.restype=ctypes.c_uint64
@@ -151,12 +155,13 @@ def worker(args):
         addresses=(madd_addresses if madd_case else
                    filter_addresses if filter_case else
                    complex_addresses if complex_case else
-                   range(0x300,0x380) if args.case=='training' else
+                   range(0x300,0x380) if args.case in ('training','training-return') else
                    range(0x300,0x340) if args.case in ('madd-circular','mads-circular')
                    else range(0x2f0,0x310))
         state = [core.state(), core.serial_state(), core.memory_map(),
                  [core.data(a) for a in addresses],
                  [core.data_write_count(a) for a in addresses]]
+        if args.case=='training-return':state.append(core.stack())
         if complex_case:state.append([core.register(a) for a in range(9,0x20)])
         if filter_case:state += [[core.register(a) for a in range(9,0x20)],
                                 core.stack(),core.data_write_count(0x1f)]
@@ -174,7 +179,7 @@ def worker(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex', 'complex-mixed',
+    parser.add_argument('--case', choices=['dmov', 'address', 'training', 'training-return', 'complex', 'complex-mixed',
                                          'madd-circular', 'mads-circular',
                                          'filter', 'filter-saram', 'filter-repeat',
                                          'madd','madd-prepare','madd-saram'], default='dmov')

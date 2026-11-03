@@ -102,3 +102,9 @@ Keep a direct eight-argument call when no optional service is present.
 The configured path retains fixed positional arguments. 47 focused
 native x86/timer/trace checks pass after this refinement. This measures
 boundary plumbing, not a real modem workload or whole-call CPU savings.
+
+The corrected return workload records 41,666 native admissions per
+million modeled cycles in a notebook smoke check and matches the ordinary
+interpreter state hash, including hardware stack. The refined guard build
+passes 153 focused arithmetic/XC checks in 0.68 seconds. These checks
+validate the fixture and semantics; they do not measure A53 savings.

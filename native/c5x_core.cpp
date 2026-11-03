@@ -1588,9 +1588,9 @@ bool C5xCore::try_training_block(uint64_t target)
         return false;
     // RETCD and its result stores are optional: a short budget or a device
     // destination still admits the arithmetic prefix and ordinary stepping.
-    const bool with_return=target-m_cycles>=15 && m_event_deadline>m_cycles+15
-        && m_program[0x87a8]==0xff00 && m_program[0x87a9]==0x98a0
-        && m_program[0x87aa]==0x9099
+    const bool with_return=m_program[0x87a8]==0xff00
+        && m_program[0x87a9]==0x98a0 && m_program[0x87aa]==0x9099
+        && target-m_cycles>=15 && m_event_deadline>m_cycles+15
         && !(m_call_tdm_active && (m_line_dac_slot==indexed
                                   || m_line_dac_slot==uint16_t(indexed+1)));
     ++m_training_block_hits;
