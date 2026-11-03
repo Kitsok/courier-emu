@@ -336,3 +336,61 @@ checkpoint-elision candidate is rejected because A53 memory/traced controls
 regress by roughly 6–8%. Its runtime changes are removed. Details are in
 `docs/dsp-delay-move-optimization.md` and `docs/x86-checkpoint-experiment.md`.
 No additional physical call or nanovax deployment occurred in that work.
+
+## Inspection optimizations rebuilt and called, 2026-11-03
+
+Nanovax's clean `e22ed4d` checkout was merged with the committed notebook
+work, preserving both histories as `86ba8ff`. The notebook was then
+fast-forwarded to that same merge. `./build.sh` completed on nanovax and
+loaded both native libraries. The C5x library SHA-256 is recorded in
+`docs/physical-call-inspection-20261103.json`. No parallel emulator was
+running; the two test services were inactive and normal mgetty was active.
+
+One bounded call used the same probe and a temporary copy of the configured
+EEPROM: &M5/&N6, S27=0 and S54=96. Experimental native pacing remained
+disabled. SIP registered, negotiated 200/ACK and RTP, and physical mgetty
+logged RING/ATA at 11:24:42. Physical training failed with NO CARRIER/A_FAIL
+at 11:25:44. SIP BYE followed; the emulator eventually returned NO CARRIER
+at approximately 177 seconds. Shutdown completed at 180.09 seconds. There
+was no CONNECT or error-corrected connection.
+
+The worker averaged 101.33% of one core. It processed 660 100-ms line frames
+(66 seconds modeled audio), with peak lag 109.06 seconds and a pending
+receive peak of 291040 samples. There were no pacing waits. The earlier
+attempt processed 302 frames before returning BUSY at 123.05 seconds, so
+whole-attempt frame rates compare different execution endpoints. No
+controlled CPU reduction is established by those totals.
+
+The SIP transport received the same 500640 PCMU octets in both attempts
+(62.58 seconds). It transmitted 211200 octets this time (26.4 seconds),
+versus 156800 previously (19.6 seconds). This is more delivered audio
+during the physical session, still substantially below real time. It is
+not proof of successful demodulation or ARQ negotiation.
+
+A journal clock anchor places the interior training interval at monotonic
+11345–11395, after ATA and before NO CARRIER. Period-weighted user-cycle
+shares, with zero lost samples, are:
+
+| Code | Earlier training slice | Updated training slice |
+| --- | ---: | ---: |
+| Native C5x/devices | 66.83% | 59.37% |
+| Native x86 | 22.84% | 29.87% |
+| Python | 8.52% | 8.84% |
+
+The changed mix is consistent with reduced DSP overhead, but the slices
+are not fixed-work replays and cannot quantify a speedup. The new
+`try_repeat_mac` helper accounts for 2.15% of training samples, including
+both eligibility checks and eligible kernels. Code inspection identifies
+an avoidable call for unrepeated MACs: the repeat check currently lives
+inside that out-of-line helper. Moving an eligibility check to the caller
+is a narrow next candidate; its possible saving is only part of 2.15%.
+Resampling accounts for 2.58%, and x86 `run_batch<true>` alone for 24.13%.
+The broad native execution deficit remains the principal blocker.
+
+Configured EEPROM and INI hashes match before and after. No physical
+settings commands or temperature queries were issued. Existing mgetty
+answer/reinitialization ran normally, and probe/emulator/perf processes
+stopped. Native yield counters were not enabled, so their empty snapshot
+is not interpreted as zero yields. Full evidence remains at
+`nanovax:/tmp/courier-physical-inspection-20261103-1125`. The goal remains
+unmet.
