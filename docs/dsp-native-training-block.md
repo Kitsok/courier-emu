@@ -161,3 +161,14 @@ will select the isolated library and opt-in flag explicitly, copy the
 existing 9600-bps ARQ EEPROM profile, and record block hits and media.
 Existing autoanswer is active and the physical line is idle. No direct
 physical settings commands are authorized or needed.
+
+## Physical validation outcome
+
+The refined opt-in executes during physical training: 1533863 additional
+hits were observed without a reset after the first connected sample.
+The call still failed with physical NO CARRIER and emulator BUSY.
+Only 19.6 seconds of audio were sent against 62.58 received seconds.
+The synthetic 40.24% block-kernel cycle reduction therefore must not be
+reported as a whole-call gain. DSP still accounts for 65.42% of sampled
+user cycles in the interior training interval. See the physical-call
+report and `physical-call-native-block-20261103.json` for evidence.

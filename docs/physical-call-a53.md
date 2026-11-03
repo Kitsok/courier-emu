@@ -487,3 +487,33 @@ than add buffering or repeat bitrate-only calls. This does not exclude
 additional protocol defects. Raw timing and capture hash are retained in
 `physical-2400-rtp-correlation.json`. No new call was needed for this
 analysis.
+
+## Physical call with refined native block
+
+The isolated refined A53 library was selected explicitly with the block
+opt-in enabled. The temporary emulator EEPROM retained &M5/&N6 (mandatory
+ARQ, 9600 bps). Existing configuration and EEPROM hashes were unchanged
+afterward. No physical modem settings were changed.
+
+The attempt failed: the physical modem reported NO CARRIER after about
+62 seconds; the emulator returned BUSY during a 123.32-second probe.
+The worker averaged 101.35% CPU. It sent 19.6 seconds of RTP audio while
+receiving 62.58 seconds, and recorded 299 SIP frames with peak lateness
+80.24 seconds. Pacing waits were zero. Real-time throughput remains
+insufficient; no whole-call improvement is demonstrated by this attempt.
+
+The connected-window hit counter rose monotonically from 536734 to
+2070597 across 62 samples: 1533863 additional block executions, with
+CBCR ef throughout. This establishes use during physical training.
+It does not establish that the block dominates training cost.
+
+A 48-second interior training profile attributes 65.42% of sampled user
+cycles to DSP, 22.96% to x86 and 9.34% to Python, with zero lost samples.
+The largest individual symbol is x86 run_batch<true> at 17.32%; DSP cost
+is spread across handlers and dispatch. Full evidence and limitations
+are in `physical-call-native-block-20261103.json`. Capture/probe processes
+finished, and normal mgetty autoanswer remained active.
+
+Next, match the notebook workload to this temporary 9600-bps ARQ profile
+before selecting broader native blocks. The current successful notebook
+loopback negotiates 31200 bps and need not exercise identical hot paths.
