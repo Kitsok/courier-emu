@@ -12,7 +12,7 @@ def words(values):
     return struct.pack('<%dH' % len(values), *values)
 
 
-def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False, cbcr=0, trm=False, xc=None):
+def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False, cbcr=0, trm=False, xc=None, returning=False):
     monkeypatch.setenv('COURIER_C5X_TRAINING_BLOCK', str(enabled))
     setup = [0xbf08,0x320,0xbf0a,0x37d if alias else 0x330,0xbc06,0xbf00|pm,
              0xbe43 if ovm else 0xbe42,0xbf8f,0x7fff]
@@ -26,14 +26,14 @@ def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_
         core.host_write(0x1e,cbcr)
         code = list(BLOCK)
         if changed:code[8] = 0x7800
-        tail=[xc,0xae60,0xaaaa] if xc is not None else [0x7800]*16
+        tail=([0xff00,0x98a0,0x9099] if returning else []) + ([xc,0xae60,0xaaaa] if xc is not None else [0x7800]*16)
         core.load_program(words([0x8b00,*code,*tail]),0x879c)
         core.trace_data_writes(trace);core.set_pc(0x879c)
         core.step_cycles(budget)
         query=core.library.courier_c5x_training_block_hits
         query.argtypes=[ctypes.c_void_p];query.restype=ctypes.c_uint64
         hits=query(core.handle)
-        snapshot=(core.state(),core.serial_state(),core.memory_map(),
+        snapshot=(core.state(),core.serial_state(),core.memory_map(),core.stack(),
                   [core.data(a) for a in range(0x300,0x380)],
                   [core.data_write_count(a) for a in range(0x300,0x380)],
                   [core.register(a) for a in (0xc,0xd,0xe)])
@@ -86,5 +86,15 @@ def test_block_only_rejects_circular_updates_on_ar2(monkeypatch,cbcr,expected_hi
 def test_translated_block_preserves_xc_pipeline_sample(monkeypatch,xc,pm,trm):
     expected,_=run(monkeypatch,0,15,pm,True,trm=trm,xc=xc)
     actual,hits=run(monkeypatch,1,15,pm,True,trm=trm,xc=xc)
+    assert actual==expected
+    assert hits==1
+
+
+@pytest.mark.parametrize('budget',[12,14,15,16,17,19])
+@pytest.mark.parametrize('pm',range(4))
+@pytest.mark.parametrize('alias',[False,True])
+def test_block_fuses_delayed_return(monkeypatch,budget,pm,alias):
+    expected,_=run(monkeypatch,0,budget,pm,True,alias=alias,returning=True)
+    actual,hits=run(monkeypatch,1,budget,pm,True,alias=alias,returning=True)
     assert actual==expected
     assert hits==1

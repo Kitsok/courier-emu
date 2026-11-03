@@ -1586,6 +1586,13 @@ bool C5xCore::try_training_block(uint64_t target)
         || !daram(m_st0.dp | 4) || !daram(high) || !daram(low)
         || (m_call_tdm_active && (m_line_dac_slot == high || m_line_dac_slot == low)))
         return false;
+    // RETCD and its result stores are optional: a short budget or a device
+    // destination still admits the arithmetic prefix and ordinary stepping.
+    const bool with_return=target-m_cycles>=15 && m_event_deadline>m_cycles+15
+        && m_program[0x87a8]==0xff00 && m_program[0x87a9]==0x98a0
+        && m_program[0x87aa]==0x9099
+        && !(m_call_tdm_active && (m_line_dac_slot==indexed
+                                  || m_line_dac_slot==uint16_t(indexed+1)));
     ++m_training_block_hits;
 #ifdef C5X_PROFILE_WORK
     for (unsigned i=0; i<11; ++i) record_work(uint16_t(0x879d+i),code[i],true);
@@ -1616,8 +1623,22 @@ bool C5xCore::try_training_block(uint64_t target)
     m_condition_start=condition_state();
     m_map.data_daram+=7;
     m_pc=0x87a8; m_previous_pc=0x87a7; m_op=0x6290;
-    m_cycles+=11;
-    m_instructions += 11;
+    if (with_return) {
+#ifdef C5X_PROFILE_WORK
+        record_work(0x87a8,0xff00,true);
+        record_work(0x87a9,0x98a0,true);
+        record_work(0x87aa,0x9099,true);
+#endif
+        // *+ followed by *-,AR1 returns AR2 to its original value.
+        store(indexed,uint16_t(uint32_t(m_acc)>>16));
+        store(uint16_t(indexed+1),uint16_t(m_acc));
+        m_st1.arb=2; m_st0.arp=1;
+        m_pc=POP_STACK(); m_previous_pc=0x87a8; m_op=0x9099;
+        m_map.program_external+=3;
+        m_xc_condition=m_condition_start=condition_state();
+    }
+    m_cycles+=with_return ? 15 : 11;
+    m_instructions += with_return ? 12 : 11;
     m_tail_cycle = m_cycles;
     return true;
 }
