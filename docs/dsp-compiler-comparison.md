@@ -93,3 +93,18 @@ Clang is still absent and the installation preference remains unanswered.
 It would exercise the statement-level forced integration intended by the
 existing executor, rather than this GCC heuristic change. No installation
 or physical-modem setting change is authorized by elapsed waiting time.
+
+## Clang installation authorized and completed
+
+After the user's go-ahead, nanovax installed clang-14 1:14.0.6-12 with
+no recommends. APT added the nine previously listed packages, upgraded
+none and removed none. It downloaded 37.2 MB and reported 213 MB of
+additional installed space. Installation completed successfully.
+
+An isolated Clang DSP build has been started through the recorded-variant
+builder at `/tmp/libcourier-c5x-clang14.so`. This is not a runtime switch
+or validation result. The deployed GCC DSP library still has SHA-256
+`1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56`.
+No physical modem setting was altered and no test call was made during
+installation. Earlier pending-installation notes describe historical
+state; authorization is now resolved.
