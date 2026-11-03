@@ -1801,6 +1801,7 @@ class CourierMachine:
         console_wait = getattr(self.console, "wait", None)
         idle_pacer = None
         sip_pacer = None
+        native_pacer_ready = [0]
         pacing_enabled = os.environ.get("COURIER_IDLE_PACING", "1") != "0"
         bridge = self.dsp_bridge
         if callable(console_wait) and pacing_enabled and self._rom_serial is not None:
@@ -2292,6 +2293,12 @@ class CourierMachine:
                 self.serial_rx.extend(typed)
                 self._serial_cooldown = min(self._serial_cooldown, 64)
                 self.serial_trace.append(f"typed at {self.instructions}")
+            if native_pacer_ready[0]:
+                ready, native_pacer_ready[0] = native_pacer_ready[0], 0
+                if ready & 4:
+                    bridge.sip.poll()
+                if ready & 2:
+                    poll_console()
             if sip_pacer is not None and self.instructions >= sip_pacer.next_check:
                 deadline = bridge._sip_line.pacing_deadline(len(bridge._exchange_line_buffer))
                 if sip_pacer.service(self.instructions, self.timebase.instructions_per_second,
@@ -3441,7 +3448,12 @@ class CourierMachine:
                                              if console_fd is not None else 0)
                 state.console_fd = console_fd if console_fd is not None else -1
                 state.pacer_period = 0
+                state.pacer_wait.enabled = bool(
+                    native_pacer and scheduled == 3 and console_fd is not None
+                    and len(self.serial_rx) < CONSOLE_INPUT_FIFO and not self.stop_requested
+                    and os.environ.get('COURIER_NATIVE_PACER_WAIT', '0') != '0')
                 if native_pacer:
+                    state.pacer_wait.interval = sip_pacer.interval
                     line = bridge._sip_line
                     state.pacer_origin = line._next_frame_at - line._frame_duration
                     state.pacer_next = sip_pacer.next_check
@@ -3774,7 +3786,20 @@ class CourierMachine:
 
             worker_resume_diagnostic[0] = resume_diagnostic
 
+            waited_seen = [0, 0, 0.0, 0.0]
+
             def after_run() -> None:
+                waited = state.pacer_wait
+                if waited.waits != waited_seen[0]:
+                    sip_pacer.waits += waited.waits-waited_seen[0]
+                    sip_pacer.wakeups += waited.wakeups-waited_seen[1]
+                    sip_pacer.waited += waited.waited-waited_seen[2]
+                    bridge._sip_line.paced_seconds += waited.port_waited-waited_seen[3]
+                    waited_seen[:] = [waited.waits, waited.wakeups, waited.waited, waited.port_waited]
+                if waited.resume_flags:
+                    native_pacer_ready[0] = waited.resume_flags
+                    waited.resume_flags = 0
+                    sip_pacer.next_check = state.pacer_next
                 resume_ready[0] = bool(state.armed and state.pending_native
                                        and uc._native.exit_reason == 4)
                 state.armed = 0
@@ -3877,6 +3902,15 @@ class CourierMachine:
                     bridge.finish_fast_clock(state.step_writes, bool(state.step_tdm))
                 fast_service_rest(_uc, state.resume_elapsed)
                 worker_arm[0] = True
+
+            if poll.profile_enabled:
+                original_arm = arm
+
+                def arm():
+                    poll.arm_counts['attempts'] = poll.arm_counts.get('attempts', 0)+1
+                    original_arm()
+                    key = 'armed_mode_'+str(state.scheduled) if state.armed else 'declined'
+                    poll.arm_counts[key] = poll.arm_counts.get(key, 0)+1
 
             uc.native_before_run = before_run
             uc.native_after_run = after_run

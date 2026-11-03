@@ -9,6 +9,7 @@
 #include "silicon_daa.hpp"
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
+#include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
 
@@ -2484,6 +2485,8 @@ struct WorkerPollState {
     uint64_t native_media_services,native_media_yields,native_codec_services;
     MachineServiceState *service_model;
     char error[512];
+    uint64_t *yield_counts;
+    courier::PacerWait pacer_wait;
 };
 
 // A line frame can change the predicates that made the DSP/ASIC tail static.
@@ -2720,18 +2723,23 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
     uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
 
-    if (!s.armed) return 0;
+    auto leave = [&](unsigned reason, int code=0) {
+        if(s.yield_counts) ++s.yield_counts[reason];
+        s.armed=0;
+        return code;
+    };
+    if (!s.armed) return leave(0);
     const PollCpu &cpu = *static_cast<const PollCpu *>(lent);
     worker_apply_eois(s, cpu);
     const int64_t total = s.instruction_base + int64_t(now);
-    if (uint64_t(total) >= s.elide_until) { s.armed = 0; return 0; }
+    if (uint64_t(total) >= s.elide_until) { return leave(1); }
     // The comparison path leaves deferred frame/INT1 delivery to Python.
-    if (!s.pending_native && (irq_int0_pending || irq_int1_pending || irq_timer_pending)) { s.armed = 0; return 0; }
+    if (!s.pending_native && (irq_int0_pending || irq_int1_pending || irq_timer_pending)) { return leave(2); }
     // Lamp writes waiting for the harness's replay: harmless only if they
     // leave the latch as it is.
     for (uint64_t index = s.io_cursor; index < cpu.io_event_count; ++index) {
         const uint8_t *event = cpu.io_events + 4 * index;
-        if ((event[0] | event[1] << 8) != 0x14 || event[2] != s.panel_latch) { s.armed = 0; return 0; }
+        if ((event[0] | event[1] << 8) != 0x14 || event[2] != s.panel_latch) { return leave(3); }
     }
     s.io_cursor = cpu.io_event_count;
     C5xCore *core = static_cast<C5xCore *>(s.core);
@@ -2749,7 +2757,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint64_t &service_ticks=s.service_model?s.service_model->ticks:s.ticks;
     const int64_t elapsed = total - int64_t(s.last_service);
     if (s.scheduled) {
-        if(s.scheduled==3 && !s.native_media){s.armed=0;return 0;}
+        if(s.scheduled==3 && !s.native_media){return leave(4);}
         const bool exchange_due = s.exchange_present && clock_exchange_ticks + elapsed >= s.batch;
         const bool dsp_due = s.dsp_active && clock_x86_ticks + elapsed >= s.batch;
         const bool console_due = s.console_present && service_console_owed - elapsed <= 0;
@@ -2760,19 +2768,20 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
              && !(s.scheduled==3 && s.native_media->codec))
             || (s.scheduled == 1 && (exchange_due || dsp_due))
             || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
-            s.armed = 0; return 0;
+            return leave(5);
         }
         if (console_due) {
-            if (!s.console_poll_period) { s.armed = 0; return 0; }
+            if (!s.console_poll_period) { return leave(6); }
             pollfd entry{int(s.console_fd), POLLIN, 0};
             // Never consume input or hide HUP/ERR/NVAL (or EINTR). Python
             // owns those outcomes, including draining its pending output.
-            if (::poll(&entry, 1, 0) != 0) { s.armed = 0; return 0; }
+            if (::poll(&entry, 1, 0) != 0) { return leave(7); }
         }
+        double native_pacing_deadline=0;
         const bool pacer_due = s.pacer_period && uint64_t(total) >= s.pacer_next;
         if (pacer_due) {
             timespec now;
-            if (::clock_gettime(CLOCK_MONOTONIC, &now)) { s.armed = 0; return 0; }
+            if (::clock_gettime(CLOCK_MONOTONIC, &now)) { return leave(8); }
             const double wall = double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
             // Same interpolation and pre-DSP service order as SipLine and
             // DeadlinePacer. Full media frames still return to Python.
@@ -2781,7 +2790,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 ? (media->port.s.clock_started ? media->port.s.next_frame_at-media->port.s.frame_duration
                     + double(media->line_buffer.size())/8000 : wall)
                 : s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
-            if (deadline > wall) { s.armed = 0; return 0; }
+            if (deadline > wall) {
+                if(!media || !s.pacer_wait.enabled || s.console_fd<0)return leave(9);
+                native_pacing_deadline=deadline;
+            }
         }
         bool frame_edge = false;
         uint32_t slots[3];
@@ -2806,7 +2818,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (timer_poll && s.int0_ok && !irq_int0_pending
             && !irq_int0_in_service && (flags & WORKER_IF)
             && total - service_last_frame >= int64_t(s.frame_instructions)) {
-            if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
+            if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { return leave(10); }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
             if (vector[0] | vector[1] | vector[2] | vector[3]) {
                 frame_edge = true;
@@ -2823,11 +2835,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 || (vector_number == 13 && irq_int1_pending));
         if (enter_irq) {
             if (vector_number > 255 || irq_stack_depth >= sizeof s.stack
-                || !worker_readable(cpu, vector_number * 4, 4)) { s.armed = 0; return 0; }
+                || !worker_readable(cpu, vector_number * 4, 4)) { return leave(11); }
             for (unsigned k = 0; k < 3; ++k) {
                 slots[k] = ((r[REG_SS] & 0xffff) * 16
                     + ((r[REG_SP] - 2 * (k + 1)) & 0xffff)) & 0xfffff;
-                if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
+                if (!worker_writable(cpu, slots[k], 2)) { return leave(12); }
             }
         }
         auto *timed = static_cast<courier::resample::Timed *>(s.timed);
@@ -2838,19 +2850,19 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (exchange_due && s.scheduled!=3) {
             if (produced == s.exchange_codec_last) {
                 idle += s.batch;
-                if (idle >= s.line_frame_instructions) { s.armed = 0; return 0; }
+                if (idle >= s.line_frame_instructions) { return leave(13); }
             } else {
                 idle = 0;
-                if (produced < start || !timed) { s.armed = 0; return 0; }
+                if (produced < start || !timed) { return leave(14); }
                 if (produced > start) {
                     double rate = double(core->codec_sample_rate_millihz()) / 1000.0;
                     for (const auto &event : core->line_tx_clock_events()) {
                         if (int64_t(event[0]) <= start) rate = 40320000.0 / double(event[1]);
-                        else if (int64_t(event[0]) < produced) { s.armed = 0; return 0; }
+                        else if (int64_t(event[0]) < produced) { return leave(15); }
                     }
                     if (!(rate > 0) || rate != timed->input_rate
                         || s.line_rate != timed->output_rate || !timed->kernel) {
-                        s.armed = 0; return 0;
+                        return leave(16);
                     }
                     const auto &source = core->line_tx_samples();
                     std::vector<int16_t> samples(size_t(produced - start));
@@ -2860,11 +2872,27 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                     if (s.line_buffer_count + timed->out.size() >= s.line_frame_samples
                         || s.line_buffer_count + timed->out.size() > 1024) {
                         timed->rollback();
-                        s.armed = 0; return 0;
+                        return leave(17);
                     }
                     converted = true;
                 }
             }
+        }
+        // A wait follows all guest-state preflights, before service commit.
+        if(native_pacing_deadline>0) {
+                auto &port=s.native_media->port;
+                // Same media pump as SipSession.poll; signalling remains a
+                // Python action, bounded by readiness and its next deadline.
+                port.media.transport.poll(courier::pacer_now());
+                if(port.media.transport.snapshot().error)return leave(9);
+                const int waited=courier::pacer_wait(s.pacer_wait,int(s.console_fd),
+                    int(port.control.signal_fd),native_pacing_deadline,port.control.deadline);
+                if(waited<0)return leave(9);
+                if(waited>1) {
+                    s.pacer_wait.resume_flags=uint64_t(waited);
+                    s.pacer_next=uint64_t(total)+s.pacer_period;
+                    return leave(44);
+                }
         }
         s.dirty = 1;
         s.last_service = uint64_t(total);
@@ -2896,11 +2924,11 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                         s.resume_elapsed=elapsed;s.armed=0;
                         // Code 4 is reserved by the x86 engine for an IRQ
                         // taken inside a poll. Media must leave the engine.
-                        ++s.native_media_yields;++s.polls;return 6;
+                        ++s.native_media_yields;++s.polls;return leave(40,6);
                     }
                 } catch(const std::exception &exception) {
                     copy_error(s.error,sizeof s.error,exception.what());
-                    s.resume_elapsed=elapsed;s.armed=0;++s.polls;return 7;
+                    s.resume_elapsed=elapsed;s.armed=0;++s.polls;return leave(41,7);
                 }
             } else {
                 s.exchange_codec_last = produced;
@@ -2932,7 +2960,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             clock_x86_ticks = 0;
             if (const int code = worker_step(s, core, elapsed)) {
                 ++s.polls;
-                return code;
+                return leave(code==2?42:43,code);
             }
         }
         service_timer_poll_owed -= elapsed;
@@ -2987,7 +3015,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     // clock_x86_fast's tests that a service can change.
     if (clock_x86_ticks + elapsed < s.batch
         || (s.codec_present && s.codec_instructions + elapsed >= s.line_frame_instructions)) {
-        s.armed = 0; return 0;
+        return leave(18);
     }
     const int64_t produced = int64_t(core->line_tx_count());
     const int64_t fresh = produced - s.line_codec_last;
@@ -2995,7 +3023,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         && s.line_skipped < s.line_max_skip;
     if ((!line_skip && (fresh <= 0 || !s.timed))
         || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
-        s.armed = 0; return 0;
+        return leave(19);
     }
     // fast_service's frame edge, decided now: nothing it reads moves in the
     // DSP step. An entry this cannot make the way dispatch_interrupt would is
@@ -3007,14 +3035,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint32_t slots[3];
     if (timer_poll && s.int0_ok && !irq_int0_in_service && (flags & WORKER_IF)
         && total - service_last_frame >= int64_t(s.frame_instructions)) {
-        if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { s.armed = 0; return 0; }
+        if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { return leave(20); }
         const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
         if (vector[0] | vector[1] | vector[2] | vector[3]) {
             for (unsigned k = 0; k < 3; ++k) {
                 slots[k] = (ss * 16 + ((sp - 2 * (k + 1)) & 0xFFFF)) & 0xFFFFF;
-                if (!worker_writable(cpu, slots[k], 2)) { s.armed = 0; return 0; }
+                if (!worker_writable(cpu, slots[k], 2)) { return leave(21); }
             }
-            if (irq_stack_depth >= sizeof s.stack) { s.armed = 0; return 0; }
+            if (irq_stack_depth >= sizeof s.stack) { return leave(22); }
             frame_edge = true;
         }
     }
@@ -3025,17 +3053,17 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     const int64_t line_start = s.tx_index;
     bool frame = false;
     if (!line_skip) {
-        if (line_start < 0 || produced <= line_start) { s.armed = 0; return 0; }
+        if (line_start < 0 || produced <= line_start) { return leave(23); }
         // The codec's rate, or the one in force at the batch's first sample;
         // a clock change inside the batch is the harness's.
         double rate = double(core->codec_sample_rate_millihz()) / 1000.0;
         for (const auto &event : core->line_tx_clock_events()) {
             if (int64_t(event[0]) <= line_start) rate = 40320000.0 / double(event[1]);  // ASIC_DSP_CLOCK_HZ
-            else if (int64_t(event[0]) < produced) { s.armed = 0; return 0; }
+            else if (int64_t(event[0]) < produced) { return leave(24); }
         }
         if (!(rate > 0) || rate != timed->input_rate || s.line_rate != timed->output_rate
             || !timed->kernel) {
-            s.armed = 0; return 0;
+            return leave(25);
         }
         std::vector<int16_t> samples(size_t(produced - line_start));
         for (size_t k = 0; k < samples.size(); ++k)
@@ -3045,7 +3073,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (buffered >= 2 * s.line_frame_samples || buffered > 512
             || (buffered >= s.line_frame_samples && !s.frame_ok)) {
             timed->rollback();
-            s.armed = 0; return 0;
+            return leave(26);
         }
         frame = buffered >= s.line_frame_samples;
     }
@@ -3065,7 +3093,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             || s.tx_record_count + s.line_frame_samples > 4096
             || s.rx_record_count + 2048 > 4096 || s.rx_log_count + 2048 > 4096) {
             timed->rollback();
-            s.armed = 0; return 0;
+            return leave(27);
         }
         const uint64_t from_buffer = std::min<uint64_t>(s.line_buffer_count, s.line_frame_samples);
         for (uint64_t k = 0; k < from_buffer; ++k) wire[k] = s.line_buffer[k];
@@ -3084,7 +3112,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (const int failed = worker_send(fd, packet.data(), packet.size())) {
             timed->rollback();
             s.presend_error = failed == WORKER_TIMEOUT ? 5000 : 4000 + uint64_t(failed);
-            s.armed = 0; return 0;
+            return leave(28);
         }
         int failed = worker_receive(fd, header, sizeof header);
         if (!failed) {
@@ -3100,7 +3128,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             timed->rollback();
             s.presend_error = failed == WORKER_CLOSED ? 1
                 : failed == WORKER_TIMEOUT ? 3000 : 2000 + uint64_t(failed);
-            s.armed = 0; return 0;
+            return leave(29);
         }
     }
     // interpreter_service's bookkeeping, then clock_x86_fast's commit.
@@ -3167,6 +3195,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     if (frame && !(s.peer_off_hook && !s.peer_ringing && s.peer_call_state <= 3)) s.armed = 0;
     ++s.polls;
     return 1;
+}
+
+extern "C" int courier_worker_pacer_wait(void *state,int console,int signal,double deadline,double signal_deadline) {
+    return courier::pacer_wait(*static_cast<courier::PacerWait *>(state),console,signal,deadline,signal_deadline);
 }
 
 // For worker_poll.py to check its mirror of WorkerPollState against.

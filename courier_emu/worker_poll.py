@@ -34,6 +34,11 @@ LINE_BUFFER_SLOTS = 1024
 RECORD_SLOTS = 4096
 
 
+class PacerWaitState(ctypes.Structure):
+    _fields_ = [(name, U64) for name in ('enabled', 'waits', 'wakeups', 'resume_flags')]
+    _fields_ += [(name, F64) for name in ('interval', 'waited', 'port_waited')]
+
+
 class WorkerPollState(ctypes.Structure):
     _fields_ = [
         ("core", ctypes.c_void_p),
@@ -102,6 +107,8 @@ class WorkerPollState(ctypes.Structure):
         ("native_media_services", U64), ("native_media_yields", U64), ("native_codec_services", U64),
         ("service_model", ctypes.c_void_p),
         ("error", ctypes.c_char * 512),
+        ("yield_counts", ctypes.c_void_p),
+        ("pacer_wait", PacerWaitState),
     ]
 
 
@@ -118,11 +125,28 @@ _SCHEDULE_PACK, _SCHEDULE_OFFSET = _snapshot_pack('scheduled', 'exchange_codec_l
 _TICK_PACK, _TICK_OFFSET = _snapshot_pack('tick_period', 'native_ticks', '7Q')
 
 
+YIELD_REASONS = dict(enumerate((
+    'unarmed', 'deadline', 'pending_irq', 'panel_latch', 'missing_media',
+    'service_boundary', 'console_unsupported', 'console_ready', 'clock_failure',
+    'pacing_wait', 'int0_vector_guard', 'irq_vector_guard', 'irq_stack_guard',
+    'exchange_idle', 'tx_reset_or_resampler', 'clock_retune', 'resampler_config',
+    'line_frame_boundary', 'comparison_clock_batch', 'comparison_line_or_probe',
+    'comparison_vector_guard', 'comparison_stack_guard', 'comparison_stack_full',
+    'comparison_tx_range', 'comparison_clock_retune', 'comparison_resampler_config',
+    'comparison_frame_boundary', 'comparison_frame_state', 'comparison_send',
+    'comparison_receive')))
+YIELD_REASONS.update({40: 'media_edge', 41: 'media_error',
+                      42: 'dsp_transition', 43: 'dsp_error', 44: 'pacer_event'})
+
+
 class WorkerPoll:
     """The structure and the engine's handle on the native poll."""
 
     def __init__(self) -> None:
         self.diagnostic_resumes = 0
+        import os
+        self.profile_enabled = os.environ.get('COURIER_WORKER_YIELDS', '0') == '1'
+        self.arm_counts = {}
         library = load_library()
         layout = (ctypes.c_uint64 * 4)()
         library.courier_worker_poll_layout(layout)
@@ -131,8 +155,16 @@ class WorkerPoll:
         if tuple(layout) != expected:
             raise RuntimeError(f"WorkerPollState layout {tuple(layout)} != {expected}")
         self.state = WorkerPollState()
+        self._yield_counts = (U64 * 48)()
+        if self.profile_enabled:
+            self.state.yield_counts = ctypes.addressof(self._yield_counts)
         self.function = ctypes.cast(library.courier_worker_poll, ctypes.c_void_p).value
         self.context = ctypes.addressof(self.state)
+
+    def yield_profile(self):
+        return {'native': {YIELD_REASONS.get(k, str(k)): int(v) for k, v in enumerate(self._yield_counts) if v},
+                'arm': dict(self.arm_counts),
+                'pacer': {name: getattr(self.state.pacer_wait, name) for name in ('waits', 'wakeups', 'waited', 'port_waited')}}
 
     def seed_snapshot(self, core, machine, bridge, base, deadline, scheduled,
                       dsp_active, tick_period, timer_period, line_period):
