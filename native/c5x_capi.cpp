@@ -2072,6 +2072,11 @@ uint64_t courier_c5x_complex_block_hits(void *handle)
     return handle ? static_cast<C5xCore *>(handle)->complex_block_hits() : 0;
 }
 
+uint64_t courier_c5x_filter_block_hits(void *handle)
+{
+    return handle ? static_cast<C5xCore *>(handle)->filter_block_hits() : 0;
+}
+
 #ifdef C5X_PROFILE_WORK
 int courier_c5x_clear_work_profile(void *handle)
 {

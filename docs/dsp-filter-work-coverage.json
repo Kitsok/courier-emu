@@ -1,0 +1,374 @@
+{
+  "return_only": {
+    "result": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "dsp_work_profiled": true,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "modem_failure": null,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 32.18278345296858,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 452895.749298846,
+              "cpu": 9.329282714,
+              "instructions": 38621183,
+              "batches": 100748,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 452915.243624629,
+              "cpu": 23.530119114,
+              "instructions": 104887915,
+              "batches": 116371,
+              "zero_batches": 24393,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "dsp_work": {
+              "file": "dsp-work.json",
+              "windows": 4,
+              "incomplete": null
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 452895.750228075,
+              "cpu": 9.059822437,
+              "instructions": 38622208,
+              "batches": 109374,
+              "zero_batches": 23684,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 452915.243757884,
+              "cpu": 22.791277317,
+              "instructions": 105162752,
+              "batches": 124382,
+              "zero_batches": 24882,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "dsp_work": {
+              "file": "dsp-work.json",
+              "windows": 4,
+              "incomplete": null
+            }
+          }
+        }
+      }
+    },
+    "phases": {
+      "caller": [
+        {
+          "first_frame": 108,
+          "end_frame": 118,
+          "executed": 6776351,
+          "native": 1196528,
+          "native_percent": 17.657408832570805,
+          "filter_executed": 1111418,
+          "filter_native": 302582
+        },
+        {
+          "first_frame": 118,
+          "end_frame": 128,
+          "executed": 6777333,
+          "native": 1195423,
+          "native_percent": 17.638546018028034,
+          "filter_executed": 1110186,
+          "filter_native": 302218
+        },
+        {
+          "first_frame": 128,
+          "end_frame": 138,
+          "executed": 6764819,
+          "native": 1193886,
+          "native_percent": 17.648454452365982,
+          "filter_executed": 1108800,
+          "filter_native": 301882
+        },
+        {
+          "first_frame": 138,
+          "end_frame": 302,
+          "executed": 148167389,
+          "native": 8005868,
+          "native_percent": 5.403259147665753,
+          "filter_executed": 4672598,
+          "filter_native": 1189608
+        }
+      ],
+      "answerer": [
+        {
+          "first_frame": 108,
+          "end_frame": 118,
+          "executed": 2933633,
+          "native": 388949,
+          "native_percent": 13.258270547133877,
+          "filter_executed": 495432,
+          "filter_native": 0
+        },
+        {
+          "first_frame": 118,
+          "end_frame": 128,
+          "executed": 2195723,
+          "native": 216315,
+          "native_percent": 9.851652508080482,
+          "filter_executed": 275520,
+          "filter_native": 0
+        },
+        {
+          "first_frame": 128,
+          "end_frame": 138,
+          "executed": 1112107,
+          "native": 0,
+          "native_percent": 0.0,
+          "filter_executed": 0,
+          "filter_native": 0
+        },
+        {
+          "first_frame": 138,
+          "end_frame": 302,
+          "executed": 158996308,
+          "native": 6480868,
+          "native_percent": 4.07611225790224,
+          "filter_executed": 4115524,
+          "filter_native": 1154776
+        }
+      ]
+    }
+  },
+  "repeat_body": {
+    "result": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "dsp_work_profiled": true,
+      "rate_index": null,
+      "mandatory_arq": true,
+      "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+      "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+      "modem_failure": null,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 33.84994786803145,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 453292.746992677,
+              "cpu": 9.078468708,
+              "instructions": 38643712,
+              "batches": 100925,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 453311.756452088,
+              "cpu": 22.422894404,
+              "instructions": 103249619,
+              "batches": 116546,
+              "zero_batches": 24388,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "dsp_work": {
+              "file": "dsp-work.json",
+              "windows": 4,
+              "incomplete": null
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 453292.745527241,
+              "cpu": 8.975929136,
+              "instructions": 38758400,
+              "batches": 109530,
+              "zero_batches": 23690,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 453311.756821091,
+              "cpu": 21.819033627,
+              "instructions": 103643135,
+              "batches": 124691,
+              "zero_batches": 24876,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "dsp_work": {
+              "file": "dsp-work.json",
+              "windows": 4,
+              "incomplete": null
+            }
+          }
+        }
+      }
+    },
+    "phases": {
+      "caller": [
+        {
+          "first_frame": 108,
+          "end_frame": 118,
+          "executed": 6729276,
+          "native": 1989208,
+          "native_percent": 29.560505468939006,
+          "filter_executed": 1103410,
+          "filter_native": 1101688
+        },
+        {
+          "first_frame": 118,
+          "end_frame": 128,
+          "executed": 6866201,
+          "native": 2028233,
+          "native_percent": 29.539377015033494,
+          "filter_executed": 1124816,
+          "filter_native": 1123248
+        },
+        {
+          "first_frame": 128,
+          "end_frame": 138,
+          "executed": 6658845,
+          "native": 1968142,
+          "native_percent": 29.556807524428034,
+          "filter_executed": 1091552,
+          "filter_native": 1090026
+        },
+        {
+          "first_frame": 138,
+          "end_frame": 298,
+          "executed": 145238775,
+          "native": 11175901,
+          "native_percent": 7.694846641332523,
+          "filter_executed": 4473616,
+          "filter_native": 4466826
+        }
+      ],
+      "answerer": [
+        {
+          "first_frame": 108,
+          "end_frame": 118,
+          "executed": 3139559,
+          "native": 991497,
+          "native_percent": 31.58077296843283,
+          "filter_executed": 555912,
+          "filter_native": 555072
+        },
+        {
+          "first_frame": 118,
+          "end_frame": 128,
+          "executed": 1992572,
+          "native": 388819,
+          "native_percent": 19.51342285247409,
+          "filter_executed": 217980,
+          "filter_native": 217714
+        },
+        {
+          "first_frame": 128,
+          "end_frame": 138,
+          "executed": 1105333,
+          "native": 0,
+          "native_percent": 0.0,
+          "filter_executed": 0,
+          "filter_native": 0
+        },
+        {
+          "first_frame": 138,
+          "end_frame": 298,
+          "executed": 156498875,
+          "native": 9313780,
+          "native_percent": 5.9513399057980445,
+          "filter_executed": 4012540,
+          "filter_native": 4006604
+        }
+      ]
+    }
+  }
+}

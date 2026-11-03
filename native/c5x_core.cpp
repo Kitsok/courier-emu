@@ -99,6 +99,7 @@ void C5xCore::reset()
     m_delay_move_last_pc = m_delay_move_last_address = 0;
     m_pc = m_op = 0;
     m_complex_block_hits = 0;
+    m_filter_block_hits = 0;
     m_acc = m_accb = m_preg = 0;
     m_treg0 = m_treg1 = m_treg2 = 0;
     std::fill(std::begin(m_ar), std::end(m_ar), 0);
@@ -1711,6 +1712,94 @@ bool C5xCore::try_complex_block(uint64_t target)
     return executed;
 }
 
+// Five-tap MADS helper observed throughout initial V.32 training.
+bool C5xCore::try_filter_block(uint64_t target)
+{
+    static constexpr uint16_t code[]={0x081f,0xb805,0x881f,0x7804,0xbe59,
+        0xbb04,0xaa90,0xbe04,0x7805,0x7790,0x7780,0xa080,0x2f7b,0x9880};
+    constexpr uint16_t first_pc=0x8aae, end_pc=0x8abc;
+    if (m_previous_pc!=first_pc || m_pc!=first_pc+1 || m_op!=code[0]
+        || m_maps_dirty || m_trace_data_writes || m_trace_register==0x1f
+        || (m_pmst.braf && m_paer<end_pc) || m_repeat_active || m_rptc || m_in_delay_slot
+        || m_delay_condition_pending || step_is_rare() || m_pmap[first_pc]!=3
+        || !std::equal(std::begin(code),std::end(code),m_program.data()+first_pc))
+        return false;
+    const unsigned arp=m_st0.arp;
+    auto advance = [&](uint16_t address,int step) -> uint16_t {
+        if ((m_cbcr&8) && arp==(m_cbcr&7))
+            return address==m_cber1 ? m_cbsr1 : uint16_t(address+step);
+        if ((m_cbcr&0x80) && arp==((m_cbcr>>4)&7))
+            return address==m_cber2 ? m_cbsr2 : uint16_t(address+step);
+        return uint16_t(address+step);
+    };
+    uint16_t taps[5], address=advance(m_ar[arp],4);
+    for (auto &tap:taps) { tap=address; address=advance(address,-1); }
+    const uint16_t moved=advance(address,5), final=advance(moved,-1);
+    // DMOV's external/register cases have separate diagnostic side effects.
+    if (!internal_data(moved) || !internal_data(final)) return false;
+    const uint16_t pma=uint16_t(m_bmar+5);
+    MacSpan coefficients;
+    if (!mac_program_span(pma,5,coefficients)) return false;
+    const unsigned cycles=13+bmar_mac_cycles(pma,taps[0],5,false);
+    if (target-m_cycles<cycles || m_event_deadline<=m_cycles+cycles) return false;
+    // The observed RPTB ends before RETC. Leave that edge to ordinary
+    // stepping; a non-repeating body may include its return when it fits.
+    const bool with_return=!m_pmst.braf && target-m_cycles>=cycles+4
+        && m_event_deadline>m_cycles+cycles+4 && m_program[end_pc]==0xef00;
+    const uint16_t addresses[]={taps[0],taps[1],taps[2],taps[3],taps[4],
+        moved,uint16_t(moved+1),final,uint16_t(final+1),uint16_t(m_st0.dp|0x7b)};
+    struct Cell { uint16_t *value; uint64_t *reads; } cells[10];
+    for (unsigned i=0;i<10;++i) {
+        const uint8_t kind=m_dmap[addresses[i]];
+        const bool write=i==6 || i==7 || i==8;
+        if (!(kind&7) || (write &&
+            ((((kind>>3)&3)==3 && addresses[i]>=first_pc && addresses[i]<end_pc)
+             || (m_call_tdm_active && addresses[i]==m_line_dac_slot)))) return false;
+        cells[i]={&data_cell(kind,addresses[i]),&(&m_map.data_registers)[kind&7]};
+    }
+    auto load = [&](unsigned cell) { ++*cells[cell].reads; return *cells[cell].value; };
+    auto store = [&](unsigned cell,uint16_t value) {
+        ++m_data_write_counts[addresses[cell]]; *cells[cell].value=value;
+    };
+#ifdef C5X_PROFILE_WORK
+    for (unsigned i=0;i<14;++i) record_work(uint16_t(first_pc+i),code[i],true);
+    if (with_return) record_work(end_pc,0xef00,true);
+#endif
+    // LAMM/ADD/SAMM @BMAR. No register observer is admitted for this write.
+    ++m_map.data_registers;
+    m_bmar=uint16_t(ADD(m_bmar,5,false)); ++m_data_write_counts[0x1f];
+    int32_t acc=0,preg=0;
+    uint16_t temp=0;
+    for (unsigned tap=0;tap<5;++tap) {
+        temp=load(tap);
+        acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(coefficients.values[tap]));
+    }
+    *coefficients.reads+=5;
+    acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+    // Keep both delay-line moves and the later direct operand read ordered.
+    store(6,load(5)); store(8,load(7));
+    const uint32_t norm=uint32_t(acc);
+    m_st1.tc=norm==0 || (((norm>>31)^(norm>>30))&1);
+    if (!m_st1.tc) acc=int32_t(norm<<1);
+    const uint16_t addend=load(9);
+    const uint32_t extended=m_st1.sxm ? uint32_t(int32_t(int16_t(addend))) : addend;
+    acc=ADD(uint32_t(acc),extended<<15,false);
+    store(7,uint16_t(uint32_t(acc)>>16));
+    m_acc=acc; m_preg=preg; m_treg0=temp; // MADS does not load TREG1/2.
+    m_ar[arp]=final;
+    if (arp==0 && !m_pmst.ndx) m_arcr=m_indx=final;
+    m_rpt_start=m_rpt_end=0x8ab4; m_rptc=0; m_repeat_active=false;
+    m_pc=end_pc; m_previous_pc=end_pc-1; m_op=code[13];
+    if (with_return) { m_pc=POP_STACK(); m_previous_pc=end_pc; m_op=0xef00; }
+    m_map.program_external+=13+unsigned(with_return); // First opcode already fetched.
+    m_instructions+=14+unsigned(with_return); m_cycles+=cycles+(with_return ? 4 : 0);
+    m_tail_cycle=m_cycles;
+    m_condition_start=m_xc_condition=condition_state();
+    ++m_filter_block_hits;
+    return true;
+}
+
 void C5xCore::op_group_be() { s_opcode_table_be[m_op & 0xff](this); }
 void C5xCore::op_group_bf() { s_opcode_table_bf[m_op & 0xff](this); }
 
@@ -2171,6 +2260,9 @@ void C5xCore::threaded(C5xCore *core)
     } else if constexpr(F == &C5xCore::op_lacc_s16_mem) {
         if (core->m_previous_pc==0xb950 && core->m_native_training_block)
             translated=core->try_complex_block(core->m_run_target);
+    } else if constexpr(F == &C5xCore::op_lamm) {
+        if (core->m_previous_pc==0x8aae && core->m_native_training_block)
+            translated=core->try_filter_block(core->m_run_target);
     }
     if (!translated) {
 #ifdef C5X_PROFILE_WORK

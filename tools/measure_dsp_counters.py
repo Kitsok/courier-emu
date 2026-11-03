@@ -25,6 +25,9 @@ def worker(args):
     if args.case == 'training':
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
     complex_case=args.case in ('complex','complex-mixed')
+    filter_case=args.case in ('filter','filter-saram')
+    if filter_case:
+        code=[0xbc06,0xbf00,0xbe42,0x8b89]
     if complex_case:
         code = [0xbc07 if args.case=='complex-mixed' else 0xbc06,0xbf00,0xbe42,0x8b89]
     if args.case in ('madd-circular', 'mads-circular'):
@@ -34,6 +37,18 @@ def worker(args):
         for address in range(0x2f0, 0x310):
             core.set_data(address, address ^ 0x55aa)
         core.set_pc(0x6000)
+        if filter_case:
+            core.host_write(7,0x30);core.host_write(0x26,0x10)
+            base,pma=(0x810,0x2200) if args.case=='filter-saram' else (0x310,0x7000)
+            filter_addresses=sorted(set(range(0x300,0x380))|set(range(base-8,base+24)))
+            for a in filter_addresses:core.set_data(a,((a*137)^0xaaaa)&65535)
+            core.load_program(struct.pack('<5H',30000,0xb9b0,0x7fff,0x8000,73),pma)
+            core.step(4)
+            helper=[0x081f,0xb805,0x881f,0x7804,0xbe59,0xbb04,0xaa90,
+                    0xbe04,0x7805,0x7790,0x7780,0xa080,0x2f7b,0x9880,0xef00]
+            header=[0xbf09,base,0xbf80,pma-5,0x881f,0x7a80,0x8aae,0x7980,0x6000]
+            core.load_program(struct.pack('<15H',*helper),0x8aae)
+            core.load_program(struct.pack('<9H',*header),0x6000);core.set_pc(0x6000)
         if complex_case:
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,args.cbcr)
@@ -80,9 +95,14 @@ def worker(args):
         if complex_query:
             complex_query.argtypes=[ctypes.c_void_p];complex_query.restype=ctypes.c_uint64
         def complex_hits():return int(complex_query(core.handle)) if complex_query else 0
+        filter_query=getattr(core.library,'courier_c5x_filter_block_hits',None)
+        if filter_query:
+            filter_query.argtypes=[ctypes.c_void_p];filter_query.restype=ctypes.c_uint64
+        def filter_hits():return int(filter_query(core.handle)) if filter_query else 0
         core.step_cycles(100000)
         before_hits=hits()
         before_complex_hits=complex_hits()
+        before_filter_hits=filter_hits()
         with open(args.folder / 'control', 'w', buffering=1) as control, open(args.folder / 'ack') as ack:
             def command(value):
                 control.write(value + '\n')
@@ -95,7 +115,8 @@ def worker(args):
                 elapsed = time.process_time() - start
             finally:
                 command('disable')
-        addresses=(complex_addresses if complex_case else
+        addresses=(filter_addresses if filter_case else
+                   complex_addresses if complex_case else
                    range(0x300,0x380) if args.case=='training' else
                    range(0x300,0x340) if args.case in ('madd-circular','mads-circular')
                    else range(0x2f0,0x310))
@@ -103,9 +124,12 @@ def worker(args):
                  [core.data(a) for a in addresses],
                  [core.data_write_count(a) for a in addresses]]
         if complex_case:state.append([core.register(a) for a in range(9,0x20)])
+        if filter_case:state += [[core.register(a) for a in range(9,0x20)],
+                                core.stack(),core.data_write_count(0x1f)]
         (args.folder / 'kernel.json').write_text(json.dumps(dict(
             cpu_seconds=elapsed, block_hits=hits()-before_hits,
             complex_block_hits=complex_hits()-before_complex_hits,
+            filter_block_hits=filter_hits()-before_filter_hits,
             retired_instructions=retired, executed_cycles=executed_cycles,
             sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
 
@@ -114,7 +138,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex', 'complex-mixed',
-                                         'madd-circular', 'mads-circular'], default='dmov')
+                                         'madd-circular', 'mads-circular',
+                                         'filter', 'filter-saram'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,
                         help='circular-buffer configuration for training/complex cases')
