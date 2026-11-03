@@ -115,3 +115,13 @@ and their invalidating port/memory callbacks. Unlike pacing waits, that
 handoff work can matter while A53 is behind real time. Establishing safe
 reuse across those boundaries still requires measured attribution and
 state-equivalence checks.
+
+## Actual rebuilt A53 call
+
+The subsequent rebuilt physical call confirms that this host does not
+currently benefit from pacing waits: zero waits were recorded while CPU
+remained saturated and media lag reached approximately 80 seconds. The
+physical modem answered but did not connect. Unarmed snapshots and DSP
+transitions dominate observed native yield reasons in that attempt.
+See `docs/physical-call-rebuilt-20261103.json` and the dated section in
+`docs/physical-call-a53.md`. No experimental-wait call was placed.

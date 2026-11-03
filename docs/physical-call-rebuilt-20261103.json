@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-03",
+  "host": "nanovax",
+  "remote_checkout": "/home/kostik/work/courier-emu",
+  "remote_revision": "e22ed4d",
+  "scope": "One physical call to 100 after user rebuild; existing emulator EEPROM copied into capture directory; native pacing explicitly disabled.",
+  "result": "FAILED: no error-corrected modem connection",
+  "emulator_result": "BUSY",
+  "physical_result": "NO CARRIER / A_FAIL",
+  "sip_answered": true,
+  "physical_answered": true,
+  "elapsed_seconds": 123.04897525399974,
+  "dial_at_seconds": 27.23051657399992,
+  "worker_cpu_percent": 101.39858001293767,
+  "cpu_method": "Delta utime+stime from worker /proc/PID/stat samples, divided by SC_CLK_TCK and elapsed wall time.",
+  "line_frames": 302,
+  "modeled_audio_seconds": 30.200000000000003,
+  "whole_attempt_modeled_audio_fraction": 0.2454307314438065,
+  "peak_media_lag_ms": 79958.8,
+  "pending_peak_samples": 343840,
+  "pacing": {
+    "input_wakeups": 0,
+    "waited_seconds": 0.0,
+    "waits": 0
+  },
+  "yield_profile": {
+    "native": {
+      "unarmed": 4750,
+      "deadline": 538,
+      "service_boundary": 1,
+      "media_edge": 10,
+      "dsp_transition": 1318
+    },
+    "arm": {
+      "attempts": 6889,
+      "armed_mode_3": 5585,
+      "declined": 1303,
+      "armed_mode_1": 1
+    },
+    "pacer": {
+      "waits": 0,
+      "wakeups": 0,
+      "waited": 0.0,
+      "port_waited": 0.0
+    }
+  },
+  "scheduler": {
+    "native_board_ticks": 5725,
+    "native_codec_services": 231,
+    "native_console_polls": 12111,
+    "native_diagnostic_resumes": 0,
+    "native_dsp_batches": 23141,
+    "native_eoi_writes": 68060,
+    "native_media_services": 24221,
+    "native_media_yields": 10,
+    "native_pacer_checks": 13889,
+    "native_pending_irqs": 4068,
+    "native_polls": 97172,
+    "native_timer_irqs": 46,
+    "native_timer_polls": 95844
+  },
+  "emulator_settings": {
+    "ARQ": "&M5",
+    "speed": "&N6",
+    "S27": 0,
+    "S54": 96
+  },
+  "remote_evidence": "/tmp/courier-physical-rebuilt-20261103-092544",
+  "physical_modem_commands": "No direct commands sent by probe; existing mgetty answer and reinitialization routines ran unchanged.",
+  "saved_emulator_settings_changed": false,
+  "physical_settings_changed_by_agent": false,
+  "temperature_collected": false,
+  "interpretation": [
+    "Network/host unavailability did not cause this failure: SIP 200/ACK and physical RING/ATA were observed.",
+    "Worker remains CPU-saturated and substantially behind real-time audio.",
+    "Zero pacing waits mean enabling experimental native waiting would not exercise its changed path here; no second physical call was placed.",
+    "302 frames/123.05 s versus previous 280/119.84 s is not a controlled performance comparison; no significant whole-call speedup is established."
+  ],
+  "physical_answer_excerpt": "\n11/03 09:26:31 SB0    select returned 1\n11/03 09:26:31 SB0   checking lockfiles, locking the line\n11/03 09:26:31 SB0   makelock(ttyUSB0) called\n11/03 09:26:31 SB0   do_makelock: lock='/var/lock/LCK..ttyUSB0'\n11/03 09:26:31 SB0   lock made\n11/03 09:26:31 SB0  wfr: waiting for ``RING''\n11/03 09:26:31 SB0   got: [0a][0d][0a]RING[0d]\n11/03 09:26:31 SB0    CND: RING\n11/03 09:26:31 SB0   wfr: rc=0, drn=0\n11/03 09:26:31 SB0    CND: check no: 'none'\n11/03 09:26:31 SB0    CND: check vs: all\n11/03 09:26:31 SB0  send: ATA[0d]\n11/03 09:26:31 SB0  waiting for ``CONNECT''\n11/03 09:26:31 SB0   got: ATA[0d]\n11/03 09:26:31 SB0    CND: OKATA[0d][0a]NO CARRIER\n11/03 09:27:33 SB0  found action string: ``NO CARRIER''\n11/03 09:27:33 ##### failed A_FAIL dev=ttyUSB0, pid=467, caller='none', conn='', name=''\n",
+  "whole_attempt_profile": {
+    "event": "cycles:u",
+    "lost_samples": 0,
+    "shares_percent": {
+      "native_c5x_and_devices": 46.48,
+      "python": 31.25,
+      "native_x86": 18.7,
+      "libc": 1.78,
+      "ctypes": 1.39
+    },
+    "top_symbols_percent": {
+      "x86_run_batch_traced": 15.25,
+      "python_eval_frame": 13.6
+    },
+    "limit": "Whole-attempt sample shares are not a controlled before/after speedup measurement."
+  },
+  "probe_sha256": "3cd4c4118a763843fdf8a5cee5b9e793748df6f90f83315c1b2df4de5371aa31"
+}

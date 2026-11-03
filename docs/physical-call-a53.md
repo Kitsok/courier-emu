@@ -270,3 +270,50 @@ Subsequent user instruction prohibits physical-modem settings changes;
 all further work is confined to the emulator and calls through the existing
 physical configuration. Temperature sampling on nanovax is also disabled
 as requested.
+
+## Rebuilt checkout and physical call, 2026-11-03
+
+The user rebuilt the clean nanovax checkout at `e22ed4d`, including the
+latest diagnostic buffering and conservative pacing default. Both parallel
+emulator test services were inactive; the existing `mgetty.service` was
+running. No emulator was already running. The old temporary probe had been
+removed; the same bounded probe was restored under `/tmp` with an optional
+read-only yield capture wrapper. It used a copy of the configured EEPROM,
+confirmed &M5/&N6, S27=0 and S54=96, then dialed physical modem 100 with
+experimental native waiting explicitly disabled.
+
+SIP registration and INVITE succeeded, with 200/ACK and an RTP re-INVITE.
+The physical modem logged RING and ATA at 09:26:31, then NO CARRIER/A_FAIL
+at 09:27:33. The emulator reported BUSY after peer hangup. This was a failed
+modem connection. Host/network unavailability did not cause this attempt's
+failure. Earlier local pacing validation failures also involved only two
+notebook loopback peers; nanovax availability cannot explain those.
+
+The run lasted 123.05 seconds and delivered 302 100-ms line frames, or 30.2
+seconds of modeled audio (24.5% of real time over the whole attempt,
+including boot/setup). Worker CPU averaged 101.4% of one core. Peak media
+lag reached 79.96 seconds, with a pending receive peak of 343840 samples.
+The previous attempt's 280 frames in 119.84 seconds is not a controlled
+comparison and establishes no significant whole-call speedup.
+
+There were zero pacing waits and zero paced seconds. Enabling the native
+wait experiment would therefore not exercise its changed path here; no
+second physical call was made. Native yield attribution recorded 4750
+unarmed snapshots, 1318 DSP transitions, 538 deadlines, 10 media edges and
+one other service boundary. Rearming was attempted 6889 times, including
+1303 declines. These are whole-attempt counts, not training-only counts.
+
+The worker's user-cycle profile lost no samples. Flat shares were 46.48%
+native C5x/devices, 31.25% Python and 18.70% native x86. The largest symbols
+were traced x86 `run_batch` (15.25%) and Python evaluation (13.60%). Sample
+shares are not CPU-time savings. They support investigating unarmed
+snapshot boundaries and the actual DSP training workload rather than
+positive-lead pacing for this saturated host.
+
+No direct commands were sent to the physical modem by the probe. Its
+existing mgetty answer/reinitialization routines ran unchanged. Saved
+emulator configuration and physical configuration were not edited; no
+temperatures were read. All probe/emulator processes stopped afterward.
+Structured evidence is in `docs/physical-call-rebuilt-20261103.json`.
+Full remote capture: `/tmp/courier-physical-rebuilt-20261103-092544`.
+The error-corrected physical connection goal remains unmet.
