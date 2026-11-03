@@ -130,31 +130,35 @@ class NativeInterpreter:
             if cpu.native_write_trace and self.write_trace is None:
                 self.write_trace = bytearray(4096 * 32)
             self.signature = signature
-        host_io = ()
+        host_function = host_context = host_ports = host_base = None
+        poll_function = poll_context = poll_state = None
         polling = False
         if cpu.native_host_io is not None:
-            # The instruction count a port model sees is the harness's own:
-            # its base plus everything retired before this batch.
-            host_io = (*cpu.native_host_io, cpu.native_host_base + cpu.retired)
+            host_function, host_context, host_ports = cpu.native_host_io
+            # The port model sees the in-flight instruction timestamp.
+            host_base = cpu.native_host_base + cpu.retired
             if cpu.native_poll is not None and cpu._clock_callback is not None:
                 polling = True
-                host_io += (*cpu.native_poll, (cpu.retired, cpu._clock_next, cpu._clock_period))
+                poll_function, poll_context = cpu.native_poll
+                poll_state = (cpu.retired, cpu._clock_next, cpu._clock_period)
         batching = cpu.native_mmio_callback is not None and cpu.native_mmio_batch
-        if batching:
-            host_io = (*host_io, *((None,) * (7 - len(host_io))), self.mmio_events)
         if cpu.native_before_run is not None:
             cpu.native_before_run()
         timer_reads = cpu.native_timer_reads
         if timer_reads is not None:
             timer_reads.prepare(cpu.native_host_base + cpu.retired)
-            host_io = (*host_io, *((None,) * (8 - len(host_io))), timer_reads.buffer)
-            if timer_reads.model_buffer is not None:
-                host_io += (timer_reads.model_buffer,)
-        if cpu.native_write_trace:
-            host_io = (*host_io, *((None,) * (10 - len(host_io))), self.write_trace)
+        # A fixed positional call avoids rebuilding and padding several
+        # intermediate tuples at every native/Python boundary. Optional
+        # buffers keep their previous positions and None means disabled.
         done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = self.run(
             cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
-            cpu.native_int_mode, self.int_counts, *host_io,
+            cpu.native_int_mode, self.int_counts,
+            host_function, host_context, host_ports, host_base,
+            poll_function, poll_context, poll_state,
+            self.mmio_events if batching else None,
+            timer_reads.buffer if timer_reads is not None else None,
+            timer_reads.model_buffer if timer_reads is not None else None,
+            self.write_trace if cpu.native_write_trace else None,
         )
         self.exit_reason = reason
         if cpu.native_after_run is not None:

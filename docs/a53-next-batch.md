@@ -41,3 +41,21 @@ A short notebook counter smoke run matches all seven final state hashes.
 Timing varies in both directions and is not evidence of an A53 gain. This
 candidate requires the final target comparison before retention; raw
 notebook smoke results are in `x86-fetch-notebook-smoke.json`.
+
+## Python native-batch argument assembly
+
+Pass the fixed native x86 argument layout directly instead of repeatedly
+concatenating, padding and expanding optional argument tuples. Native host
+I/O, polling, buffered MMIO, legacy/live timer buffers and write traces
+retain their existing positions. Keep callback and timer preparation /
+completion order unchanged, including publishing state before observers.
+The change removes Python allocations at each batch boundary without
+increasing instruction budgets or postponing device callbacks.
+
+The combined wrapper/native path passes 40 focused x86 checks and 52
+focused timer, write-trace, worker-deadline and pacer checks (1.82 seconds
+for the latter). The first wider invocation included firmware-scale cases
+and hit restricted socket fixtures: 52 passed, two failed and three errored
+at socket creation. The focused rerun permits local socket fixtures and
+excludes the five firmware-scale cases. No physical call was made for an
+individual stage. Target measurements and the final batch call follow.
