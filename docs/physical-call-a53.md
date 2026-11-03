@@ -556,3 +556,46 @@ block disabled and in one enabled repeat. Thus the first local failure
 is intermittent and does not establish an optimization regression or
 an intrinsically unusable saved profile. Preserve the complete profile
 for future attribution; details are in `dsp-exact-profile-notebook.md`.
+
+## Final native V.32 block batch call
+
+The corrected native-entry build at 14033ef ran one physical attempt
+using isolated library 66b5df81… and the unchanged temporary emulator
+EEPROM profile. The native opt-in was enabled. The extra Python hit hook
+was omitted; media/packet recording and 49-Hz perf sampling remained.
+The normal library and saved configuration/EEPROM hashes are unchanged.
+
+SIP registration and INVITE both received 200 responses. The physical
+modem answered at 15:00:52 and reported NO CARRIER/A_FAIL at 15:01:03.
+The emulator returned BUSY at about 67.6 seconds; the probe ended after
+68.81 seconds. No error-corrected modem connection was established.
+Worker CPU averaged 101.86% of one core. It sent 4.0 seconds of PCMU and received 10.48 seconds, with 145 line
+frames and peak lateness 41.63 seconds. Pacing waits were zero. This is
+a much shorter physical interval than the preceding 63-second attempt;
+its totals cannot establish a throughput improvement or regression.
+
+The six-second interior interval at monotonic 24311–24317 has 297 user
+cycle samples, none lost: DSP/devices 53.58%, x86 26.18%, Python 14.53%.
+The short interval and changed handshake stage limit precision and
+comparison with older 48-second profiles. Physical native-body counts
+were not collected without the Python hook. Kernel gains remain separate
+from the unresolved initial-handshake throughput.
+
+Deduplicated PCMU media contains 523 physical packets (10.46 seconds),
+one initial PBX packet, and 200 outgoing packets (4.0 seconds). Physical
+input has maximum packet gap 22.00 ms; output reaches 443.61 ms. With
+decoded packet RMS >500, output activity starts 6.360 seconds after
+physical input activity, leaving only 2.422 seconds before physical
+input ends. This repeats the delayed-response pattern already observed
+in the earlier diagnostic attempt. No outgoing modulation correctness
+claim is made. A shorter timeout must not be attributed to a specific
+physical setting or native arithmetic defect without further evidence.
+
+Full results and timing method are in `physical-call-v32-native-20261103.json`.
+All test/capture processes finished and normal mgetty remained active.
+No direct physical modem commands or temperature queries were made.
+The next optimization selection should cover the initial response phase
+and quantify real interpreter work; short local trace windows and
+accounted instruction totals alone can be misleading. IDLE fast-forward
+also increments the historical instruction counter for skipped clocks,
+so native-hit fractions of that total are not CPU-work fractions.
