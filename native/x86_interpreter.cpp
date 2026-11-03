@@ -112,6 +112,15 @@ struct Core {
     uint32_t fetch(int n=1) { uint32_t v=0; for(int i=0;i<n;++i) {v|=uint32_t(mem[phys(r[CS],r[IP])])<<(i*8); r[IP]=(r[IP]+1)&65535;} return v; }
     void check(uint32_t a,int n,int p,uint32_t value=0) {
         if(a+unsigned(n)>mask+1) yield(2);
+        // Ordinary word accesses need both permissions and no watch bit.
+        // memcpy keeps unaligned guard pairs defined on every host. Other
+        // flag bits do not affect the ordinary access decision.
+        if(n==2) {
+            uint16_t pair;
+            std::memcpy(&pair,guard+a,sizeof(pair));
+            const unsigned watched=p==1?16:32;
+            if((pair&((p|watched)*0x101u))==unsigned(p)*0x101u) return;
+        }
         // Mapping regions are page-aligned. Watched bytes force a fallback,
         // including straddling accesses (conservative w.r.t. Python hooks).
         for(int i=0;i<n;++i) if(!(guard[a+i]&p) || (guard[a+i]&(p==1?16:32))) {
