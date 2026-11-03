@@ -840,6 +840,11 @@ private:
         return {m_op & 0x80 ? (m_op >> 3) & 15u : 16u, m_op & 0x7fu};
     }
     uint16_t GET_REPEAT_ADDRESS(const RepeatAddress &operand);
+    struct MacSpan { uint16_t *values; uint64_t *reads; };
+    bool mac_data_span(uint16_t first, unsigned words, MacSpan &span);
+    bool mac_program_span(uint16_t first, unsigned words, MacSpan &span);
+    bool try_repeat_mac(uint16_t pma, bool move, bool c2x,
+                        unsigned &count, uint16_t &dma);
     uint16_t GET_ADDRESS();
     uint16_t &data_cell(uint8_t kind, uint16_t address);
     bool GET_ZLVC_CONDITION(int zlvc, int zlvc_mask);

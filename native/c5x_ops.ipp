@@ -1957,6 +1957,98 @@ void C5xCore::op_lts()
 //
 // All four load TREG0 with the data operand.
 
+// Direct spans are borrowed only while the whole repeated operation has
+// no mapped-register, tracing, circular-address or codec-write side effects.
+bool C5xCore::mac_data_span(uint16_t first, unsigned words, MacSpan &span)
+{
+    if ((m_dmap[first] & 7) != 1) return false;
+    const unsigned end = unsigned(first) + words;
+    auto within = [&](unsigned start, unsigned size) {
+        return first >= start && end <= start + size;
+    };
+    if (!(within(C5X_B2_FIRST, C5X_B2_WORDS)
+          || within(C5X_B0_FIRST, C5X_B0_WORDS)
+          || within(C5X_B1_FIRST, C5X_B1_WORDS))) return false;
+    span = {m_data.data() + first, &m_map.data_daram};
+    return true;
+}
+
+bool C5xCore::mac_program_span(uint16_t first, unsigned words, MacSpan &span)
+{
+    const unsigned end = unsigned(first) + words;
+    if (end > 65536) return false;
+    switch (m_pmap[first]) {
+    case 0:
+        if (end > m_rom_words) return false;
+        span = {m_rom.data() + first, &m_map.program_rom};
+        return true;
+    case 1:
+        span = {m_data.data() + C5X_B0_FIRST + first - C5X_B0_PROGRAM_FIRST,
+                &m_map.program_daram};
+        return true;
+    case 2:
+        if (end > m_saram_program_first + m_saram_words) return false;
+        span = {m_saram.data() + saram_data_address(first), &m_map.program_saram};
+        return true;
+    case 3:
+        // External endpoints alone cannot prove that a range does not cross
+        // an intervening on-chip window.
+        if (m_pmst.ram && m_saram_words && first < m_saram_program_first
+            && end > m_saram_program_first) return false;
+        if (m_st1.cnf && first < C5X_B0_PROGRAM_FIRST
+            && end > C5X_B0_PROGRAM_FIRST) return false;
+        span = {m_program.data() + first, &m_map.program_external};
+        return true;
+    default:
+        return false; // Includes absent-ROM reads and their extra counter.
+    }
+}
+
+bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
+                            unsigned &count, uint16_t &dma)
+{
+    if (m_rptc <= 0 || m_maps_dirty || m_trace_data_writes || !(m_op & 0x80))
+        return false;
+    const unsigned mode = (m_op >> 3) & 15, arp = m_st0.arp;
+    if (mode != 0 && mode != 2 && mode != 4) return false;
+    if (((m_cbcr & 8) && arp == (m_cbcr & 7))
+        || ((m_cbcr & 0x80) && arp == ((m_cbcr >> 4) & 7))) return false;
+    const int step = mode == 2 ? -1 : mode == 4 ? 1 : 0;
+    const uint16_t ea = m_ar[arp];
+    const unsigned taps = unsigned(m_rptc) + 1;
+    const int last = int(ea) + step * int(taps - 1);
+    const int low = std::min(int(ea), last), high = std::max(int(ea), last) + int(move);
+    if (low < 0 || high >= 65536) return false;
+    if (move && m_call_tdm_active && m_line_dac_slot >= low + 1
+        && m_line_dac_slot <= high) return false;
+    MacSpan data, program;
+    if (!mac_data_span(uint16_t(low), unsigned(high-low+1), data)
+        || !mac_program_span(pma, taps, program)) return false;
+    uint16_t *source = data.values + (int(ea)-low);
+    uint16_t address = ea;
+    dma = ea; count = 0;
+    do {
+        const uint16_t value = *source;
+        ++*data.reads;
+        m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
+        m_treg0 = value;
+        if (c2x && !m_pmst.trm) m_treg1 = m_treg2 = value;
+        const uint16_t coefficient = program.values[count];
+        ++*program.reads;
+        m_preg = int32_t(int16_t(value)) * int32_t(int16_t(coefficient));
+        if (move) {
+            source[1] = value;
+            ++m_data_write_counts[uint16_t(address+1)];
+        }
+        if (step) UPDATE_AR(arp, step);
+        ++count;
+        // Do not form an out-of-array pointer after the last descending tap.
+        if (m_rptc > 0) { source += step; address = uint16_t(address+step); }
+    } while (m_rptc-- > 0);
+    m_rptc = 0;
+    return true;
+}
+
 void C5xCore::op_mac()
 {
 	const auto operand = decode_repeat_address();
@@ -1968,6 +2060,10 @@ void C5xCore::op_mac()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, false, true, count, dma)) {
+        CYCLES(mac_cycles(pma, dma, count, false));
+        return;
+    }
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
@@ -1998,6 +2094,10 @@ void C5xCore::op_macd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, true, true, count, dma)) {
+        CYCLES(mac_cycles(pma, dma, count, true));
+        return;
+    }
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
@@ -2030,6 +2130,10 @@ void C5xCore::op_madd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, true, false, count, dma)) {
+        CYCLES(bmar_mac_cycles(pma, dma, count, true));
+        return;
+    }
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
@@ -2059,6 +2163,10 @@ void C5xCore::op_mads()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, false, false, count, dma)) {
+        CYCLES(bmar_mac_cycles(pma, dma, count, false));
+        return;
+    }
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
