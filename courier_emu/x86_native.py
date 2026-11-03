@@ -150,16 +150,21 @@ class NativeInterpreter:
         # A fixed positional call avoids rebuilding and padding several
         # intermediate tuples at every native/Python boundary. Optional
         # buffers keep their previous positions and None means disabled.
-        done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = self.run(
-            cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
-            cpu.native_int_mode, self.int_counts,
-            host_function, host_context, host_ports, host_base,
-            poll_function, poll_context, poll_state,
-            self.mmio_events if batching else None,
-            timer_reads.buffer if timer_reads is not None else None,
-            timer_reads.model_buffer if timer_reads is not None else None,
-            self.write_trace if cpu.native_write_trace else None,
-        )
+        if host_function is None and not batching and timer_reads is None and not cpu.native_write_trace:
+            result = self.run(cpu.regs, cpu.memory, self.guard, self.fast_out,
+                              self.io_events, count, cpu.native_int_mode, self.int_counts)
+        else:
+            result = self.run(
+                cpu.regs, cpu.memory, self.guard, self.fast_out, self.io_events, count,
+                cpu.native_int_mode, self.int_counts,
+                host_function, host_context, host_ports, host_base,
+                poll_function, poll_context, poll_state,
+                self.mmio_events if batching else None,
+                timer_reads.buffer if timer_reads is not None else None,
+                timer_reads.model_buffer if timer_reads is not None else None,
+                self.write_trace if cpu.native_write_trace else None,
+            )
+        done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = result
         self.exit_reason = reason
         if cpu.native_after_run is not None:
             # Before anything else in Python sees the state a native poll kept.

@@ -91,3 +91,14 @@ invalid run in `dsp-return-fixture-invalid.json`; its return timings are
 not evidence of native-return performance. Its non-return control also
 shows unnecessary tail-guard overhead. Test the tail opcode first so the
 usual non-return case avoids budget/deadline checks for that extension.
+
+### Preserve the short plain-CPU binding
+
+A small A53 wrapper-only check (10,000 four-instruction batches per
+repetition, three alternating repetitions) initially reduces configured
+host/timer/trace plumbing CPU by 13.62%, but adds 6.63% for a plain CPU
+because its native binding now parses eleven unused optional arguments.
+Keep a direct eight-argument call when no optional service is present.
+The configured path retains fixed positional arguments. 47 focused
+native x86/timer/trace checks pass after this refinement. This measures
+boundary plumbing, not a real modem workload or whole-call CPU savings.
