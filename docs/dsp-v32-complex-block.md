@@ -122,3 +122,28 @@ these checks into the matching first-opcode wrappers before retaining
 this common-path cost. This follow-up remains unmeasured; do not claim
 the kernel gains as an application speedup or physical connection.
 Raw runs and build manifest are in `dsp-v32-native-arm.json`.
+
+## Restrict native admission checks to matching opcode wrappers
+
+Move each entry check into the threaded wrapper of its first opcode:
+SQRA for 879d, LACC16 for b950. Other opcode wrappers no longer inspect
+native block entry PCs or flags. These checks occur after the ordinary
+first-opcode fetch and before its execution. A rejected block continues
+with that already-fetched opcode normally. An admitted block counts only
+the remaining ten or thirteen program fetches in its first body and
+commits all of its own retirement; the wrapper must not retire it again.
+Subsequent native repeat bodies still account for all fourteen fetches.
+
+This also permits admission after an ordinary block-repeat edge and at
+run entry, where the prior global checks missed the first instruction.
+The normal target/event/PCM/rare checks still run after a translated body
+before another ordinary fetch. Unsupported operands/budgets preserve
+the already-fetched opcode and instruction-level execution exactly.
+
+The notebook build and focused differential checks pass. Counter-tool
+smoke comparisons retain the same architectural digests for both complex
+layouts and the original arithmetic block. Complex hits rise slightly
+from 68601 to 68627 per million modeled cycles because more repeat/run
+entries can be admitted. These are eligibility checks without hardware
+perf events; target cost remains outstanding for this follow-up.
+Raw smoke results are in `dsp-native-entry-counter-smoke.json`.

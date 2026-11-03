@@ -1540,7 +1540,8 @@ bool C5xCore::try_training_block(uint64_t target)
 {
     static constexpr uint16_t code[] = {0x528a,0x8d7d,0x8c7e,0x7304,0x557e,
         0x8d7e,0x547d,0xbe03,0x627e,0x61a0,0x6290};
-    if (m_pc != 0x879d || m_maps_dirty || m_trace_data_writes
+    if (m_previous_pc != 0x879d || m_pc != 0x879e || m_op != code[0]
+        || m_maps_dirty || m_trace_data_writes
         || m_pmst.braf || m_repeat_active || m_rptc || m_in_delay_slot
         || m_delay_condition_pending
         || ((m_cbcr & 8) && (m_cbcr & 7) == 2)
@@ -1550,7 +1551,7 @@ bool C5xCore::try_training_block(uint64_t target)
         return false;
     // At this PC all supported models use external program storage. DARAM
     // operands cannot alias it; writes cannot change later code in the block.
-    if (m_pmap[m_pc] != 3 || !std::equal(std::begin(code),std::end(code),m_program.data()+m_pc))
+    if (m_pmap[0x879d] != 3 || !std::equal(std::begin(code),std::end(code),m_program.data()+0x879d))
         return false;
     auto daram = [&](uint16_t address) { return (m_dmap[address] & 0x3f) == 1; };
     const uint16_t first = m_ar[m_st0.arp], indexed = m_ar[2];
@@ -1560,7 +1561,7 @@ bool C5xCore::try_training_block(uint64_t target)
         || (m_call_tdm_active && (m_line_dac_slot == high || m_line_dac_slot == low)))
         return false;
     ++m_training_block_hits;
-    m_map.program_external += 11;
+    m_map.program_external += 10; // The first opcode was already fetched.
     auto store = [&](uint16_t address, uint16_t value) {
         ++m_data_write_counts[address]; m_data[address] = value;
     };
@@ -1599,7 +1600,8 @@ bool C5xCore::try_complex_block(uint64_t target)
     static constexpr uint16_t code[] = {0x6a8a,0x628e,0x747e,0x548d,0x5199,
         0x98aa,0x90ab,0x6a8c,0x628e,0x747d,0x549d,0x508b,0x98ac,0x90a9};
     constexpr uint16_t first_pc = 0xb950, end_pc = 0xb95e;
-    if (m_pc != first_pc || m_maps_dirty || m_trace_data_writes
+    if (m_previous_pc != first_pc || m_pc != first_pc+1 || m_op != code[0]
+        || m_maps_dirty || m_trace_data_writes
         || m_repeat_active || m_rptc || m_in_delay_slot || m_delay_condition_pending
         || step_is_rare() || (m_pmst.braf && m_paer < end_pc)
         || target - m_cycles < 14 || m_event_deadline <= m_cycles + 14
@@ -1615,7 +1617,7 @@ bool C5xCore::try_complex_block(uint64_t target)
             && m_ar[ar] == m_cber2) return m_cbsr2;
         return uint16_t(m_ar[ar] + step);
     };
-    bool executed = false;
+    bool executed = false, first_body = true;
     do {
         const uint16_t initial = m_ar[m_st0.arp], a1=m_ar[1], a2=m_ar[2],
             a3=m_ar[3], a4=m_ar[4], a5=m_ar[5], a6=m_ar[6],
@@ -1664,7 +1666,8 @@ bool C5xCore::try_complex_block(uint64_t target)
         if (!m_pmst.trm) m_treg1=m_treg2=temp;
         m_condition_start=m_xc_condition=condition_state();
         m_pc=end_pc; m_previous_pc=end_pc-1; m_op=code[13];
-        m_map.program_external+=14;
+        m_map.program_external+=first_body ? 13 : 14;
+        first_body=false; // Only the first body's first opcode was fetched.
         m_cycles+=14; m_instructions+=14; m_tail_cycle=m_cycles;
         ++m_complex_block_hits; executed=true;
         // Apply a repeat edge only when another complete body can execute.
@@ -2123,20 +2126,24 @@ inline __attribute__((always_inline)) void C5xCore::step_inline()
 template <void (C5xCore::*F)()>
 void C5xCore::threaded(C5xCore *core)
 {
-    [[clang::always_inline]] (core->*F)();
-    core->step_repeat_edge();
-    core->step_retire();
+    // Native blocks replace their first opcode after its ordinary fetch.
+    // Other opcode wrappers need no native-entry PC/flag checks at all.
+    bool translated=false;
+    if constexpr(F == &C5xCore::op_sqra) {
+        if (core->m_previous_pc==0x879d && core->m_native_training_block)
+            translated=core->try_training_block(core->m_run_target);
+    } else if constexpr(F == &C5xCore::op_lacc_s16_mem) {
+        if (core->m_previous_pc==0xb950 && core->m_native_training_block)
+            translated=core->try_complex_block(core->m_run_target);
+    }
+    if (!translated) {
+        [[clang::always_inline]] (core->*F)();
+        core->step_repeat_edge();
+        core->step_retire();
+    }
     if (core->m_cycles >= core->m_run_target
         || (core->m_run_yield && core->m_g711_tx.size() != core->m_run_pcm_size)
         || core->step_is_rare())
-        return;
-    if (core->m_pc == 0x879d && core->m_native_training_block
-        && core->try_training_block(core->m_run_target)
-        && core->m_cycles >= core->m_run_target)
-        return;
-    if (core->m_pc == 0xb950 && core->m_native_training_block
-        && core->try_complex_block(core->m_run_target)
-        && core->m_cycles >= core->m_run_target)
         return;
     // consume_cycles left the architectural conditions for this next step.
     // General/run entry still samples afresh; BCND/CC explicitly refresh
