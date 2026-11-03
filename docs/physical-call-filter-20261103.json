@@ -121,5 +121,28 @@
   "configuration_and_eeprom_unchanged": true,
   "normal_library_unchanged": true,
   "pcap_sha256": "a905980d39d955e9e2c46230a524ad36a62de9fd12298bd8f1e57766c13b0696",
-  "evidence": "nanovax:/tmp/courier-physical-filter-20261103; notebook:/tmp/courier-physical-filter-evidence"
+  "evidence": "nanovax:/tmp/courier-physical-filter-20261103; notebook:/tmp/courier-physical-filter-evidence",
+  "tx_destination_counts": [
+    {
+      "address": "192.168.196.29",
+      "port": 16412,
+      "quiet_packets": 156,
+      "active_packets": 44
+    },
+    {
+      "address": "192.168.196.254",
+      "port": 10192,
+      "quiet_packets": 0,
+      "active_packets": 10
+    }
+  ],
+  "automatic_mgetty_diagnostics": {
+    "source": "Existing /var/log/mgetty/statistics.ttyUSB0.log, 15:58:49 record; no commands issued by the agent",
+    "connection": "No Connection",
+    "modulation": "Unknown Modulation",
+    "characters_and_octets_sent_received": 0,
+    "link_timeouts_and_naks": 0,
+    "fallback_field": "Disabled",
+    "limit": "Failed-call diagnostics do not establish a specific saved physical setting or the cause of handshake failure"
+  }
 }

@@ -636,3 +636,12 @@ for substantial interpreted caller work in the same initial intervals.
 The measured MADS kernel savings alone do not meet the physical
 connection criterion. No physical settings or temperature checks were
 changed/performed by this batch.
+
+A read of mgetty's existing 15:58:49 statistics record reports No Connection,
+Unknown Modulation and zero data/link counters. Its Fallback field says
+Disabled; this failed-call diagnostic is not proof of a particular saved
+physical setting or the cause of failure. No AT commands were issued by
+the agent to obtain it. Packet inspection confirms 44 active outgoing
+packets addressed the negotiated ATA endpoint 192.168.196.29:16412, while
+ten active packets addressed the PBX after media changed. This verifies
+the captured transmit destination, not UDP delivery or waveform validity.
