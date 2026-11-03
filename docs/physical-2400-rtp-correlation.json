@@ -1,0 +1,55 @@
+{
+  "source": "/tmp/courier-2400-diag/courier-2400-diagnostic.pcap",
+  "sha256": "100ec1c12994566a0e0adf38f3404a113116c719c160a4c95cc359283023beb2",
+  "method": "Classic little-endian pcap, Linux SLL2, IPv4 UDP RTP. Group by direction and SSRC, deduplicate sequence/timestamp keeping first capture time. Decode PCMU; active threshold packet RMS >500. Times are Unix realtime seconds.",
+  "streams": [
+    {
+      "direction": "rx",
+      "ssrc": 1075120533,
+      "packets": 1,
+      "audio_seconds": 0.02,
+      "first": 1793702734.012506,
+      "last": 1793702734.012506,
+      "wall_span": 0.0,
+      "active_onset": null,
+      "active_onset_after_first": null,
+      "active_packets": 0,
+      "max_packet_gap": 0
+    },
+    {
+      "direction": "rx",
+      "ssrc": 1183309249,
+      "packets": 518,
+      "audio_seconds": 10.36,
+      "first": 1793702734.037419,
+      "last": 1793702744.372375,
+      "wall_span": 10.334955930709839,
+      "active_onset": 1793702735.691795,
+      "active_onset_after_first": 1.6543760299682617,
+      "active_packets": 385,
+      "max_packet_gap": 0.020872116088867188
+    },
+    {
+      "direction": "tx",
+      "ssrc": 1106406830,
+      "packets": 200,
+      "audio_seconds": 4.0,
+      "first": 1793702734.409169,
+      "last": 1793702744.428472,
+      "wall_span": 10.0193030834198,
+      "active_onset": 1793702741.887524,
+      "active_onset_after_first": 7.4783549308776855,
+      "active_packets": 44,
+      "max_packet_gap": 0.446958065032959
+    }
+  ],
+  "physical_answer_tone_hz": 2100,
+  "answer_to_transmit_onset_seconds": 6.195728778839111,
+  "remaining_incoming_after_transmit_onset_seconds": 2.484851121902466,
+  "limits": [
+    "Any-interface capture includes duplicates; earliest local capture time is not a remote playout timestamp.",
+    "RMS detects signal onset, not valid handshake content.",
+    "2100 Hz identified in a 200-ms received window using a 25-Hz Goertzel grid; transmitted modulated signal is not classified.",
+    "This proves timing impairment but does not exclude other protocol or signal defects."
+  ]
+}

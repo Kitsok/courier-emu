@@ -462,3 +462,28 @@ specific protocol failure. Evidence: nanovax `/tmp/courier-2400-diagnostic.pcap`
 `/tmp/courier-2400-diagnostic-audio-{tx,rx}.wav`, and
 `/tmp/courier-physical-2400-diagnostic-20261103`. A credential-free copy is
 retained on the notebook under `/tmp/courier-2400-diag`.
+
+## Deduplicated diagnostic RTP timing
+
+The captured PCMU streams were grouped by direction/SSRC and deduplicated
+by RTP sequence/timestamp, retaining the first capture time. There are
+518 packets in the physical stream (10.36 seconds), one initial packet
+from the previous PBX stream, and 200 emulator packets (4 seconds).
+Incoming physical packets have maximum interarrival gap 20.87 ms;
+outgoing emulator packets have a maximum gap of 446.96 ms. Kernel capture
+drops were zero. The transport report independently counts 200 sent and
+519 received packets, agreeing with deduplication.
+
+At packet RMS >500, physical signal onset is 11:45:35.691795 and emulator
+signal onset is 11:45:41.887524 local time. A 200-ms receive window has a
+strong 2100-Hz component on a 25-Hz frequency grid. The emulator response
+therefore starts 6.196 seconds after physical answer-signal onset, only
+2.485 seconds before incoming RTP ends. The transmitted modulation has
+not been classified, so no handshake-content correctness claim is made.
+
+This separates steady network input from irregular, delayed emulator
+output. Further work should target training execution throughput rather
+than add buffering or repeat bitrate-only calls. This does not exclude
+additional protocol defects. Raw timing and capture hash are retained in
+`physical-2400-rtp-correlation.json`. No new call was needed for this
+analysis.
