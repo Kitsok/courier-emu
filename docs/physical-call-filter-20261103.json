@@ -1,0 +1,125 @@
+{
+  "date": "2026-11-03",
+  "native_source_revision": "1616466",
+  "target_checkout_revision": "b977c51",
+  "library_sha256": "c690cc48c6b4a4b1dbc772bcb348349b194e6c1b3499745d3719d0283a75fc0f",
+  "native_blocks_opt_in": true,
+  "extra_python_hooks": false,
+  "profile": "Copied &M5/&N6 EEPROM; S34=129,S54=96,S56=192,S58=97 unchanged",
+  "result": {
+    "result": "modem-failure",
+    "elapsed": 65.41973515399877,
+    "dial": 26.949243176997697,
+    "connected": null,
+    "returncode": 0,
+    "worker": 10086
+  },
+  "terminal_result": "BUSY",
+  "physical_result": "NO CARRIER/A_FAIL",
+  "physical_answer": "2026-11-03 15:58:37 Europe/Amsterdam",
+  "physical_failure": "2026-11-03 15:58:46 Europe/Amsterdam",
+  "worker_cpu_percent": 101.73772606525223,
+  "sip_frames": 147,
+  "peak_late_ms": 39045.5,
+  "pending_peak": 42080,
+  "rtp_seconds": {
+    "sent": 4.2,
+    "received": 9.28
+  },
+  "pacing": {
+    "input_wakeups": 0,
+    "waited_seconds": 0.0,
+    "waits": 0
+  },
+  "sip_events": [
+    "tx REGISTER cseq=1",
+    "rx REGISTER 200",
+    "tx INVITE cseq=1",
+    "rx 100",
+    "rx 180",
+    "rx 200",
+    "tx ACK cseq=1",
+    "tx re-INVITE response",
+    "tx re-INVITE response",
+    "rx BYE"
+  ],
+  "perf": {
+    "window_monotonic_seconds": [
+      27776,
+      27781
+    ],
+    "samples": 243,
+    "lost_samples": 0,
+    "dso_percent": {
+      "DSP_devices": 48.3,
+      "x86": 36.04,
+      "Python": 13.61
+    },
+    "clock_anchor": {
+      "epoch": 1793717982.338347,
+      "monotonic": 27839.270070105
+    },
+    "reports": {
+      "training-dso.txt": "# To display the perf.data header info, please use --header/--header-only options.\n#\n#\n# Total Lost Samples: 0\n#\n# Samples: 243  of event 'cycles:u' (time slices: 27776,27781)\n# Event count (approx.): 5745651815\n#\n# Overhead  Shared Object                               \n# ........  ............................................\n#\n    48.30%  libcourier-c5x-filter-body.so               \n    36.04%  _x86_native.cpython-311-aarch64-linux-gnu.so\n    13.61%  python3.11                                  \n     1.20%  libc.so.6                                   \n     0.85%  _ctypes.cpython-311-aarch64-linux-gnu.so    \n\n\n#\n# (Tip: For tracepoint events, try: perf report -s trace_fields)\n#\n",
+      "training-symbols.txt": "# To display the perf.data header info, please use --header/--header-only options.\n#\n#\n# Total Lost Samples: 0\n#\n# Samples: 243  of event 'cycles:u' (time slices: 27776,27781)\n# Event count (approx.): 5745651815\n#\n# Overhead       Samples        Period  Shared Object                                 Symbol                                                              IPC   [IPC Coverage]\n# ........  ............  ............  ............................................  ..................................................................  ....................\n#\n    28.75%            72    1651863622  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] run_batch<true>                                                 -      -            \n     4.80%             1     275809338  python3.11                                    [.] PyMem_Malloc                                                    -      -            \n     3.30%             8     189593289  python3.11                                    [.] _PyEval_EvalFrameDefault                                        -      -            \n     3.22%             8     185240994  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::try_filter_block                              -      -            \n     2.47%             6     141982093  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacc_mem>      -      -            \n     2.46%             6     141417600  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::read                         -      -            \n     2.13%             5     122154835  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_sacl>          -      -            \n     2.09%             5     120264878  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_group_be>      -      -            \n     1.98%             5     113951087  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::delay_slot                                    -      -            \n     1.69%             4      97068943  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::ea                           -      -            \n     1.61%             4      92591032  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_retcd>         -      -            \n     1.61%             4      92577784  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_bd>            -      -            \n     1.60%             4      91693468  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_samm                                       -      -            \n     1.58%             4      90828370  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_adrk>          -      -            \n     1.53%             4      87904817  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_samm>          -      -            \n     1.51%             4      86519517  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::alu                          -      -            \n     1.23%             3      70541105  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_sqra>          -      -            \n     1.21%             3      69297386  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_sph>           -      -            \n     0.83%             2      47893103  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_sach>          -      -            \n     0.83%             2      47848780  libcourier-c5x-filter-body.so                 [.] (anonymous namespace)::worker_media_guard                       -      -            \n     0.83%             2      47603995  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::pop                          -      -            \n     0.83%             2      47545390  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_madd>          -      -            \n     0.83%             2      47532157  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_apac>             -      -            \n     0.83%             2      47496034  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_mar>           -      -            \n     0.82%             2      47103947  libcourier-c5x-filter-body.so                 [.] courier::resample::Timed::run                                   -      -            \n     0.82%             2      46903825  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lamm>          -      -            \n     0.82%             2      46867734  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_sach>             -      -            \n     0.81%             2      46763483  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lar_mem>       -      -            \n     0.81%             2      46533387  libc.so.6                                     [.] memcmp                                                          -      -            \n     0.81%             2      46353478  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_lacc_limm>        -      -            \n     0.79%             2      45519597  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_retc>          -      -            \n     0.79%             2      45475819  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_lar_limm>         -      -            \n     0.76%             2      43527382  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_madd                                       -      -            \n     0.65%             2      37327261  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_add_s16_mem>   -      -            \n     0.54%             2      31178147  python3.11                                    [.] _PyObject_GenericGetAttrWithDict                                -      -            \n     0.44%             1      25485539  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_sar                                        -      -            \n     0.44%             1      25476791  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::mac_program_span                              -      -            \n     0.44%             1      25395901  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_lmmr                                       -      -            \n     0.44%             1      25355225  python3.11                                    [.] PyLong_FromUnsignedLong                                         -      -            \n     0.44%             1      25290018  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::step_front_rare                               -      -            \n     0.44%             1      25271985  python3.11                                    [.] PyNumber_Multiply                                               -      -            \n     0.44%             1      25158569  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacl_mem>      -      -            \n     0.44%             1      25136862  python3.11                                    [.] PyObject_GetAttr                                                -      -            \n     0.44%             1      25053201  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_mpy_limm>         -      -            \n     0.44%             1      25031493  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_or_mem                                     -      -            \n     0.44%             1      25011752  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::cpuregs_w                                     -      -            \n     0.43%             1      24986344  _ctypes.cpython-311-aarch64-linux-gnu.so      [.] 0x0000000000015700                                              -      -            \n     0.43%             1      24921304  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_group_bf>      -      -            \n     0.43%             1      24905406  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::IO_WRITE16                                    -      -            \n     0.43%             1      24731982  python3.11                                    [.] 0x0000000000102900                                              -      -            \n     0.43%             1      24669442  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_adds                                       -      -            \n     0.43%             1      24560718  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_setc_intm>        -      -            \n     0.43%             1      24507309  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_add_s16_mem                                -      -            \n     0.42%             1      24373006  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_dmov>          -      -            \n     0.42%             1      24304607  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_norm>          -      -            \n     0.42%             1      24300356  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::write                        -      -            \n     0.42%             1      24276702  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_sfr>              -      -            \n     0.42%             1      24239845  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_mpyu>          -      -            \n     0.42%             1      24114824  python3.11                                    [.] 0x00000000000794d0                                              -      -            \n     0.42%             1      24027457  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_calld>         -      -            \n     0.42%             1      23970121  python3.11                                    [.] 0x00000000001c2128                                              -      -            \n     0.42%             1      23890475  python3.11                                    [.] _PyObject_GenericSetAttrWithDict                                -      -            \n     0.42%             1      23882025  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::cpuregs_r                                     -      -            \n     0.42%             1      23879202  _ctypes.cpython-311-aarch64-linux-gnu.so      [.] 0x0000000000011180                                              -      -            \n     0.42%             1      23874354  python3.11                                    [.] PyType_IsSubtype                                                -      -            \n     0.41%             1      23816933  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::bmar_mac_cycles                               -      -            \n     0.41%             1      23554844  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_samm>             -      -            \n     0.41%             1      23480984  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_add_mem>          -      -            \n     0.41%             1      23309259  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_subs>          -      -            \n     0.40%             1      23196925  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::GET_ZLVC_CONDITION                            -      -            \n     0.40%             1      23150532  python3.11                                    [.] 0x0000000000090a50                                              -      -            \n     0.40%             1      23135970  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::try_training_block                            -      -            \n     0.40%             1      22882033  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lt>            -      -            \n     0.40%             1      22843333  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_sub_simm>      -      -            \n     0.39%             1      22674923  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_lt                                         -      -            \n     0.39%             1      22580534  libc.so.6                                     [.] __GI_____strtod_l_internal                                      -      -            \n     0.39%             1      22391184  python3.11                                    [.] 0x00000000001c2150                                              -      -            \n     0.38%             1      22114488  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::io@plt                                        -      -            \n     0.38%             1      22106640  python3.11                                    [.] 0x00000000001c2208                                              -      -            \n     0.38%             1      21849103  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_zap>              -      -            \n     0.38%             1      21751164  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_bit>           -      -            \n     0.38%             1      21720978  _x86_native.cpython-311-aarch64-linux-gnu.so  [.] (anonymous namespace)::Core<true>::push                         -      -            \n     0.38%             1      21585677  python3.11                                    [.] strncpy@plt                                                     -      -            \n     0.37%             1      21069749  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::try_repeat_mac                                -      -            \n     0.37%             1      21011611  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_bcnd>          -      -            \n     0.36%             1      20845477  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::threaded<&courier::C5xCore::op_lacc_s16_mem>  -      -            \n     0.34%             1      19804042  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::op_bcnd                                       -      -            \n     0.33%             1      18904265  libcourier-c5x-filter-body.so                 [.] courier::resample::Stream::convert                              -      -            \n     0.09%             1       4996366  libcourier-c5x-filter-body.so                 [.] courier::C5xCore::thunk<&courier::C5xCore::op_rptb>             -      -            \n     0.00%             1         18223  libcourier-c5x-filter-body.so                 [.] operator delete@plt                                             -      -            \n     0.00%             1            83  libc.so.6                                     [.] __aarch64_swp4_acq                                              -      -            \n     0.00%             3             3  libc.so.6                                     [.] __GI___lll_lock_wait                                            -      -            \n\n\n#\n# (Tip: For tracepoint events, try: perf report -s trace_fields)\n#\n"
+    }
+  },
+  "media_timing": {
+    "method": "PCMU grouped by direction/SSRC and deduplicated by sequence/timestamp; first capture time retained; decoded packet RMS >500 activity threshold; no modulation classification",
+    "streams": [
+      {
+        "direction": "rx",
+        "ssrc": 1903055062,
+        "packets": 1,
+        "audio_seconds": 0.02,
+        "first": 1793717918.078133,
+        "last": 1793717918.078133,
+        "wall_span": 0.0,
+        "active_onset": null,
+        "active_onset_after_first": null,
+        "active_packets": 0,
+        "max_packet_gap": 0
+      },
+      {
+        "direction": "rx",
+        "ssrc": 2573779912,
+        "packets": 463,
+        "audio_seconds": 9.26,
+        "first": 1793717918.097697,
+        "last": 1793717927.335611,
+        "wall_span": 9.237914085388184,
+        "active_onset": 1793717919.755504,
+        "active_onset_after_first": 1.6578068733215332,
+        "active_packets": 330,
+        "max_packet_gap": 0.022124052047729492
+      },
+      {
+        "direction": "tx",
+        "ssrc": 1597698699,
+        "packets": 210,
+        "audio_seconds": 4.2,
+        "first": 1793717918.431129,
+        "last": 1793717927.786989,
+        "wall_span": 9.355859994888306,
+        "active_onset": 1793717924.966348,
+        "active_onset_after_first": 6.535218954086304,
+        "active_packets": 54,
+        "max_packet_gap": 0.39859604835510254
+      }
+    ],
+    "tx_active_after_rx_active_seconds": 5.210844039916992,
+    "rx_remaining_after_tx_active_seconds": 2.369263172149658
+  },
+  "comparison": {
+    "previous": "physical-call-v32-native-20261103.json",
+    "previous_response_seconds": 6.359879016876221,
+    "current_response_seconds": 5.210844039916992,
+    "observed_response_reduction_seconds": 1.1490349769592285,
+    "limits": "One non-alternating attempt per build, different physical durations and short profile windows; no controlled overall speedup or protocol correctness established"
+  },
+  "capture_kernel_drops": 0,
+  "configuration_and_eeprom_unchanged": true,
+  "normal_library_unchanged": true,
+  "pcap_sha256": "a905980d39d955e9e2c46230a524ad36a62de9fd12298bd8f1e57766c13b0696",
+  "evidence": "nanovax:/tmp/courier-physical-filter-20261103; notebook:/tmp/courier-physical-filter-evidence"
+}

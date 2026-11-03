@@ -599,3 +599,40 @@ and quantify real interpreter work; short local trace windows and
 accounted instruction totals alone can be misleading. IDLE fast-forward
 also increments the historical instruction counter for skipped clocks,
 so native-hit fractions of that total are not CPU-work fractions.
+
+## Initial-handshake MADS filter validation
+
+One final-batch call used the isolated non-instrumented filter library
+c690cc48… with native blocks enabled and the same temporary &M5/&N6
+profile. Saved configuration/EEPROM hashes and the normal library are
+unchanged. SIP setup received 200/ACK; physical autoanswer ran at
+15:58:37 and ended with NO CARRIER/A_FAIL at 15:58:46. The emulator
+returned BUSY; the probe finished after 65.42 seconds. No ARQ modem
+connection was established. Existing mgetty handling was left intact.
+
+It sent 4.2 seconds of PCMU and received 9.28 seconds, with 147 line
+frames, peak lateness 39.05 seconds and no pacing waits. Deduplicated
+media has 210 outgoing packets, 463 physical incoming packets and one
+initial PBX packet. Incoming maximum gap is 22.12 ms; outgoing maximum
+gap is 398.60 ms. Capture kernel drops are zero.
+
+At the same decoded packet RMS >500 threshold, outgoing activity starts
+5.211 seconds after incoming activity, compared with 6.360 seconds in
+the preceding native V32 attempt: an observed 1.149-second reduction.
+Only 2.369 seconds of incoming activity remain afterward. These are
+single non-alternating attempts with different physical durations;
+they support a positive initial-response indication, not a controlled
+whole-call speedup or a claim that the transmitted protocol is correct.
+
+The five-second interior profile has 243 user-cycle samples, none lost:
+DSP/devices 48.30%, x86 36.04%, Python 13.61%. Its short duration and
+changed handshake progression limit comparisons with prior profiles.
+The worker still occupies roughly one core. Full CPU, media, profile
+and comparison evidence is in `physical-call-filter-20261103.json`.
+
+The next remaining early-work candidates are the neighboring MADD
+helpers already identified in `dsp-v32-work-summary.json`; they account
+for substantial interpreted caller work in the same initial intervals.
+The measured MADS kernel savings alone do not meet the physical
+connection criterion. No physical settings or temperature checks were
+changed/performed by this batch.
