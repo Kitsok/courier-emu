@@ -517,3 +517,34 @@ finished, and normal mgetty autoanswer remained active.
 Next, match the notebook workload to this temporary 9600-bps ARQ profile
 before selecting broader native blocks. The current successful notebook
 loopback negotiates 31200 bps and need not exercise identical hot paths.
+
+## Combined circular-span and condition-reuse attempt
+
+The batch at 04ec08e was rebuilt into isolated library a28c9896… and
+selected explicitly with the arithmetic-block opt-in. One call used the
+same temporary copy of the emulator EEPROM, retaining mandatory ARQ and
+9600 bps. INI and saved EEPROM hashes are unchanged afterward. No direct
+physical modem commands were sent; normal mgetty handling remained active.
+
+The physical modem answered at 14:04:35 and reported NO CARRIER/A_FAIL at
+14:05:38. The emulator returned BUSY; the probe finished after 123.97
+seconds. CPU averaged 101.22%, with 304 line frames, 19.8 seconds of
+PCMU sent and 62.61 seconds received. Peak lateness reached 89.06 seconds.
+There were no pacing waits or kernel packet-capture drops. The native
+arithmetic block recorded 1563506 additional connected-window hits without
+a reset. These data do not demonstrate a whole-call speedup or connection.
+
+An interior 48-second profile attributes 66.76% of sampled user cycles to
+DSP, 20.90% to x86 and 10.17% to Python, with no lost samples. Isolated
+kernel gains remain distinct from the unresolved application throughput.
+Structured evidence is in `physical-call-circular-condition-20261103.json`.
+
+The saved emulator profile includes S34=129, S54=96, S56=192 and S58=97.
+The earlier notebook --rate-index 6 fixture negotiated V.34 and matched
+only fixed rate and ARQ, not these complete protocol restrictions. A
+notebook-only check using a copy of the exact saved EEPROM also returns
+NO CARRIER at both ends. This requires local profile/protocol diagnosis
+in addition to A53 optimization. It does not yet identify a specific
+register or establish whether the latest code caused the local failure;
+a preserved-library control is the next check. Physical settings remain
+outside the scope of these temporary emulator experiments.
