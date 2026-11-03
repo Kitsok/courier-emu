@@ -1,0 +1,253 @@
+{
+  "instructions": 1000000,
+  "repeat": 3,
+  "summary": {
+    "register_branches": {
+      "reference": 0.11601362399999993,
+      "candidate": 0.13502183300000004,
+      "cpu_reduction_percent": -16.384462742065644
+    },
+    "counter_loop": {
+      "reference": 0.13477420699999998,
+      "candidate": 0.1360645410000001,
+      "cpu_reduction_percent": -0.9574042605942523
+    },
+    "mixed_memory": {
+      "reference": 0.17278537400000005,
+      "candidate": 0.16655624999999974,
+      "cpu_reduction_percent": 3.6051222715183684
+    },
+    "traced_memory": {
+      "reference": 0.2098410400000006,
+      "candidate": 0.20831766500000004,
+      "cpu_reduction_percent": 0.7259661885018032
+    },
+    "memory_control": {
+      "reference": 0.1794365409999994,
+      "candidate": 0.18230595699999963,
+      "cpu_reduction_percent": -1.5991257878740894
+    },
+    "prefixed_control": {
+      "reference": 0.1389465000000003,
+      "candidate": 0.14232195900000022,
+      "cpu_reduction_percent": -2.4293227969037767
+    },
+    "386_control": {
+      "reference": 0.13076466500000006,
+      "candidate": 0.14591558400000082,
+      "cpu_reduction_percent": -11.58640141815126
+    }
+  },
+  "runs": {
+    "register_branches": {
+      "reference": [
+        {
+          "cpu_seconds": 0.115101291,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.11601362399999993,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.15138754,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.12281587399999999,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.13502183300000004,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.15161445800000006,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        }
+      ]
+    },
+    "counter_loop": {
+      "reference": [
+        {
+          "cpu_seconds": 0.13477420699999998,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        },
+        {
+          "cpu_seconds": 0.14090387400000015,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        },
+        {
+          "cpu_seconds": 0.132977833,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.1360645410000001,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        },
+        {
+          "cpu_seconds": 0.1474856229999999,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        },
+        {
+          "cpu_seconds": 0.13278533299999995,
+          "sha256": "8a898de3d3bbfa691e24f43cf0278bb744ebe776953a8e93720dbf748bfb4acf"
+        }
+      ]
+    },
+    "mixed_memory": {
+      "reference": [
+        {
+          "cpu_seconds": 0.1787417910000002,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        },
+        {
+          "cpu_seconds": 0.1653983320000001,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        },
+        {
+          "cpu_seconds": 0.17278537400000005,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.16782383200000028,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        },
+        {
+          "cpu_seconds": 0.16423691500000004,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        },
+        {
+          "cpu_seconds": 0.16655624999999974,
+          "sha256": "f1f23fea5803f8affd1ed20bb751bc52a4cb772fe1d337b2c1265a2411b9d12e"
+        }
+      ]
+    },
+    "traced_memory": {
+      "reference": [
+        {
+          "cpu_seconds": 0.21151491499999997,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        },
+        {
+          "cpu_seconds": 0.1940607080000003,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        },
+        {
+          "cpu_seconds": 0.2098410400000006,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.22549449999999993,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        },
+        {
+          "cpu_seconds": 0.20122666599999972,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        },
+        {
+          "cpu_seconds": 0.20831766500000004,
+          "sha256": "a967cb8e833f51b90b20696f4c2ffce5495d64e3f7048d1a003c7686eb0e0c8f"
+        }
+      ]
+    },
+    "memory_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.1794365409999994,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.1775964160000001,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.18931179099999973,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.1702155000000003,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.18912191300000014,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.18230595699999963,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        }
+      ]
+    },
+    "prefixed_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.15457691499999981,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.13016324799999968,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.1389465000000003,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.13682229099999965,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.14232195900000022,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.14381995799999991,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        }
+      ]
+    },
+    "386_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.13076466500000006,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.14610633299999964,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.12657312500000018,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.14661937400000014,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.1370885829999997,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.14591558400000082,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        }
+      ]
+    }
+  }
+}

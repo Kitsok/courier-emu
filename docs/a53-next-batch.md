@@ -70,3 +70,24 @@ control; register and 386 controls are essentially unchanged. All state
 hashes match. Restore the preceding native implementation and retain the
 wrap checks. Raw results are in `x86-fetch-arm-rejected.json`. Do not
 attribute any later call behavior to this rejected candidate.
+
+### Narrow RAM-read experiment
+
+A second isolated candidate placed timer-window checks before the timer
+model loads and kept the complex timer reader out of line. It passes 47
+focused x86/timer/trace checks. Target controls again do not support
+retention: mixed memory improves 3.61%, traced memory 0.73%, but register
+and 386 controls regress substantially. Revert the experiment before the
+final call. `x86-ram-arm-rejected.json` retains its small counter run.
+Neither attempted native x86 change is a retained performance gain.
+
+### Correct the return workload before judging its timing
+
+The first return workload leaves ARP=1 on return, then executes MAR in
+direct mode (a NOP). It subsequently reads a register operand and bypasses
+the native block: both variants have zero measured native hits. Replace
+that header with MAR *,AR0 and require positive measured hits. Keep the
+invalid run in `dsp-return-fixture-invalid.json`; its return timings are
+not evidence of native-return performance. Its non-return control also
+shows unnecessary tail-guard overhead. Test the tail opcode first so the
+usual non-return case avoids budget/deadline checks for that extension.
