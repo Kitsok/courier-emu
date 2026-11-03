@@ -12,7 +12,7 @@ def words(values):
     return struct.pack('<%dH' % len(values), *values)
 
 
-def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False):
+def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_event=False, alias=False, cbcr=0):
     monkeypatch.setenv('COURIER_C5X_TRAINING_BLOCK', str(enabled))
     setup = [0xbf08,0x320,0xbf0a,0x37d if alias else 0x330,0xbc06,0xbf00|pm,
              0xbe43 if ovm else 0xbe42,0xbf8f,0x7fff]
@@ -21,6 +21,9 @@ def run(monkeypatch, enabled, budget, pm, ovm, changed=False, trace=False, near_
         if not near_event:core.host_write(0x26,0x10) # Admit an event-free window.
         for a in range(0x300,0x380):core.set_data(a,(a*137)^0xaaaa)
         core.set_pc(0x6000);core.step(6)
+        core.host_write(0x1a,0x320);core.host_write(0x1b,0x330)
+        core.host_write(0x1c,0x320);core.host_write(0x1d,0x330)
+        core.host_write(0x1e,cbcr)
         code = list(BLOCK)
         if changed:code[8] = 0x7800
         core.load_program(words([0x8b00,*code,*([0x7800]*16)]),0x879c)
@@ -65,3 +68,11 @@ def test_block_preserves_live_operand_aliases(monkeypatch):
     actual,hits=run(monkeypatch,1,12,0,True,alias=True)
     assert actual==expected
     assert hits==1
+
+
+@pytest.mark.parametrize('cbcr,expected_hits',[(0xef,1),(0x09,1),(0x90,1),(0x0a,0),(0xa0,0)])
+def test_block_only_rejects_circular_updates_on_ar2(monkeypatch,cbcr,expected_hits):
+    expected,_=run(monkeypatch,0,12,0,False,cbcr=cbcr)
+    actual,hits=run(monkeypatch,1,12,0,False,cbcr=cbcr)
+    assert actual==expected
+    assert hits==expected_hits

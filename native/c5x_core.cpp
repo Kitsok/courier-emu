@@ -1541,7 +1541,10 @@ bool C5xCore::try_training_block(uint64_t target)
         0x8d7e,0x547d,0xbe03,0x627e,0x61a0,0x6290};
     if (m_pc != 0x879d || m_maps_dirty || m_trace_data_writes
         || m_pmst.braf || m_repeat_active || m_rptc || m_in_delay_slot
-        || m_delay_condition_pending || m_cbcr || step_is_rare()
+        || m_delay_condition_pending
+        || ((m_cbcr & 8) && (m_cbcr & 7) == 2)
+        || ((m_cbcr & 0x80) && ((m_cbcr >> 4) & 7) == 2)
+        || step_is_rare()
         || target - m_cycles < 11 || m_event_deadline <= m_cycles + 11)
         return false;
     // At this PC all supported models use external program storage. DARAM

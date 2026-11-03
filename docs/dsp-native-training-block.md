@@ -8,8 +8,8 @@ and front/retirement setup; it is not a general translator or a claim of
 algebraic equivalence to a replacement modem algorithm.
 
 Admission checks require the exact eleven current code words in external
-program storage, valid maps, DARAM operands/destinations, no circular
-configuration, no codec sink destination, no tracing/diagnostic front flags,
+program storage, valid maps, DARAM operands/destinations, no circular updates
+on AR2, no codec sink destination, no tracing/diagnostic front flags,
 no active hardware repeat/block repeat or delayed-condition state, and a
 run budget and event deadline extending past the block. Unusual cases
 retain the interpreter. DARAM writes cannot alias this external code span;
@@ -91,3 +91,20 @@ training; positive real-work hits must be measured before adoption.
 Raw target counters, build manifest and local hit samples are retained in
 `dsp-native-block-first-results.json`. The deployed nanovax library remains
 the original reference. No physical call or modem-setting change was made.
+
+## Refine circular eligibility using observed configuration
+
+The block now rejects circular buffers only when an enabled buffer selects
+AR2. The first indirect SQRA does not increment its source register; it
+changes ARP to 2. Only the following ADD16/ADDS pair increments/decrements
+AR2. Circular state for other registers is therefore irrelevant to this
+block and remains live and unchanged. AR2 circular updates continue to
+fallback; existing DARAM/address/code/event guards are retained.
+
+The notebook native build and 72 focused checks pass in 0.43 seconds.
+Added hit-asserted cases accept ef, 09 and 90 configurations while rejecting
+0a and a0, with wrap-capable start/end registers programmed in both
+reference and candidate. Snapshots match. The observed ef configuration
+is now eligible with respect to this guard, but positive actual-training
+hits and revised target cost are still unmeasured. No physical call or
+modem setting change was made for this refinement.
