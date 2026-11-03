@@ -100,6 +100,7 @@ void C5xCore::reset()
     m_pc = m_op = 0;
     m_complex_block_hits = 0;
     m_filter_block_hits = 0;
+    m_madd_block_hits = 0;
     m_acc = m_accb = m_preg = 0;
     m_treg0 = m_treg1 = m_treg2 = 0;
     std::fill(std::begin(m_ar), std::end(m_ar), 0);
@@ -1800,6 +1801,94 @@ bool C5xCore::try_filter_block(uint64_t target)
     return true;
 }
 
+// Two observed MADD helpers share arithmetic and ordered delay-line moves.
+bool C5xCore::try_madd_block(uint64_t target)
+{
+    static constexpr uint16_t returning[]={0x881f,0x7804,0xbe59,0xbb04,0xab90,
+        0xbe04,0x7804,0xa080,0xff00,0x2f7b,0x9880};
+    static constexpr uint16_t preparing[]={0x8809,0x7804,0xbe59,0xbb04,0xab90,
+        0xbe04,0x7804,0xa080,0x2f7b,0x9880};
+    const bool returns=m_previous_pc==0x8a7d;
+    const uint16_t first=returns ? 0x8a7d : 0x8aa2;
+    const uint16_t *code=returns ? returning : preparing;
+    const unsigned words=returns ? 11 : 10;
+    const uint16_t end=uint16_t(first+words), reg=returns ? 0x1f : 9;
+    if (m_previous_pc!=first || m_pc!=first+1 || m_op!=code[0]
+        || m_maps_dirty || m_trace_data_writes || m_trace_register==reg
+        || (m_pmst.braf && (returns || m_paer<end))
+        || m_repeat_active || m_rptc || m_in_delay_slot || m_delay_condition_pending
+        || step_is_rare() || m_pmap[first]!=3
+        || !std::equal(code,code+words,m_program.data()+first)) return false;
+    const unsigned arp=m_st0.arp;
+    auto advance = [&](uint16_t address,int step) -> uint16_t {
+        if ((m_cbcr&8) && arp==(m_cbcr&7))
+            return address==m_cber1 ? m_cbsr1 : uint16_t(address+step);
+        if ((m_cbcr&0x80) && arp==((m_cbcr>>4)&7))
+            return address==m_cber2 ? m_cbsr2 : uint16_t(address+step);
+        return uint16_t(address+step);
+    };
+    uint16_t addresses[12],address=advance(m_ar[arp],4);
+    for (unsigned i=0;i<5;++i) {
+        if (!internal_data(address)) return false;
+        addresses[i]=address; addresses[i+5]=uint16_t(address+1);
+        address=advance(address,-1);
+    }
+    const uint16_t final=advance(address,4);
+    addresses[10]=final; addresses[11]=m_st0.dp|0x7b;
+    const uint16_t pma=returns ? uint16_t(m_acc) : m_bmar;
+    MacSpan coefficients;
+    if (!mac_program_span(pma,5,coefficients)) return false;
+    const unsigned cycles=(returns ? 11 : 9)+bmar_mac_cycles(pma,addresses[0],5,true);
+    if (target-m_cycles<cycles || m_event_deadline<=m_cycles+cycles) return false;
+    struct Cell { uint16_t *value; uint64_t *reads; } cells[12];
+    for (unsigned i=0;i<12;++i) {
+        const uint8_t kind=m_dmap[addresses[i]];
+        if (!(kind&7) || (i>=5 && i<=10 &&
+            ((((kind>>3)&3)==3 && addresses[i]>=first && addresses[i]<end)
+             || (m_call_tdm_active && addresses[i]==m_line_dac_slot)))) return false;
+        cells[i]={&data_cell(kind,addresses[i]),&(&m_map.data_registers)[kind&7]};
+    }
+    auto load = [&](unsigned cell) { ++*cells[cell].reads; return *cells[cell].value; };
+    auto store = [&](unsigned cell,uint16_t value) {
+        ++m_data_write_counts[addresses[cell]]; *cells[cell].value=value;
+    };
+#ifdef C5X_PROFILE_WORK
+    for (unsigned i=0;i<words;++i) record_work(uint16_t(first+i),code[i],true);
+#endif
+    if (returns) m_bmar=uint16_t(m_acc);
+    else m_brcr=uint16_t(m_acc);
+    ++m_data_write_counts[reg];
+    int32_t acc=0,preg=0;
+    uint16_t temp=0;
+    for (unsigned tap=0;tap<5;++tap) {
+        temp=load(tap);
+        acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        // Coefficients can alias a destination from an earlier tap.
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(coefficients.values[tap]));
+        store(tap+5,temp);
+    }
+    *coefficients.reads+=5;
+    acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+    const uint32_t norm=uint32_t(acc);
+    m_st1.tc=norm==0 || (((norm>>31)^(norm>>30))&1);
+    if (!m_st1.tc) acc=int32_t(norm<<1);
+    const uint16_t addend=load(11);
+    const uint32_t extended=m_st1.sxm ? uint32_t(int32_t(int16_t(addend))) : addend;
+    acc=ADD(uint32_t(acc),extended<<15,false); store(10,uint16_t(uint32_t(acc)>>16));
+    m_acc=acc; m_preg=preg; m_treg0=temp;
+    m_ar[arp]=final;
+    if (arp==0 && !m_pmst.ndx) m_arcr=m_indx=final;
+    m_rpt_start=m_rpt_end=uint16_t(first+4); m_rptc=0; m_repeat_active=false;
+    m_pc=returns ? POP_STACK() : end;
+    m_previous_pc=returns ? 0x8a85 : 0x8aab; m_op=0x9880;
+    m_map.program_external+=words-1;
+    // The returning helper's two delay-slot bodies do not retire separately.
+    m_instructions+=returns ? 9 : 10; m_cycles+=cycles; m_tail_cycle=m_cycles;
+    m_condition_start=m_xc_condition=condition_state();
+    ++m_madd_block_hits;
+    return true;
+}
+
 void C5xCore::op_group_be() { s_opcode_table_be[m_op & 0xff](this); }
 void C5xCore::op_group_bf() { s_opcode_table_bf[m_op & 0xff](this); }
 
@@ -2263,6 +2352,10 @@ void C5xCore::threaded(C5xCore *core)
     } else if constexpr(F == &C5xCore::op_lamm) {
         if (core->m_previous_pc==0x8aae && core->m_native_training_block)
             translated=core->try_filter_block(core->m_run_target);
+    } else if constexpr(F == &C5xCore::op_samm) {
+        if ((core->m_previous_pc==0x8a7d || core->m_previous_pc==0x8aa2)
+            && core->m_native_training_block)
+            translated=core->try_madd_block(core->m_run_target);
     }
     if (!translated) {
 #ifdef C5X_PROFILE_WORK

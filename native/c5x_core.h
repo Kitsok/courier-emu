@@ -380,6 +380,7 @@ public:
     uint64_t training_block_hits() const { return m_training_block_hits; }
     uint64_t complex_block_hits() const { return m_complex_block_hits; }
     uint64_t filter_block_hits() const { return m_filter_block_hits; }
+    uint64_t madd_block_hits() const { return m_madd_block_hits; }
     uint16_t program_counter() const { return m_pc; }
     std::size_t line_tx_count() const { return m_line_tx.size(); }
     SerialState serial_state() const;
@@ -570,6 +571,7 @@ private:
     bool try_training_block(uint64_t target);
     bool try_complex_block(uint64_t target);
     bool try_filter_block(uint64_t target);
+    bool try_madd_block(uint64_t target);
     uint64_t m_run_target = 0;
     std::size_t m_run_pcm_size = 0;
     bool m_run_yield = false;
@@ -943,6 +945,7 @@ private:
     void op_setc_xf(); void op_setc_cnf(); void op_setc_intm(); void op_sst_st0();
     void op_sst_st1(); void op_group_be(); void op_group_bf();
     uint64_t m_filter_block_hits = 0;
+    uint64_t m_madd_block_hits = 0;
 };
 
 // A data cell other than a CPU register, in the storage bits 3-4 of its data

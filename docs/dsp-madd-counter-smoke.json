@@ -1,0 +1,74 @@
+[
+  {
+    "cpu_seconds": 0.009210481999999992,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 0,
+    "retired_instructions": 448277,
+    "executed_cycles": 1000001,
+    "sha256": "a8e73542f71d6918c81ffdb1a1c934608a9afd19e690a19bdd4b806675c4d316",
+    "case": "madd",
+    "enabled": "0"
+  },
+  {
+    "cpu_seconds": 0.006635394000000017,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 34483,
+    "retired_instructions": 448277,
+    "executed_cycles": 1000001,
+    "sha256": "a8e73542f71d6918c81ffdb1a1c934608a9afd19e690a19bdd4b806675c4d316",
+    "case": "madd",
+    "enabled": "1"
+  },
+  {
+    "cpu_seconds": 0.008862008000000005,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 0,
+    "retired_instructions": 515152,
+    "executed_cycles": 1000000,
+    "sha256": "7dfa8e5e3cd07fd7596a266dd7e8855f47b09d83bb00ddb72a15fbdc730b1ea1",
+    "case": "madd-prepare",
+    "enabled": "0"
+  },
+  {
+    "cpu_seconds": 0.006740508000000006,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 30303,
+    "retired_instructions": 515152,
+    "executed_cycles": 1000000,
+    "sha256": "7dfa8e5e3cd07fd7596a266dd7e8855f47b09d83bb00ddb72a15fbdc730b1ea1",
+    "case": "madd-prepare",
+    "enabled": "1"
+  },
+  {
+    "cpu_seconds": 0.009391315000000011,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 0,
+    "retired_instructions": 406250,
+    "executed_cycles": 1000000,
+    "sha256": "596a77bbdc03ef9e4abb9b8679e360286e3e5cd9686c427223a3a4a55b62ea72",
+    "case": "madd-saram",
+    "enabled": "0"
+  },
+  {
+    "cpu_seconds": 0.00572213299999999,
+    "block_hits": 0,
+    "complex_block_hits": 0,
+    "filter_block_hits": 0,
+    "madd_block_hits": 31250,
+    "retired_instructions": 406250,
+    "executed_cycles": 1000000,
+    "sha256": "596a77bbdc03ef9e4abb9b8679e360286e3e5cd9686c427223a3a4a55b62ea72",
+    "case": "madd-saram",
+    "enabled": "1"
+  }
+]
