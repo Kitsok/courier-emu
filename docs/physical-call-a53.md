@@ -437,3 +437,28 @@ and probe/emulator/perf processes stopped. No temperatures were queried.
 Structured results are in `physical-call-2400-20261103.json`; full capture
 is `nanovax:/tmp/courier-physical-2400-20261103`. The requested established
 connection remains unachieved.
+
+## Lower-rate diagnostic audio capture
+
+A further bounded 2400-bps/&M5 call on the unchanged updated build recorded
+native modem-facing TX/RX WAVs and packets filtered to RTP port 4014. The
+emulator returned BUSY at about 67 seconds. No connection was established.
+Capture and probe processes finished; the remaining capture was explicitly
+stopped after the call. Physical settings were not changed.
+
+Both 8-kHz recordings contain 4.1 seconds. TX is exactly silent through
+the first 3.1 seconds at 100-ms resolution, then has RMS around 12000.
+RX rises from background RMS around 20 to answer-signal RMS around 3200
+at approximately 1.6 seconds. These are recording offsets, not wall times
+or protocol classifications. Packet timestamps span 10.02 seconds outbound
+and 10.36 seconds inbound. Packet counts cannot be used directly because
+the any-interface capture contains bridge/loopback duplicates.
+
+This confirms delayed delivery and late onset of the emulator response.
+It does not establish whether that response implements the correct
+handshake. The next analysis must deduplicate RTP by stream/sequence and
+map decoded waveform onset onto wall timestamps before attributing a
+specific protocol failure. Evidence: nanovax `/tmp/courier-2400-diagnostic.pcap`,
+`/tmp/courier-2400-diagnostic-audio-{tx,rx}.wav`, and
+`/tmp/courier-physical-2400-diagnostic-20261103`. A credential-free copy is
+retained on the notebook under `/tmp/courier-2400-diag`.
