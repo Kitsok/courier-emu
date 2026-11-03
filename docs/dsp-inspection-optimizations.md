@@ -118,3 +118,29 @@ library. No additional test campaign was introduced for this final review.
 There is no measured speedup or new physical-modem connection result from
 this batch; ARM build, normal-workload performance and end-to-end call
 validation remain outstanding.
+
+## Follow-up from the rebuilt physical attempt
+
+The completed batch was rebuilt on nanovax and called physical modem 100;
+see `physical-call-inspection-20261103.json` and `physical-call-a53.md`.
+Neither end connected. An interior training profile attributes 2.15% to
+`try_repeat_mac`, including eligibility and eligible kernel execution.
+The four MAC callers now test RPTC before calling that out-of-line helper,
+so unrepeated instructions go directly to their existing general path.
+The helper retains its defensive check. This changes no guest state,
+repeat count, arithmetic, map handling or cycle accounting.
+
+Validation: native notebook build and 38 short focused MAC checks pass.
+This follow-up has not been rebuilt on ARM or measured and no additional
+call was made. It cannot save the entire helper share: repeated eligible
+work still runs there.
+
+Inspection of the actual GCC 12 ARM binary also found that threaded
+wrappers for MADD, LACC-memory and SACH call separate opcode bodies.
+The source's Clang statement-level always-inline annotation does not force
+GCC to integrate these bodies. This provides a concrete compiler/codegen
+candidate for a later batch: selectively integrate small hot handlers,
+checking code size and target cost before broader adoption. The sampled
+wrapper cost includes architectural retirement and next-opcode setup;
+it is not all removable function-call overhead. The previously rejected
+BE/BF table-dispatch experiment remains rejected.

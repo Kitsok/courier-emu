@@ -2099,7 +2099,7 @@ void C5xCore::op_mac()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
-	if (try_repeat_mac(pma, false, true, count, dma)) {
+	if (m_rptc > 0 && try_repeat_mac(pma, false, true, count, dma)) {
         CYCLES(mac_cycles(pma, dma, count, false));
         return;
     }
@@ -2133,7 +2133,7 @@ void C5xCore::op_macd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
-	if (try_repeat_mac(pma, true, true, count, dma)) {
+	if (m_rptc > 0 && try_repeat_mac(pma, true, true, count, dma)) {
         CYCLES(mac_cycles(pma, dma, count, true));
         return;
     }
@@ -2169,7 +2169,7 @@ void C5xCore::op_madd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
-	if (try_repeat_mac(pma, true, false, count, dma)) {
+	if (m_rptc > 0 && try_repeat_mac(pma, true, false, count, dma)) {
         CYCLES(bmar_mac_cycles(pma, dma, count, true));
         return;
     }
@@ -2202,7 +2202,7 @@ void C5xCore::op_mads()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
-	if (try_repeat_mac(pma, false, false, count, dma)) {
+	if (m_rptc > 0 && try_repeat_mac(pma, false, false, count, dma)) {
         CYCLES(bmar_mac_cycles(pma, dma, count, false));
         return;
     }
