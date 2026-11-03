@@ -451,3 +451,101 @@ The larger goal remains unachieved until nanovax is rebuilt and an actual
 error-corrected connection to physical modem 100 is verified. No physical
 modem settings, nanovax temperatures or performance measurements were touched
 in this implementation/validation phase.
+
+## Nanovax rebuild and physical call after integration
+
+The checkout at `/home/kostik/work/courier-emu` had no unmerged index entries,
+but its committed merge contained conflict markers in `docs/architecture.md`.
+The only difference from the validated runtime revision was four extra
+architecture lines: markers and duplicated old text. Keeping the updated
+upstream wording resolved them in remote commit `50e4c8c`. The native
+`./build.sh` completed successfully and loaded both libraries. No parallel
+emulator process was running; the earlier test services were inactive.
+
+The configured EEPROM was copied into a temporary probe directory, and the
+emulator confirmed &M5 before dialing physical modem 100. SIP received 200
+and ACK, but the physical modem answered and reported NO CARRIER / No
+Connection. The emulator later reported BUSY after peer BYE. This is a
+failed modem connection, despite successful SIP setup.
+
+The worker averaged approximately 101.3% of one CPU over the sampled window.
+The run delivered 280 line frames and reached 78.6 seconds of media lag,
+with receive backlog peaking at 355840 samples. Native media, codec, interrupt
+and EOI paths were exercised. Real-time execution remains a blocker; these
+findings do not establish a causal explanation for every training failure.
+Evidence is summarized in `docs/native-physical-call-a53.json`, with the full
+probe/perf capture on nanovax at `/tmp/courier-native-physical-final-1`.
+Physical modem settings were not changed and no temperatures were collected.
+
+The retained whole-attempt `cycles:u` profile has no lost samples. Its flat
+DSO shares are 46.06% native C5x/device library, 32.10% Python, 18.08% native
+x86, 1.58% ctypes and 1.53% libc. Top symbols include x86 `run_batch` (14.88%),
+Python evaluation (14.75%), C5x BE dispatch (1.92%), MADD (1.88%), ADRK
+dispatch (1.83%) and timed resampling (1.51%). The earlier whole-attempt
+baseline had 51.07% Python and 28.93% C5x/device library, but these differing
+attempts are not a controlled speedup measurement. Both delivered roughly
+23% of real-time line audio over the entire attempt. The next optimization
+candidates are DSP decode/dispatch, remaining Python callback work (requiring
+function attribution), and x86 dispatch. A change in profile share alone
+must not be presented as equivalent CPU-time savings.
+
+## DSP grouped dispatch experiment
+
+A candidate replaced the BE/BF secondary plain handler tables with paired
+plain/threaded entries. Only the grouped threaded wrappers tail-dispatched
+to the secondary threaded handler; the primary dispatch path was unchanged.
+An earlier candidate that selected secondary handlers at every instruction
+was rejected after slowing the notebook microbenchmarks.
+
+On nanovax, eight interleaved reference/candidate pairs, reversing order on
+each pair and pinned to CPU 3, produced these median process CPU times for
+five million modeled cycles (after 10000 warmup cycles):
+
+| Case | Reference | Candidate | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Primary | 0.8403 s | 0.8352 s | 0.6% |
+| BE group | 0.8593 s | 0.8608 s | -0.2% |
+| BF group | 0.5035 s | 0.4889 s | 2.9% |
+
+All final architectural states matched. Earlier sequential blocks drifted
+by roughly 10%, so small differences require caution. The modest BF-only
+gain does not establish an overall training improvement. The experimental
+native implementation is removed; the existing dispatch remains in use.
+Raw repetitions and the microbenchmark source are retained in
+`docs/dsp-group-dispatch-results.json`.
+
+Four grouped-dispatch boundary checks passed on the candidate. The selected
+cycle/MAC/interrupt/line-clock suite gave identical results on candidate and
+unchanged reference: 27 passed and five failed. All five existing failures
+involve an additional timer interrupt flag bit (8); this experiment does
+not change interrupt semantics. A notebook standalone boot comparison also
+matched memory hash, registers, DSP/serial state, timers and interrupts.
+No new physical call was made and no physical modem settings were changed.
+
+Next: attribute remaining Python function costs during a reproducible local
+training workload, then optimize the largest measured cost. Separate x86
+and DSP threads remain an investigation: shared mailbox, interrupt, reset
+and guest-clock ordering require explicit synchronization before concurrency
+can be evaluated safely.
+
+## Profile and buffer remaining diagnostic write handoffs
+
+The local loopback training profiler isolates SIP-answer-to-CONNECT work
+and verifies LAPM/V42bis with exact bidirectional data. Native batch
+handling and rearming are the largest remaining Python self-time entries;
+training-only exit counts identify watched diagnostic RAM writes as
+39.3%/47.0% of caller/answerer native exits. Function attribution is retained
+in `docs/local-training-profile.json` and described in
+`docs/local-training-profile.md`.
+
+The standard worker now buffers those diagnostic stores natively, retaining
+callback PC, width/value, stack-derived caller information and order. The
+fixed-work diagnostic path uses 83.6% less notebook CPU and 79.3% less A53
+CPU. Final local reference/candidate peers all connect with LAPM/V42bis and
+transfer exact data. One sequential training pair observes about 4.6% less
+combined CPU, with differing guest work; this is not a fixed-work full-call
+speedup result. The final focused suite passes 38 checks. Details, rejected
+ordinary-execution overhead and controls are in `docs/native-queue-trace.md`
+and `docs/native-queue-trace-results.json`. Nanovax benchmarks use an
+isolated temporary package, leaving its working checkout unchanged. No
+physical call, physical settings change or temperature sampling occurred.

@@ -15,6 +15,7 @@ struct TimerReadState {
     uint64_t reads[11][2];
     uint64_t read_mask;
 };
+template<bool Trace>
 struct Core {
     uint32_t r[14], saved[14], done=0, reason=0;
     uint32_t io_direction=0, io_port=0, io_size=0, io_value=0;
@@ -64,6 +65,10 @@ struct Core {
     // worst case, so there is no overflow check.
     uint8_t *mmio_events=nullptr;
     uint32_t mmio_count=0;
+    // Diagnostic-only RAM stores: address, value, callback PC, width, CS,
+    // and three stack words at SP+4/+6/+8, all captured before the store.
+    uint8_t *write_trace=nullptr;
+    uint32_t trace_count=0, trace_capacity=0, instruction_trace_count=0;
     std::jmp_buf exit;
     [[noreturn]] void yield(uint32_t why=1) { reason=why; std::longjmp(exit, 1); }
     uint8_t *mem; const uint8_t *guard; uint32_t mask;
@@ -105,18 +110,50 @@ struct Core {
     }
     uint32_t phys(uint32_t s,uint32_t o) { return ((s&65535)*16+(o&65535))&mask; }
     uint32_t fetch(int n=1) { uint32_t v=0; for(int i=0;i<n;++i) {v|=uint32_t(mem[phys(r[CS],r[IP])])<<(i*8); r[IP]=(r[IP]+1)&65535;} return v; }
-    void check(uint32_t a,int n,int p) {
+    void check(uint32_t a,int n,int p,uint32_t value=0) {
         if(a+unsigned(n)>mask+1) yield(2);
         // Mapping regions are page-aligned. Watched bytes force a fallback,
         // including straddling accesses (conservative w.r.t. Python hooks).
         for(int i=0;i<n;++i) if(!(guard[a+i]&p) || (guard[a+i]&(p==1?16:32))) {
             // Bit 64 (writes only): the harness replays this write later.
             if(p==2&&(guard[a+i]&64)&&(guard[a+i]&p)) continue;
+            if constexpr(Trace) {
+                if(p==2&&(guard[a]&128)&&(guard[a+i]&128)&&(guard[a+i]&p)) {
+                    if(i==0) trace_store(a,n,value);
+                    continue;
+                }
+            }
             yield(p==1?3:4);
         }
     }
     uint32_t load(uint32_t a,int n) {uint32_t v;if(timer_read(a,n,v))return v;check(a,n,1); v=mem[a]; if(n>=2)v|=uint32_t(mem[a+1])<<8; if(n==4)v|=uint32_t(mem[a+2])<<16|uint32_t(mem[a+3])<<24; return v;}
-    void store(uint32_t a,int n,uint32_t v) {check(a,n,2); if(nw==8)yield(); writes[nw++]={a,v,n};}
+    uint32_t stack_word(unsigned offset) {
+        uint32_t value=0;
+        for(unsigned i=0;i<2;++i) {
+            const uint32_t address=((r[SS]&65535)*16+(r[SP]&65535)+offset+i)&mask;
+            uint8_t byte=mem[address];
+            // Earlier stores in this instruction would already be visible to
+            // a synchronous Python hook, although native stores are staged.
+            for(int j=0;j<nw;++j) {
+                const auto &w=writes[j];
+                if(address>=w.address&&address<w.address+unsigned(w.size))
+                    byte=uint8_t(w.value>>(8*(address-w.address)));
+            }
+            value|=uint32_t(byte)<<(8*i);
+        }
+        return value;
+    }
+    void trace_store(uint32_t a,int n,uint32_t v) {
+        if(trace_count==trace_capacity) yield(2);
+        const uint32_t value=n==4?v:v&((1u<<(8*n))-1);
+        const uint32_t event[8]={a,value,phys(r[CS],r[IP]),unsigned(n),r[CS],
+                                 stack_word(4),stack_word(6),stack_word(8)};
+        std::memcpy(write_trace+32*trace_count++,event,sizeof(event));
+    }
+    void store(uint32_t a,int n,uint32_t v) {
+        check(a,n,2,v); if(nw==8)yield();
+        writes[nw++]={a,v,n};
+    }
     uint32_t get(int k,int n) {return n==1?(r[k&3]>>((k&4)?8:0))&255:r[k];}
     void put(int k,int n,uint32_t v) {if(n==1){int sh=(k&4)?8:0; r[k&3]=(r[k&3]&~(255u<<sh))|((v&255)<<sh);}else r[k]=n==4?v:v&65535;}
     uint32_t ea(int m) {
@@ -278,16 +315,18 @@ struct Core {
     }
 };
 }
-static uint32_t run_batch(Core &c, uint32_t count) {
+template<bool Trace>
+static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
     // One exit target per batch; guarded data accesses can abort without the
     // cost of exception unwinding at every memory-mapped device instruction.
     if (setjmp(c.exit)) {
         std::memcpy(c.r, c.saved, sizeof(c.r));
+        if constexpr(Trace) c.trace_count=c.instruction_trace_count;
         return c.done;
     }
     for (c.done=0;c.done<count;++c.done) {
         if(c.poll_fn&&c.poll_total+c.done+1>=c.poll_next) {
-            Core::PollCpu lent{c.r,c.mem,std::size_t(c.mask)+1,c.guard,
+            typename Core<Trace>::PollCpu lent{c.r,c.mem,std::size_t(c.mask)+1,c.guard,
                 c.io_events,c.io_event_count,c.mmio_events,c.mmio_count,c.poll_total};
             int code=c.dirty_events?0:c.poll_fn(c.poll_context,c.host_base+c.done+1,c.r[F],&lent);
             if(code==1||code==4){
@@ -341,6 +380,7 @@ static uint32_t run_batch(Core &c, uint32_t count) {
             // SETcc: handled by step() below.
         } else if(opcode==0xcd||opcode==0x0f||opcode==0xf4){c.reason=7;break;}
         std::memcpy(c.saved,c.r,sizeof(c.r));
+        if constexpr(Trace) c.instruction_trace_count=c.trace_count;
         c.step();
         for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];
             if(c.timer_model){
@@ -366,13 +406,14 @@ static uint32_t run_batch(Core &c, uint32_t count) {
     return c.done;
 }
 extern "C" uint32_t courier_x86_run(uint32_t *regs,uint8_t *mem,const uint8_t *guard,uint32_t mask,uint32_t count){
-    Core c{};std::memcpy(c.r,regs,sizeof(c.r));c.mem=mem;c.guard=guard;c.mask=mask;c.is386=mask==0xffffff;
+    Core<false> c{};std::memcpy(c.r,regs,sizeof(c.r));c.mem=mem;c.guard=guard;c.mask=mask;c.is386=mask==0xffffff;
     uint32_t done=run_batch(c,count);
     std::memcpy(regs,c.r,sizeof(c.r));return done;
 }
 
 #include <Python.h>
-static PyObject *run_python(PyObject *, PyObject *args) {
+template<bool Trace>
+static PyObject *run_python_impl(PyObject *, PyObject *args) {
     PyObject *registers, *memory, *guard, *fast_out, *io_events;
     PyObject *int_mode = Py_None, *int_counts = Py_None;
     PyObject *host_io = Py_None, *host_context = Py_None, *host_ports = Py_None;
@@ -381,11 +422,12 @@ static PyObject *run_python(PyObject *, PyObject *args) {
     PyObject *mmio_events = Py_None;
     PyObject *timer_reads = Py_None;
     PyObject *timer_model = Py_None;
+    PyObject *write_trace = Py_None;
     unsigned int count;
-    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOO", &registers, &memory, &guard,
+    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOOO", &registers, &memory, &guard,
         &fast_out, &io_events, &count, &int_mode, &int_counts,
         &host_io, &host_context, &host_ports, &host_base,
-        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model)) return nullptr;
+        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model, &write_trace)) return nullptr;
     if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
         !PyByteArray_Check(memory) || !PyByteArray_Check(guard) ||
         !PyByteArray_Check(fast_out) || PyByteArray_GET_SIZE(fast_out)!=65536 ||
@@ -394,7 +436,15 @@ static PyObject *run_python(PyObject *, PyObject *args) {
         (PyByteArray_GET_SIZE(memory)!=0x100000 && PyByteArray_GET_SIZE(memory)!=0x1000000)) {
         PyErr_SetString(PyExc_ValueError,"invalid native CPU buffers"); return nullptr;
     }
-    Core c{};
+    Core<Trace> c{};
+    if(write_trace!=Py_None) {
+        if(!PyByteArray_Check(write_trace)||PyByteArray_GET_SIZE(write_trace)<8*32||
+           PyByteArray_GET_SIZE(write_trace)%32) {
+            PyErr_SetString(PyExc_ValueError,"invalid native write trace buffer");return nullptr;
+        }
+        c.write_trace=reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(write_trace));
+        c.trace_capacity=PyByteArray_GET_SIZE(write_trace)/32;
+    }
     uint32_t original[14];
     for (int i=0;i<14;++i) {
         original[i]=c.r[i]=PyLong_AsUnsignedLong(PyList_GET_ITEM(registers,i));
@@ -442,7 +492,7 @@ static PyObject *run_python(PyObject *, PyObject *args) {
             PyErr_SetString(PyExc_ValueError,"invalid native port table");
             return nullptr;
         }
-        c.host_io=reinterpret_cast<Core::HostIo>(function);
+        c.host_io=reinterpret_cast<typename Core<Trace>::HostIo>(function);
         c.host_context=reinterpret_cast<void*>(context);
         c.host_ports=reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(host_ports));
         if (host_base != Py_None) {
@@ -455,7 +505,7 @@ static PyObject *run_python(PyObject *, PyObject *args) {
         if (!PyTuple_Check(poll_state) || PyTuple_GET_SIZE(poll_state)!=3) {
             PyErr_SetString(PyExc_ValueError,"invalid native poll state"); return nullptr;
         }
-        c.poll_fn=reinterpret_cast<Core::PollFn>(PyLong_AsUnsignedLongLong(poll_fn));
+        c.poll_fn=reinterpret_cast<typename Core<Trace>::PollFn>(PyLong_AsUnsignedLongLong(poll_fn));
         c.poll_context=reinterpret_cast<void*>(PyLong_AsUnsignedLongLong(poll_context));
         c.poll_total=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll_state,0));
         c.poll_next=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll_state,1));
@@ -471,9 +521,17 @@ static PyObject *run_python(PyObject *, PyObject *args) {
             PyList_SetItem(registers,i,v);
         }
     }
-    return Py_BuildValue("IIIIIIIKII",done,c.reason,c.io_direction,c.io_port,
+    return Py_BuildValue("IIIIIIIKIII",done,c.reason,c.io_direction,c.io_port,
         c.io_size,c.io_value,c.io_event_count,
-        (unsigned long long)c.poll_next,c.poll_code,c.mmio_count);
+        (unsigned long long)c.poll_next,c.poll_code,c.mmio_count,c.trace_count);
+}
+
+static PyObject *run_python(PyObject *self, PyObject *args) {
+    // Select once per batch. The ordinary interpreter specialization has no
+    // trace branches in its instruction/store loops.
+    if(PyTuple_GET_SIZE(args)>18&&PyTuple_GET_ITEM(args,18)!=Py_None)
+        return run_python_impl<true>(self,args);
+    return run_python_impl<false>(self,args);
 }
 
 static PyObject *inject_interrupt_python(PyObject *, PyObject *args) {

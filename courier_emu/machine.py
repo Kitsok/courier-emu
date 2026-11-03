@@ -5,6 +5,7 @@ import ctypes
 from collections import Counter, deque
 import math
 import os
+from struct import Struct
 import re
 from dataclasses import asdict, dataclass, field
 from types import BuiltinFunctionType
@@ -3140,35 +3141,44 @@ class CourierMachine:
             # entries in the 24-word ring at 0x02e0..0x030f. Keep this trace
             # separate from peripheral MMIO so the producer PCs survive long
             # runs whose ordinary I/O trace has already filled.
-            pc = current_pc()
+            record_dsp_queue_write(address, size, value, current_pc())
+            if (native_worker_irqs and self.dsp_bridge is not None
+                    and self.dsp_bridge.exchange is not None):
+                # This hook only records diagnostics. Its guest store commits
+                # before the next native batch; it changes no device state.
+                if worker_resume_diagnostic[0] is not None:
+                    worker_resume_diagnostic[0]()
+
+        def record_dsp_queue_write(address, size, value, pc, cs=None, stack=None):
             source = ""
             if pc in (0x5D79E, 0x6B083):
                 # These are the stores inside the pending-word and ring-queue
                 # helpers. Their saved near return addresses identify the
                 # actual command producers.
-                sp = _uc.reg_read(UC_X86_REG_SP)
-                ss = _uc.reg_read(UC_X86_REG_SS)
+                sp = uc.reg_read(UC_X86_REG_SP) if stack is None else 0
+                ss = uc.reg_read(UC_X86_REG_SS) if stack is None else 0
                 stack_skip = 4 if pc == 0x5D79E else 6
-                return_offset = int.from_bytes(
-                    _uc.mem_read(((ss << 4) + sp + stack_skip) & 0xFFFFF, 2), "little"
-                )
-                cs = _uc.reg_read(UC_X86_REG_CS)
+                return_offset = (int.from_bytes(
+                    uc.mem_read(((ss << 4) + sp + stack_skip) & 0xFFFFF, 2), "little"
+                ) if stack is None else stack[(stack_skip-4)//2])
+                if cs is None:
+                    cs = uc.reg_read(UC_X86_REG_CS)
                 caller = ((cs << 4) + return_offset) & 0xFFFFF
                 source = f" caller={caller:05x}"
                 if caller in (0x5D76A, 0x6B066):
                     outer_skip = stack_skip + 2
-                    outer_offset = int.from_bytes(
-                        _uc.mem_read(((ss << 4) + sp + outer_skip) & 0xFFFFF, 2),
+                    outer_offset = (int.from_bytes(
+                        uc.mem_read(((ss << 4) + sp + outer_skip) & 0xFFFFF, 2),
                         "little",
-                    )
+                    ) if stack is None else stack[(outer_skip-4)//2])
                     outer_segment = cs
                     if caller == 0x5D76A:
-                        outer_segment = int.from_bytes(
-                            _uc.mem_read(
+                        outer_segment = (int.from_bytes(
+                            uc.mem_read(
                                 ((ss << 4) + sp + outer_skip + 2) & 0xFFFFF, 2
                             ),
                             "little",
-                        )
+                        ) if stack is None else stack[(outer_skip-2)//2])
                     source += (
                         f" producer={((outer_segment << 4) + outer_offset) & 0xFFFFF:05x}"
                     )
@@ -3181,13 +3191,11 @@ class CourierMachine:
             )
             if len(self.dsp_queue_writes) > self.max_io_events:
                 del self.dsp_queue_writes[0]
-            if (native_worker_irqs and self.dsp_bridge is not None
-                    and self.dsp_bridge.exchange is not None):
-                # This hook only records diagnostics. Its guest store commits
-                # before the next native batch; it changes no device state.
-                if worker_resume_diagnostic[0] is not None:
-                    worker_resume_diagnostic[0]()
+        queue_trace_record = Struct('=8I')
 
+        def replay_dsp_queue_writes(events, count):
+            for address, value, pc, size, cs, s4, s6, s8 in queue_trace_record.iter_unpack(events[:count*32]):
+                record_dsp_queue_write(address, size, value, pc, cs, (s4, s6, s8))
 
         # The harness clock. Unicorn will say how big a basic block is but not
         # how many instructions are in it, so each distinct block is
@@ -4078,6 +4086,12 @@ class CourierMachine:
             UC_HOOK_MEM_WRITE, on_dsp_queue_write, None,
             dsp_queue.first, dsp_queue.last,
         )
+        if (self.cpu_engine == 'interpreter' and uc.native_poll is not None
+                and self.mem_watch is None
+                and os.environ.get('COURIER_NATIVE_QUEUE_TRACE', '1') != '0'):
+            uc.native_write_trace = ((dsp_queue.first, dsp_queue.last),)
+            uc.native_write_trace_hook = on_dsp_queue_write
+            uc.native_write_trace_callback = replay_dsp_queue_writes
         uc.hook_add(
             UC_HOOK_MEM_WRITE, on_serial_tx_callback_write, None,
             serial_callback.first, serial_callback.last,

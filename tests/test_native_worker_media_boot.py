@@ -70,6 +70,8 @@ def test_boot_state_matches_python_worker_with_native_media(monkeypatch, monitor
     assert results[0].registers == results[1].registers
     assert machines[0].uc.memory == machines[1].uc.memory
     assert machines[0].io_counts == machines[1].io_counts
+    assert machines[0].dsp_queue_write_counts == machines[1].dsp_queue_write_counts
+    assert machines[0].dsp_queue_writes == machines[1].dsp_queue_writes
     assert results[0].serial_text == results[1].serial_text
     assert results[0].ticks == results[1].ticks
     assert results[0].timer_interrupts == results[1].timer_interrupts
