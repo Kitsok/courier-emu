@@ -147,3 +147,31 @@ The probe verifies annotation acceptance, not actual opcode integration,
 correctness or speed. Those remain separate emitted-code and runtime
 checks. The deployed library hash is still the recorded GCC reference.
 No physical call or modem-setting change was made during this stage.
+
+## Clang 16 integration validated, performance rejected
+
+The isolated Clang 16 build completed with unknown attributes treated as
+errors. Exact-symbol inspection confirms no separate opcode-body calls
+inside the inspected MADD, DMOV, LT, LACC-memory, ADD-memory and SACH
+wrappers. The artifact is 838688 bytes versus the active GCC 826400 bytes
+(about 1.49% larger). This achieves the requested code integration.
+
+All 60 focused cases match reference architecture and counter digests:
+36 register/DARAM cases plus twelve load/store and twelve arithmetic
+threaded cases. Eight additional kernel families match state, serial,
+map counters, data and write counts in every timed repetition.
+
+Three alternating pairs on CPU 3, 500000 modeled cycles per case, find
+no useful timing gain. Clang DMOV-DARAM is 15.30% slower, LTD-SARAM 9.85%
+slower and the primary control 14.26% slower. Repeated MAC cases regress
+by roughly 49–78%, with external MADD 6.64% slower. Short MAC timings
+have limited precision, but the consistent regressions do not support
+deployment or another physical call.
+
+Reject this unmodified Clang 16 build for runtime adoption. The normal
+GCC artifact and build flags remain active; no rollback is needed because
+all compiler variants stayed under /tmp. Installed toolchains remain
+available for future work. Generated integration alone is not a speedup
+and does not resolve the physical connection deficit. Manifest, exact
+handler calls, matching checks and all raw timings are retained in
+`dsp-clang16-comparison.json`. No physical modem settings were changed.
