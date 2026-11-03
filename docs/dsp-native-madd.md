@@ -55,3 +55,31 @@ The collection includes the C5X_PROFILE_WORK diagnostic build, so its
 Raw work rows and outcomes are in `dsp-madd-work-profile.json.gz` and
 `dsp-madd-work-coverage.json`. A53 validation remains pending; no new
 physical call has run for this MADD batch.
+
+## A53 validation
+
+Three alternating measurements per variant on CPU 3 compare the prior
+MADS-enabled library against the new MADD-enabled library. All workload
+state hashes agree, and both MADD helpers report positive native hits.
+Raw counters are in `dsp-madd-arm.json`.
+
+| Workload | Host cycle reduction | Host instruction reduction |
+| --- | ---: | ---: |
+| madd | 38.54% | 30.83% |
+| madd-prepare | 28.15% | 22.79% |
+| madd-saram | 39.61% | 32.21% |
+| filter-repeat | -1.88% | -0.24% |
+| training | 0.19% | 0.00% |
+| dmov | 0.15% | -0.01% |
+| address | -1.08% | -0.00% |
+
+The largest unrelated change is a 1.88% cycle increase in the MADS
+repeat workload, with 0.24% more instructions. Address work uses 1.08%
+more cycles with essentially unchanged instructions. These bounded
+results support keeping the batch for the physical-call validation;
+they do not establish a whole-call speedup.
+
+An uninstrumented notebook call establishes 9600/ARQ/V32/LAPM/V42BIS
+on both endpoints and exchanges exact bidirectional markers in 34.51
+seconds total. This is a correctness check, not an alternating timing
+comparison. Physical connection remains unproven for this batch.
