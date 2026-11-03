@@ -108,3 +108,34 @@ million modeled cycles in a notebook smoke check and matches the ordinary
 interpreter state hash, including hardware stack. The refined guard build
 passes 153 focused arithmetic/XC checks in 0.68 seconds. These checks
 validate the fixture and semantics; they do not measure A53 savings.
+
+## Final A53 batch measurements
+
+The corrected return workload passes all state-hash comparisons and has
+positive native admissions in both libraries. Three alternating CPU-3
+repetitions compare the preceding MADD-enabled build to the final return
+build. The returning arithmetic workload uses 42.26% fewer host cycles
+and 29.25% fewer host instructions. The artificial non-return arithmetic
+control costs 2.94% more cycles and 2.70% more instructions; the ordinary
+DMOV and address controls are essentially unchanged. Retain the change
+for the observed returning firmware path, documenting the prefix cost.
+Raw counters are in `dsp-return-arm.json`. These are kernel gains, not
+whole-modem CPU reductions.
+
+The final Python wrapper microbenchmark runs after compilation and DSP
+measurements, using the same preserved native x86 binary for both Python
+variants. Three alternating repetitions of 10,000 four-instruction
+batches reduce configured host/timer/trace plumbing CPU by 23.64%; the
+plain-CPU case improves 7.55%. The configured case uses inert optional
+services to isolate binding overhead. It does not run modem media, and
+these percentages must not be applied to total Python or total call CPU.
+`python-batch-arm.json` preserves its method, repetitions and registers.
+
+A notebook call with the complete initial three-stage batch establishes
+9600/ARQ/V32/LAPM/V42BIS on both endpoints and exchanges exact markers.
+Its 39.19-second total is a correctness result, not an alternating timing
+comparison. Subsequent changes restore the original x86 core, retain the
+short plain binding and reorder the DSP admission guard without changing
+emulated operations. Final focused checks cover those refinements.
+The next physical call uses the retained DSP/Python changes and original
+native x86 implementation, with unchanged mandatory-ARQ EEPROM settings.

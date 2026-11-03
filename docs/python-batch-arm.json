@@ -1,0 +1,279 @@
+{
+  "method": "10000 four-instruction batches; configured case includes inert host/timer/trace argument plumbing; setup excluded; not a modem workload",
+  "summary": {
+    "False": {
+      "reference": 0.15695312399999994,
+      "candidate": 0.14509774799999997
+    },
+    "True": {
+      "reference": 0.2609048749999998,
+      "candidate": 0.19923779099999983
+    }
+  },
+  "runs": [
+    {
+      "configured": false,
+      "variant": "reference",
+      "order": 0,
+      "cpu_seconds": 0.152238333,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": false,
+      "variant": "candidate",
+      "order": 0,
+      "cpu_seconds": 0.173063917,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": false,
+      "variant": "candidate",
+      "order": 1,
+      "cpu_seconds": 0.14509774799999997,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": false,
+      "variant": "reference",
+      "order": 1,
+      "cpu_seconds": 0.15695312399999994,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": false,
+      "variant": "reference",
+      "order": 2,
+      "cpu_seconds": 0.16042979200000018,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": false,
+      "variant": "candidate",
+      "order": 2,
+      "cpu_seconds": 0.140431666,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "reference",
+      "order": 0,
+      "cpu_seconds": 0.2609048749999998,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "candidate",
+      "order": 0,
+      "cpu_seconds": 0.176971376,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "candidate",
+      "order": 1,
+      "cpu_seconds": 0.20952779199999982,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "reference",
+      "order": 1,
+      "cpu_seconds": 0.26848879000000014,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "reference",
+      "order": 2,
+      "cpu_seconds": 0.24429795600000004,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    },
+    {
+      "configured": true,
+      "variant": "candidate",
+      "order": 2,
+      "cpu_seconds": 0.19923779099999983,
+      "registers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        2
+      ]
+    }
+  ]
+}

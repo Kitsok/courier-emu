@@ -1,0 +1,574 @@
+{
+  "summary": {
+    "dmov": {
+      "reference": {
+        "cycles:u": 139501584,
+        "instructions:u": 143480953
+      },
+      "candidate": {
+        "cycles:u": 139062233,
+        "instructions:u": 143483935
+      }
+    },
+    "training": {
+      "reference": {
+        "cycles:u": 32842245,
+        "instructions:u": 37091343
+      },
+      "candidate": {
+        "cycles:u": 33807815,
+        "instructions:u": 38091568
+      }
+    },
+    "address": {
+      "reference": {
+        "cycles:u": 186537223,
+        "instructions:u": 215818774
+      },
+      "candidate": {
+        "cycles:u": 186499668,
+        "instructions:u": 215819412
+      }
+    },
+    "training-return": {
+      "reference": {
+        "cycles:u": 52157811,
+        "instructions:u": 49279807
+      },
+      "candidate": {
+        "cycles:u": 30118028,
+        "instructions:u": 34863279
+      }
+    }
+  },
+  "runs": [
+    {
+      "cpu_seconds": 0.04826616699999997,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:34 2026\n\n52137683,,cycles:u,48482583,100.00,,\n49279807,,instructions:u,48482583,100.00,0.95,insn per cycle\n",
+      "counters": {
+        "cycles:u": 52137683,
+        "instructions:u": 49279807
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.026068582999999923,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:36 2026\n\n30118028,,cycles:u,26288208,100.00,,\n34863201,,instructions:u,26288208,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 30118028,
+        "instructions:u": 34863201
+      },
+      "variant": "candidate",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.026365792,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:37 2026\n\n30232121,,cycles:u,26641416,100.00,,\n34863348,,instructions:u,26641416,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 30232121,
+        "instructions:u": 34863348
+      },
+      "variant": "candidate",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.04751337499999997,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:38 2026\n\n52176753,,cycles:u,47833625,100.00,,\n49279737,,instructions:u,47833625,100.00,0.94,insn per cycle\n",
+      "counters": {
+        "cycles:u": 52176753,
+        "instructions:u": 49279737
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.042948499999999945,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:39 2026\n\n52157811,,cycles:u,43159375,100.00,,\n49279888,,instructions:u,43159375,100.00,0.94,insn per cycle\n",
+      "counters": {
+        "cycles:u": 52157811,
+        "instructions:u": 49279888
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.03122262500000006,
+      "block_hits": 41666,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 624997,
+      "executed_cycles": 1000000,
+      "sha256": "af95cbb9414ffbcf4aee611e306c25a46e884d1a35794bdacf2bcd72a9621282",
+      "case": "training-return",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:41 2026\n\n30098983,,cycles:u,31462958,100.00,,\n34863279,,instructions:u,31462958,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 30098983,
+        "instructions:u": 34863279
+      },
+      "variant": "candidate",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.027536834000000066,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:42 2026\n\n32867970,,cycles:u,27759959,100.00,,\n37091348,,instructions:u,27759959,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 32867970,
+        "instructions:u": 37091348
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.03751037400000001,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:43 2026\n\n33755470,,cycles:u,37766167,100.00,,\n38091568,,instructions:u,37766167,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 33755470,
+        "instructions:u": 38091568
+      },
+      "variant": "candidate",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.036159082999999925,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:44 2026\n\n33807815,,cycles:u,36410501,100.00,,\n38091507,,instructions:u,36410501,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 33807815,
+        "instructions:u": 38091507
+      },
+      "variant": "candidate",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.032705167000000035,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:46 2026\n\n32842245,,cycles:u,32939083,100.00,,\n37091343,,instructions:u,32939083,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 32842245,
+        "instructions:u": 37091343
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.02751320800000001,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:47 2026\n\n32832398,,cycles:u,27723208,100.00,,\n37091311,,instructions:u,27723208,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 32832398,
+        "instructions:u": 37091311
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.03834104199999999,
+      "block_hits": 62500,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:48 2026\n\n33853803,,cycles:u,38602082,100.00,,\n38091636,,instructions:u,38602082,100.00,1.13,insn per cycle\n",
+      "counters": {
+        "cycles:u": 33853803,
+        "instructions:u": 38091636
+      },
+      "variant": "candidate",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.12286633199999997,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:49 2026\n\n139501584,,cycles:u,123127957,100.00,,\n143473407,,instructions:u,123127957,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 139501584,
+        "instructions:u": 143473407
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.12573078999999998,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:51 2026\n\n139128741,,cycles:u,125971707,100.00,,\n143483935,,instructions:u,125971707,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 139128741,
+        "instructions:u": 143483935
+      },
+      "variant": "candidate",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.13856004200000005,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:52 2026\n\n139062233,,cycles:u,138883499,100.00,,\n143486226,,instructions:u,138883499,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 139062233,
+        "instructions:u": 143486226
+      },
+      "variant": "candidate",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.12413275000000001,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:53 2026\n\n139403429,,cycles:u,124385625,100.00,,\n143486545,,instructions:u,124385625,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 139403429,
+        "instructions:u": 143486545
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.13113449999999993,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:55 2026\n\n139875840,,cycles:u,131396707,100.00,,\n143480953,,instructions:u,131396707,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 139875840,
+        "instructions:u": 143480953
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.139401208,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:56 2026\n\n138747124,,cycles:u,139717374,100.00,,\n143482063,,instructions:u,139717374,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 138747124,
+        "instructions:u": 143482063
+      },
+      "variant": "candidate",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.172458707,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:44:58 2026\n\n186537223,,cycles:u,172735498,100.00,,\n215818562,,instructions:u,172735498,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 186537223,
+        "instructions:u": 215818562
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.18936603900000004,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:44:59 2026\n\n186499668,,cycles:u,189571083,100.00,,\n215819412,,instructions:u,189571083,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 186499668,
+        "instructions:u": 215819412
+      },
+      "variant": "candidate",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.168787499,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:45:01 2026\n\n186471743,,cycles:u,169012957,100.00,,\n215819410,,instructions:u,169012957,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 186471743,
+        "instructions:u": 215819410
+      },
+      "variant": "candidate",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.17728345700000003,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:45:02 2026\n\n186476816,,cycles:u,177536624,100.00,,\n215818774,,instructions:u,177536624,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 186476816,
+        "instructions:u": 215818774
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.17651520900000006,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "617f0305abc380b2cbcc5daaecf43f7da177716c87f9cf07d36a0e0c01222209",
+      "perf_csv": "# started on Tue Nov  3 17:45:03 2026\n\n187521993,,cycles:u,176770999,100.00,,\n215818798,,instructions:u,176770999,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 187521993,
+        "instructions:u": 215818798
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.16568737600000005,
+      "block_hits": 0,
+      "complex_block_hits": 0,
+      "filter_block_hits": 0,
+      "madd_block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "c6f184cbe8cb502884579670e0e7d065aaf6952ed6ad5c58207465f72b4a1a34",
+      "library_sha256": "446a95036e54319688aacbe380941ddf5dc3826e86719c5fa98375797e0b19b6",
+      "perf_csv": "# started on Tue Nov  3 17:45:05 2026\n\n186518380,,cycles:u,165939373,100.00,,\n215819605,,instructions:u,165939373,100.00,1.16,insn per cycle\n",
+      "counters": {
+        "cycles:u": 186518380,
+        "instructions:u": 215819605
+      },
+      "variant": "candidate",
+      "order": 2
+    }
+  ]
+}
