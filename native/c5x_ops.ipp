@@ -563,7 +563,7 @@ void C5xCore::op_lacb()
 	CYCLES(1);
 }
 
-void C5xCore::op_lacc_mem()
+inline __attribute__((always_inline)) void C5xCore::op_lacc_mem()
 {
 	int shift = (m_op >> 8) & 0xf;
 	uint16_t ea = GET_ADDRESS();
@@ -751,7 +751,7 @@ void C5xCore::op_sacb()
 	CYCLES(1);
 }
 
-void C5xCore::op_sach()
+inline __attribute__((always_inline)) void C5xCore::op_sach()
 {
 	uint16_t ea = GET_ADDRESS();
 	int shift = (m_op >> 8) & 0x7;
@@ -760,7 +760,7 @@ void C5xCore::op_sach()
 	CYCLES(1);
 }
 
-void C5xCore::op_sacl()
+inline __attribute__((always_inline)) void C5xCore::op_sacl()
 {
 	uint16_t ea = GET_ADDRESS();
 	int shift = (m_op >> 8) & 0x7;

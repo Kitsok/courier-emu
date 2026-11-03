@@ -144,3 +144,19 @@ checking code size and target cost before broader adoption. The sampled
 wrapper cost includes architectural retirement and next-opcode setup;
 it is not all removable function-call overhead. The previously rejected
 BE/BF table-dispatch experiment remains rejected.
+
+## Selectively inline hot DSP loads and stores
+
+LACC-memory, SACH and SACL now use the same explicit function-level
+always-inline attribute already used by the core's address/access helpers.
+Both GCC and Clang can integrate these three small bodies into their
+thunks and threaded wrappers. No opcode decoding, arithmetic, memory access
+or retirement logic changes. This is deliberately limited to three sampled
+load/store handlers; it does not flatten the entire core or event handlers.
+
+Validation: native notebook build and 35 short memory-map, condition-sampling
+and cycle checks pass. Twelve small threaded runs compare before/after
+state, map counters, data and write counts across all load/store shifts,
+positive/negative input, SXM and tracing. Snapshot hashes match:
+`8b69e914ecd5e99814ab37dcf3542abb67a570a4606f6751e8c1cfb4a7916405`.
+No target speedup is claimed before the next ARM build and measurement.
