@@ -377,6 +377,7 @@ public:
     // How many write events the data trace keeps (oldest dropped first); 4096 by default.
     void set_data_event_limit(std::size_t limit) { m_data_event_limit = limit ? limit : 4096; }
     State state() const;
+    uint64_t training_block_hits() const { return m_training_block_hits; }
     uint16_t program_counter() const { return m_pc; }
     std::size_t line_tx_count() const { return m_line_tx.size(); }
     SerialState serial_state() const;
@@ -540,6 +541,9 @@ private:
     void step_retire();
     uint16_t m_previous_pc = 0;
     // Where a threaded run stops: see C5xCore::threaded.
+    uint64_t m_training_block_hits = 0;
+    bool m_native_training_block = false;
+    bool try_training_block(uint64_t target);
     uint64_t m_run_target = 0;
     std::size_t m_run_pcm_size = 0;
     bool m_run_yield = false;

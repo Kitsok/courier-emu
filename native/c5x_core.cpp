@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 
@@ -84,6 +85,8 @@ C5xCore::C5xCore(Model model)
       m_saram_program_first(model == Model::C53 ? 0x4000 : 0x2000),
       m_saram_words(model == Model::C53 ? 0x0c00 : model == Model::C52 ? 0 : 0x0400)
 {
+    const char *blocks = std::getenv("COURIER_C5X_TRAINING_BLOCK");
+    m_native_training_block = blocks && std::strcmp(blocks, "1") == 0;
     // Courier external RAM wiring is a board setting, not a C53 property.
     if (model != Model::C51) set_shared_window(0xffff, 0);
     reset();
@@ -91,6 +94,7 @@ C5xCore::C5xCore(Model model)
 
 void C5xCore::reset()
 {
+    m_training_block_hits = 0;
     m_delay_move_ignored = 0;
     m_delay_move_last_pc = m_delay_move_last_address = 0;
     m_pc = m_op = 0;
@@ -1530,6 +1534,50 @@ void C5xCore::cpuregs_w(uint16_t offset, uint16_t value)
 
 #undef CYCLES
 
+// An observed arithmetic block, admitted only in an event-free run window.
+bool C5xCore::try_training_block(uint64_t target)
+{
+    static constexpr uint16_t code[] = {0x528a,0x8d7d,0x8c7e,0x7304,0x557e,
+        0x8d7e,0x547d,0xbe03,0x627e,0x61a0,0x6290};
+    if (m_pc != 0x879d || m_maps_dirty || m_trace_data_writes
+        || m_pmst.braf || m_repeat_active || m_rptc || m_in_delay_slot
+        || m_delay_condition_pending || m_cbcr || step_is_rare()
+        || target - m_cycles < 11 || m_event_deadline <= m_cycles + 11)
+        return false;
+    // At this PC all supported models use external program storage. DARAM
+    // operands cannot alias it; writes cannot change later code in the block.
+    if (m_pmap[m_pc] != 3 || !std::equal(std::begin(code),std::end(code),m_program.data()+m_pc))
+        return false;
+    auto daram = [&](uint16_t address) { return (m_dmap[address] & 0x3f) == 1; };
+    const uint16_t first = m_ar[m_st0.arp], indexed = m_ar[2];
+    const uint16_t high = m_st0.dp | 0x7d, low = m_st0.dp | 0x7e;
+    if (!daram(first) || !daram(indexed) || !daram(uint16_t(indexed+1))
+        || !daram(m_st0.dp | 4) || !daram(high) || !daram(low)
+        || (m_call_tdm_active && (m_line_dac_slot == high || m_line_dac_slot == low)))
+        return false;
+    ++m_training_block_hits;
+    m_map.program_external += 11;
+    m_condition_start = condition_state();
+    // Each original handler updates the next condition snapshot in CYCLES.
+    // No event, diagnostic, code write or register-mapped memory is admitted.
+#define BLOCK_OP(op, handler) m_previous_pc=m_pc++; m_op=op; handler();
+    BLOCK_OP(0x528a,op_sqra)
+    BLOCK_OP(0x8d7d,op_sph)
+    BLOCK_OP(0x8c7e,op_spl)
+    BLOCK_OP(0x7304,op_lt)
+    BLOCK_OP(0x557e,op_mpyu)
+    BLOCK_OP(0x8d7e,op_sph)
+    BLOCK_OP(0x547d,op_mpy_mem)
+    BLOCK_OP(0xbe03,op_pac)
+    BLOCK_OP(0x627e,op_adds)
+    BLOCK_OP(0x61a0,op_add_s16_mem)
+    BLOCK_OP(0x6290,op_adds)
+#undef BLOCK_OP
+    m_instructions += 11;
+    m_tail_cycle = m_cycles;
+    return true;
+}
+
 void C5xCore::op_group_be() { s_opcode_table_be[m_op & 0xff](this); }
 void C5xCore::op_group_bf() { s_opcode_table_bf[m_op & 0xff](this); }
 
@@ -1981,6 +2029,10 @@ void C5xCore::threaded(C5xCore *core)
     if (core->m_cycles >= core->m_run_target
         || (core->m_run_yield && core->m_g711_tx.size() != core->m_run_pcm_size)
         || core->step_is_rare())
+        return;
+    if (core->m_pc == 0x879d && core->m_native_training_block
+        && core->try_training_block(core->m_run_target)
+        && core->m_cycles >= core->m_run_target)
         return;
     core->step_begin();
     [[clang::musttail]] return s_opcode_table[core->m_op >> 8].threaded(core);
