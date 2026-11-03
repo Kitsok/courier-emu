@@ -1,0 +1,288 @@
+{
+  "instructions": 1000000,
+  "repeat": 3,
+  "summary": {
+    "byte_memory_control": {
+      "reference": 0.144326,
+      "candidate": 0.15097920799999998,
+      "cpu_reduction_percent": -4.609847151587365
+    },
+    "register_branches": {
+      "reference": 0.11016979199999999,
+      "candidate": 0.10573033399999998,
+      "cpu_reduction_percent": 4.029650886515245
+    },
+    "counter_loop": {
+      "reference": 0.11771666500000011,
+      "candidate": 0.11180866599999995,
+      "cpu_reduction_percent": 5.018829746833342
+    },
+    "mixed_memory": {
+      "reference": 0.14881970700000036,
+      "candidate": 0.14324945899999975,
+      "cpu_reduction_percent": 3.7429505220035075
+    },
+    "traced_memory": {
+      "reference": 0.1835817070000001,
+      "candidate": 0.1976706660000005,
+      "cpu_reduction_percent": -7.674489593889877
+    },
+    "memory_control": {
+      "reference": 0.16735570799999966,
+      "candidate": 0.1515733309999998,
+      "cpu_reduction_percent": 9.43043842878659
+    },
+    "prefixed_control": {
+      "reference": 0.12591337399999958,
+      "candidate": 0.11907087500000024,
+      "cpu_reduction_percent": 5.43429088001356
+    },
+    "386_control": {
+      "reference": 0.1231784160000009,
+      "candidate": 0.12613853900000027,
+      "cpu_reduction_percent": -2.403118254093606
+    }
+  },
+  "runs": {
+    "byte_memory_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.144326,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        },
+        {
+          "cpu_seconds": 0.14773791599999997,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        },
+        {
+          "cpu_seconds": 0.1442145829999999,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.14452287399999997,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        },
+        {
+          "cpu_seconds": 0.15097920799999998,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        },
+        {
+          "cpu_seconds": 0.15989429,
+          "sha256": "9c27776646103337f6cf100ddf786853fa2445a2051145a569aed9a52dcc9c43"
+        }
+      ]
+    },
+    "register_branches": {
+      "reference": [
+        {
+          "cpu_seconds": 0.11016979199999999,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.11013537500000004,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.11434762499999995,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.10573033399999998,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.10730416700000012,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        },
+        {
+          "cpu_seconds": 0.10559237500000007,
+          "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+        }
+      ]
+    },
+    "counter_loop": {
+      "reference": [
+        {
+          "cpu_seconds": 0.11783479099999994,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        },
+        {
+          "cpu_seconds": 0.11771666500000011,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        },
+        {
+          "cpu_seconds": 0.11654737400000004,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.11255883400000011,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        },
+        {
+          "cpu_seconds": 0.11172612400000004,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        },
+        {
+          "cpu_seconds": 0.11180866599999995,
+          "sha256": "4a3925b5aaa08dcdc7c391ad5f270e61d6567e9be48b77fbe3e9becde68030f8"
+        }
+      ]
+    },
+    "mixed_memory": {
+      "reference": [
+        {
+          "cpu_seconds": 0.14881970700000036,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        },
+        {
+          "cpu_seconds": 0.150735375,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        },
+        {
+          "cpu_seconds": 0.1475914989999998,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.14536666600000014,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        },
+        {
+          "cpu_seconds": 0.14167037399999982,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        },
+        {
+          "cpu_seconds": 0.14324945899999975,
+          "sha256": "a6a52004eb73547836d1cf8a8015d3c6850d12395632f9ab929ba7ce4e54fc8e"
+        }
+      ]
+    },
+    "traced_memory": {
+      "reference": [
+        {
+          "cpu_seconds": 0.1835817070000001,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        },
+        {
+          "cpu_seconds": 0.18948387399999955,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        },
+        {
+          "cpu_seconds": 0.18153654099999983,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.1975680000000004,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        },
+        {
+          "cpu_seconds": 0.20806712500000035,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        },
+        {
+          "cpu_seconds": 0.1976706660000005,
+          "sha256": "95200ac3776334e3421af355312b0920d9f23e39814bacb4ec3fba33903659a7"
+        }
+      ]
+    },
+    "memory_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.16707629099999988,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.1697012899999999,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.16735570799999966,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.1535082499999998,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.1515733309999998,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        },
+        {
+          "cpu_seconds": 0.15124053999999987,
+          "sha256": "14ff57779d05f5127fe88aeb7b4da40b3e2819f5e77e284f74f62be245eefa90"
+        }
+      ]
+    },
+    "prefixed_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.12591337399999958,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.1239137079999999,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.12792354200000045,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.12126274900000045,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.11887370699999966,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        },
+        {
+          "cpu_seconds": 0.11907087500000024,
+          "sha256": "d57b51b6c9d48047201fded5ccfbbb32567be314d0e5bf311336f218b17aa55d"
+        }
+      ]
+    },
+    "386_control": {
+      "reference": [
+        {
+          "cpu_seconds": 0.12749070699999976,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.12185949900000015,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.1231784160000009,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        }
+      ],
+      "candidate": [
+        {
+          "cpu_seconds": 0.11954220800000037,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.12613853900000027,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        },
+        {
+          "cpu_seconds": 0.12886124899999984,
+          "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+        }
+      ]
+    }
+  }
+}

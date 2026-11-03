@@ -25,3 +25,20 @@ branch to other access sizes and may alter code layout. Compare ordinary
 word memory, traced memory and byte/register controls on A53 before
 claiming a benefit; reject it if target controls regress. The earlier
 checkpoint-elision experiment remains rejected.
+
+## Reject after A53 comparison
+
+Nanovax rebuilt the candidate and ran three alternating pairs of one
+million instructions per case, after 100000 warmup instructions, pinned
+to CPU 3. All architectural/trace digests match. Ordinary word-memory
+control improves by 9.43%, but traced memory regresses by 7.67%, byte
+memory by 4.61%, and the 386 register control by 2.40%. Other register
+controls vary by roughly 4–5%, limiting precise attribution.
+
+The actual training interpreter uses traced execution. The observed
+traced and byte regressions outweigh the isolated word result; remove
+the packed check rather than retain it on the strength of one kernel.
+Raw measurements are in `x86-word-guard-arm-results.json`. No physical
+call, physical settings change or temperature sampling was performed.
+Restore the pre-candidate interpreter library after checking that native
+sources match its revision. This candidate establishes no training gain.
