@@ -108,3 +108,23 @@ or validation result. The deployed GCC DSP library still has SHA-256
 No physical modem setting was altered and no test call was made during
 installation. Earlier pending-installation notes describe historical
 state; authorization is now resolved.
+
+## Clang 14 compatibility result
+
+The isolated Clang 14.0.6 build completed, at 774152 bytes. It warns that
+the statement-level clang::always_inline attribute is unknown and ignored.
+Actual ARM wrappers still call separate MADD, DMOV and ADD-memory bodies.
+It therefore does not fully exercise the intended forced-integration path.
+The artifact remains separate at `/tmp/libcourier-c5x-clang14.so`, with
+the builder's source/compiler/library manifest alongside it.
+
+All 36 focused low-address cases match the deployed GCC reference and
+the recorded digest. No benchmark under package-installation load was
+attempted; performance and wider correctness remain unproven.
+
+The authorized compiler comparison is proceeding to Clang 16. The reviewed
+APT plan adds six packages, upgrades/removes none, downloads 38.8 MB and
+reports 227 MB additional installed space. Its installation is in progress.
+A tiny source probe will require both statement always_inline and musttail
+with unknown/ignored attributes treated as errors before another full DSP
+build is started. The active GCC runtime remains untouched.
