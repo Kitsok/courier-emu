@@ -540,6 +540,7 @@ private:
     void step_retire();
     uint16_t m_previous_pc = 0;
     // Where a threaded run stops: see C5xCore::threaded.
+    bool m_dmov_pair = false; // Experimental, selected once per core.
     uint64_t m_run_target = 0;
     std::size_t m_run_pcm_size = 0;
     bool m_run_yield = false;

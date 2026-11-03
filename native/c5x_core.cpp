@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 
@@ -84,6 +85,8 @@ C5xCore::C5xCore(Model model)
       m_saram_program_first(model == Model::C53 ? 0x4000 : 0x2000),
       m_saram_words(model == Model::C53 ? 0x0c00 : model == Model::C52 ? 0 : 0x0400)
 {
+    const char *pair = std::getenv("COURIER_C5X_DMOV_PAIR");
+    m_dmov_pair = pair && std::strcmp(pair, "1") == 0;
     // Courier external RAM wiring is a board setting, not a C53 property.
     if (model != Model::C51) set_shared_window(0xffff, 0);
     reset();
@@ -1975,6 +1978,8 @@ inline __attribute__((always_inline)) void C5xCore::step_inline()
 template <void (C5xCore::*F)()>
 void C5xCore::threaded(C5xCore *core)
 {
+    const bool pair = F == &C5xCore::op_dmov && core->m_dmov_pair
+        && core->m_op == 0x7790;
     [[clang::always_inline]] (core->*F)();
     core->step_repeat_edge();
     core->step_retire();
@@ -1983,6 +1988,10 @@ void C5xCore::threaded(C5xCore *core)
         || core->step_is_rare())
         return;
     core->step_begin();
+    // Live fetch and all retirement/run/event guards above remain mandatory.
+    // A known second DMOV can enter its handler without table dispatch.
+    if (pair && core->m_op == 0x7780)
+        [[clang::musttail]] return threaded<F>(core);
     [[clang::musttail]] return s_opcode_table[core->m_op >> 8].threaded(core);
 }
 
