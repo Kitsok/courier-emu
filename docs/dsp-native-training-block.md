@@ -130,3 +130,11 @@ Raw samples and exact terminal results are in
 `dsp-native-block-refined-local.json`. A low-frequency hit sampler was
 enabled even though the profiling tool's cProfile flag is false. Revised
 A53 measurements and a physical call remain outstanding.
+
+The counter workload accepts --cbcr to reproduce the observed circular
+configuration explicitly. It validates a 16-bit value and propagates it
+to the measured worker, which programs it before warmup. A local workload
+smoke check at ef retains matching disabled/enabled state and 62500 hits
+per one million modeled cycles. The queued refined A53 comparison asserts
+that its training case actually uses ef. This does not yet establish the
+refined target gain or a physical connection.

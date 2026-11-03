@@ -30,6 +30,7 @@ def worker(args):
         core.set_pc(0x6000)
         if args.case == 'training':
             core.host_write(7,0x30);core.host_write(0x26,0x10)
+            core.host_write(0x1e,args.cbcr)
             for a in range(0x300,0x380):core.set_data(a,(a*137)^0xaaaa)
             core.step(6)
             block=[0x8b00,0x528a,0x8d7d,0x8c7e,0x7304,0x557e,0x8d7e,
@@ -66,11 +67,13 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--case', choices=['dmov', 'address', 'training'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
+    parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,
+                        help='circular-buffer configuration for the training case')
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--folder', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
-    if args.cycles <= 0:
-        parser.error('cycles must be positive')
+    if args.cycles <= 0 or not 0 <= args.cbcr <= 65535:
+        parser.error('cycles must be positive and cbcr must fit in 16 bits')
     os.environ['COURIER_C5X_LIBRARY'] = str(args.library.resolve())
     if args.worker:
         return worker(args)
@@ -82,10 +85,10 @@ def main():
                    '--control=fifo:%s,%s' % (folder / 'control', folder / 'ack'),
                    '-o', str(folder / 'stat'), '--', sys.executable, str(Path(__file__).resolve()),
                    '--worker', '--folder', str(folder), '--library', str(args.library.resolve()),
-                   '--case', args.case, '--cycles', str(args.cycles)]
+                   '--case', args.case, '--cycles', str(args.cycles), '--cbcr', str(args.cbcr)]
         subprocess.run(command, check=True, timeout=60)
         result = json.loads((folder / 'kernel.json').read_text())
-        result.update(case=args.case, modeled_cycles=args.cycles,
+        result.update(case=args.case, modeled_cycles=args.cycles, cbcr=args.cbcr,
                       measurement_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       library_sha256=hashlib.sha256(args.library.read_bytes()).hexdigest(),
                       perf_csv=(folder / 'stat').read_text())
