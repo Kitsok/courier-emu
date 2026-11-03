@@ -51,3 +51,16 @@ updates, all product modes, saturation and tracing-forced fallback. No
 measurement or call was performed. The first implementation pass is now
 complete; the next stage rereads the changed code before making additional
 optimizations.
+
+## Second pass — SARAM spans and alias-safe bounds
+
+Rereading the completed first pass showed that the same guarded kernel can
+also cover contiguous SARAM operands. The second pass adds that mapping
+with its own read counter and model-specific bounds. Coefficients remain
+live when they overlap future delay-line destinations. The reread also
+corrected pointer-offset expressions to compute bounded integer offsets
+before pointer addition, including high SARAM and B0-program addresses.
+
+Validation: native build and short SARAM checks pass, including overlapping
+coefficient/data storage on C51 and C53 and the upper C53 SARAM window.
+No benchmark or call was run.

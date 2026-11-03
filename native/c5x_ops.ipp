@@ -1961,8 +1961,14 @@ void C5xCore::op_lts()
 // no mapped-register, tracing, circular-address or codec-write side effects.
 bool C5xCore::mac_data_span(uint16_t first, unsigned words, MacSpan &span)
 {
-    if ((m_dmap[first] & 7) != 1) return false;
+    const unsigned kind = m_dmap[first] & 0x3f;
     const unsigned end = unsigned(first) + words;
+    if (kind == (2 | 1 << 3)) {
+        if (end > C5X_SARAM_DATA_FIRST + m_saram_words) return false;
+        span = {m_saram.data() + (first - C5X_SARAM_DATA_FIRST), &m_map.data_saram};
+        return true;
+    }
+    if (kind != 1) return false;
     auto within = [&](unsigned start, unsigned size) {
         return first >= start && end <= start + size;
     };
@@ -1983,7 +1989,7 @@ bool C5xCore::mac_program_span(uint16_t first, unsigned words, MacSpan &span)
         span = {m_rom.data() + first, &m_map.program_rom};
         return true;
     case 1:
-        span = {m_data.data() + C5X_B0_FIRST + first - C5X_B0_PROGRAM_FIRST,
+        span = {m_data.data() + (C5X_B0_FIRST + unsigned(first) - C5X_B0_PROGRAM_FIRST),
                 &m_map.program_daram};
         return true;
     case 2:
