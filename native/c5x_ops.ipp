@@ -371,7 +371,7 @@ void C5xCore::op_adcb()
 	CYCLES(1);
 }
 
-void C5xCore::op_add_mem()
+inline __attribute__((always_inline)) void C5xCore::op_add_mem()
 {
 	int32_t d;
 	uint16_t ea = GET_ADDRESS();
@@ -445,7 +445,7 @@ void C5xCore::op_addc()
 	CYCLES(1);
 }
 
-void C5xCore::op_adds()
+inline __attribute__((always_inline)) void C5xCore::op_adds()
 {
 	m_acc = ADD(uint32_t(m_acc), DM_READ16(GET_ADDRESS()), false);
 	CYCLES(1);
@@ -1871,7 +1871,7 @@ void C5xCore::op_lph()
 	CYCLES(1);
 }
 
-void C5xCore::op_lt()
+inline __attribute__((always_inline)) void C5xCore::op_lt()
 {
 	uint16_t ea = GET_ADDRESS();
 	uint16_t data = DM_READ16(ea);

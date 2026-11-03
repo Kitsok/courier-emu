@@ -176,3 +176,24 @@ separate LACC-memory/SACH/SACL bodies, confirming their integration. Raw
 measurements are in `dsp-hot-inline-arm-results.json`. No temperature
 queries were made. A lower-rate physical call is a separate experiment
 using only temporary emulator settings authorized by the user.
+
+## Follow-up arithmetic and temporary-register loads
+
+The physical-training profile also samples ADD-from-memory, ADDS and LT.
+Apply the existing explicit always-inline function annotation to these
+three small handlers, following the validated load/store approach. Their
+existing arithmetic, status updates, temporary-register mirroring, address
+updates, memory helpers and cycle accounting remain unchanged. No broad
+flattening or secondary-table rewrite is introduced.
+
+The notebook native build succeeds. Thirty-three short memory-map,
+condition-sampling and instruction audit checks pass in 0.19 seconds.
+Twelve small threaded before/after runs compare state, map counters, data
+and write counts over all ADD shifts, positive/negative operands, SXM and
+tracing. Their digests match:
+`305935aed66b6c6a165c166450741de784634a77210f1265704048cd055b2201`.
+
+This stage is not yet rebuilt or measured on ARM. Explicit inlining can
+increase instruction-cache pressure, so no target or full-training gain
+is claimed from correctness alone. Group target validation with subsequent
+suitable candidates before making another physical call.
