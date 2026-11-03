@@ -93,3 +93,9 @@ Total setup/training/data time is 29.73 seconds, but this is not a
 controlled whole-training comparison and includes the hit sampler.
 Raw outcome and samples are in `dsp-v32-mapped-local.json`. This verifies
 real V.32 use of the refined path; A53 performance remains outstanding.
+
+Two additional focused checks verify that an IO-mapped coefficient source
+and a codec-sink destination retain instruction stepping and zero native
+hits. IO event contents, PCs and instruction timestamps match the
+reference. All 101 complex-loop checks pass in 0.94 seconds. These extend
+boundary coverage without changing runtime code or the target build.
