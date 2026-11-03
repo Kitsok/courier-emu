@@ -315,11 +315,11 @@ int32_t C5xCore::PREG_PSCALER(int32_t preg)
 		}
 		case 1:     // Left-shifted 1 bit, LSB zero-filled
 		{
-			return preg << 1;
+			return int32_t(uint32_t(preg) << 1);
 		}
 		case 2:     // Left-shifted 4 bits, 4 LSBs zero-filled
 		{
-			return preg << 4;
+			return int32_t(uint32_t(preg) << 4);
 		}
 		case 3:     // Right-shifted 6 bits, sign-extended, 6 LSBs lost
 		{
@@ -2091,7 +2091,6 @@ bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
 
 void C5xCore::op_mac()
 {
-	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 	const uint16_t pma = pfc;
 	uint16_t dma = 0;
@@ -2104,10 +2103,11 @@ void C5xCore::op_mac()
         CYCLES(mac_cycles(pma, dma, count, false));
         return;
     }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
-		if (count == 0) dma = ea;
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
@@ -2125,7 +2125,6 @@ void C5xCore::op_mac()
 
 void C5xCore::op_macd()
 {
-	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 	const uint16_t pma = pfc;
 	uint16_t dma = 0;
@@ -2138,10 +2137,11 @@ void C5xCore::op_macd()
         CYCLES(mac_cycles(pma, dma, count, true));
         return;
     }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
-		if (count == 0) dma = ea;
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
@@ -2161,7 +2161,6 @@ void C5xCore::op_macd()
 
 void C5xCore::op_madd()
 {
-	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 	const uint16_t pma = pfc;
 	uint16_t dma = 0;
@@ -2174,10 +2173,11 @@ void C5xCore::op_madd()
         CYCLES(bmar_mac_cycles(pma, dma, count, true));
         return;
     }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
-		if (count == 0) dma = ea;
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
@@ -2194,7 +2194,6 @@ void C5xCore::op_madd()
 
 void C5xCore::op_mads()
 {
-	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 	const uint16_t pma = pfc;
 	uint16_t dma = 0;
@@ -2207,10 +2206,11 @@ void C5xCore::op_mads()
         CYCLES(bmar_mac_cycles(pma, dma, count, false));
         return;
     }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
 		uint16_t ea = GET_REPEAT_ADDRESS(operand);
-		if (count == 0) dma = ea;
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;

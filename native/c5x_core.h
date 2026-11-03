@@ -800,6 +800,8 @@ private:
     uint64_t advance_timer(uint64_t elapsed);
     Region program_region(uint16_t address) const;
     Region data_region(uint16_t address) const;
+    struct MacTiming { bool external_pair, program_saram, data_saram; };
+    MacTiming mac_timing(uint16_t pma, uint16_t dma) const;
     unsigned mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
                         bool data_move) const;
     unsigned bmar_mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
@@ -838,6 +840,9 @@ private:
     struct RepeatAddress { unsigned mode, offset; };
     RepeatAddress decode_repeat_address() const {
         return {m_op & 0x80 ? (m_op >> 3) & 15u : 16u, m_op & 0x7fu};
+    }
+    uint16_t repeat_address_start(const RepeatAddress &operand) const {
+        return operand.mode == 16 ? m_st0.dp | operand.offset : m_ar[m_st0.arp];
     }
     uint16_t GET_REPEAT_ADDRESS(const RepeatAddress &operand);
     struct MacSpan { uint16_t *values; uint64_t *reads; };

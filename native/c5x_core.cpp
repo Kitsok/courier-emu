@@ -950,20 +950,31 @@ C5xCore::Region C5xCore::program_region(uint16_t address) const
 // more only when both operands queue for one bus - both off-chip, or both in
 // one SARAM block - or, for MACD, when the delay-line write lands in SARAM.
 // A single execution is n = 1 of the same formula, floored at 3.
+C5xCore::MacTiming C5xCore::mac_timing(uint16_t pma, uint16_t dma) const
+{
+    if (!m_maps_dirty) {
+        const unsigned program = m_pmap[pma], data = m_dmap[dma] & 7;
+        // A missing-ROM entry (4) retains ROM timing, including when its
+        // fetch falls back to downloaded program storage.
+        return {program == 3 && data > 2, program == 2, data == 2};
+    }
+    const Region program = program_region(pma), data = data_region(dma);
+    return {program == Region::External && data != Region::Daram
+            && data != Region::Saram && data != Region::Registers,
+            program == Region::Saram, data == Region::Saram};
+}
+
 unsigned C5xCore::mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
                              bool data_move) const
 {
-    const Region op1 = program_region(pma), op2 = data_region(dma);
-    const bool op1_external = op1 == Region::External;
-    const bool op2_external = op2 != Region::Daram && op2 != Region::Registers
-                              && op2 != Region::Saram;
+    const auto timing = mac_timing(pma, dma);
     const unsigned n = count;
     unsigned cycles;
-    if (op1_external && op2_external)
+    if (timing.external_pair)
         cycles = 2 * n + 2;
-    else if (op2 == Region::Saram && data_move)
+    else if (timing.data_saram && data_move)
         cycles = 2 * n;
-    else if (op2 == Region::Saram && op1 == Region::Saram)
+    else if (timing.data_saram && timing.program_saram)
         cycles = 2 * n + 2;
     else
         cycles = n + 2;
@@ -975,14 +986,11 @@ unsigned C5xCore::mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
 unsigned C5xCore::bmar_mac_cycles(uint16_t pma, uint16_t dma, unsigned n,
                                   bool data_move) const
 {
-    const Region op1 = program_region(pma), op2 = data_region(dma);
-    const bool external1 = op1 == Region::External;
-    const bool external2 = op2 != Region::Daram && op2 != Region::Registers
-                            && op2 != Region::Saram;
-    const bool same_saram = op1 == Region::Saram && op2 == Region::Saram;
+    const auto timing = mac_timing(pma, dma);
+    const bool same_saram = timing.program_saram && timing.data_saram;
     unsigned cycles;
-    if (external1 && external2) cycles = 2 * n + 1;
-    else if (op2 == Region::Saram && data_move)
+    if (timing.external_pair) cycles = 2 * n + 1;
+    else if (timing.data_saram && data_move)
         cycles = (same_saram ? 3 * n : 2 * n) - 1;
     else if (same_saram) cycles = 2 * n + 1;
     else cycles = n + 1;
@@ -990,8 +998,9 @@ unsigned C5xCore::bmar_mac_cycles(uint16_t pma, uint16_t dma, unsigned n,
     // adding code in that same block takes four. Repeated data moves add
     // two cycles when their delay line shares SARAM with the instruction.
     if (n == 1 && same_saram && cycles < 3) cycles = 3;
-    if (data_move && op2 == Region::Saram
-        && program_region(uint16_t(m_pc - 1)) == Region::Saram) {
+    if (data_move && timing.data_saram
+        && (m_maps_dirty ? program_region(uint16_t(m_pc - 1)) == Region::Saram
+                         : m_pmap[uint16_t(m_pc - 1)] == 2)) {
         if (n > 1) cycles += 2;
         else if (same_saram) ++cycles;
     }

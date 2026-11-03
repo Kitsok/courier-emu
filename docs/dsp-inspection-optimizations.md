@@ -64,3 +64,17 @@ before pointer addition, including high SARAM and B0-program addresses.
 Validation: native build and short SARAM checks pass, including overlapping
 coefficient/data storage on C51 and C53 and the upper C53 SARAM window.
 No benchmark or call was run.
+
+## Second pass — MAC setup and timing classification
+
+General MAC fallbacks now decode operands only after the direct path is
+rejected and capture the initial effective address before entering the
+loop. This removes a first-tap test from every iteration without changing
+dynamic address updates. Cycle accounting reuses valid cached memory-map
+entries; dirty mappings retain the original region classifiers. Guest
+cycle formulas and missing-ROM timing remain unchanged. Product scaling
+uses unsigned shifts for defined 32-bit wrapping, including negative
+products.
+
+Validation: native build and 38 focused MAC checks pass. No benchmark or
+call was run.
