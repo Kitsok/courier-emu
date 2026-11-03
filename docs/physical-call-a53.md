@@ -645,3 +645,42 @@ the agent to obtain it. Packet inspection confirms 44 active outgoing
 packets addressed the negotiated ATA endpoint 192.168.196.29:16412, while
 ten active packets addressed the PBX after media changed. This verifies
 the captured transmit destination, not UDP delivery or waveform validity.
+
+
+## MADD batch physical validation, November 3
+
+The 144a466 native source, built with GCC 12 and selected through the
+isolated `/tmp/libcourier-c5x-madd.so`, still does not connect to modem
+100. The copied emulator EEPROM retains mandatory error correction
+(&M5), fixed 9600 (&N6), and the same V32 overrides. No additional Python
+profiling hooks are enabled. SIP registration, answer and direct-media
+renegotiation complete; physical autoanswer at 16:23:07 ends with
+NO CARRIER at 16:23:15. The emulator reports BUSY after about 63 seconds.
+Normal configuration, source EEPROM and runtime library remain unchanged.
+The existing mgetty service remains active; the agent sends no physical
+modem commands. Its automatic diagnostics and reinitialization continue.
+
+Worker utilization is 102.04%, still approximately one A53 core. During
+a five-second interior answer interval, 246 user-cycle samples attribute
+50.77% to DSP/devices, 33.55% to x86 and 13.79% to Python. These short
+samples describe this attempt, not a controlled before/after speedup.
+
+Deduplicated PCMU contains 4.00 seconds sent and 8.28 seconds received
+(including one initial PBX packet). Above an RMS threshold of 500, the
+outgoing response follows incoming activity by 5.276 seconds, leaving
+1.264 seconds of incoming audio. Maximum outgoing packet gap is 419 ms;
+incoming gap is 22 ms. The preceding MADS attempt observed 5.211 seconds
+response delay. Thus this call supplies no evidence of an additional
+whole-call response improvement, despite the measured MADD kernel gains.
+The recordings do not identify modulation or prove the cause of failure.
+
+The cumulative line scheduler reports 147 frames, 46.18 seconds peak
+lateness and 36,640 pending samples, including pre-call delays. Pacing
+waits remain zero. Keep these counters separate from the packet-aligned
+answer interval. Raw structured evidence and compact self-time reports
+are in `physical-call-madd-20261103.json`.
+
+Next, use the remaining early-handshake opcode work and current source
+to select another bounded native block, prioritizing repeated return/
+delay-slot and resident DSP work. A53 remains CPU-bound; connection to
+physical modem 100 is still the acceptance criterion.
