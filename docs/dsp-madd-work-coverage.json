@@ -1,0 +1,187 @@
+{
+  "result": {
+    "instrumented": false,
+    "batch_exits_counted": false,
+    "dsp_work_profiled": true,
+    "rate_index": null,
+    "mandatory_arq": true,
+    "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+    "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+    "modem_failure": null,
+    "exact_bidirectional_data": true,
+    "elapsed_seconds": 36.38337140902877,
+    "endpoints": {
+      "caller": {
+        "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 455074.208486783,
+            "cpu": 9.207164504,
+            "instructions": 38672384,
+            "batches": 100815,
+            "zero_batches": 23284,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 455093.222108416,
+            "cpu": 23.281358633,
+            "instructions": 103249618,
+            "batches": 116210,
+            "zero_batches": 24387,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "dsp_work": {
+            "file": "dsp-work.json",
+            "windows": 4,
+            "incomplete": null
+          }
+        }
+      },
+      "answerer": {
+        "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 455074.206231441,
+            "cpu": 9.308871418,
+            "instructions": 38772736,
+            "batches": 109274,
+            "zero_batches": 23677,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 455093.223312194,
+            "cpu": 23.077823218,
+            "instructions": 103667711,
+            "batches": 123901,
+            "zero_batches": 24865,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "dsp_work": {
+            "file": "dsp-work.json",
+            "windows": 4,
+            "incomplete": null
+          }
+        }
+      }
+    }
+  },
+  "scope": "Diagnostic opcode-body frequencies; not CPU shares or unprofiled speed.",
+  "phases": {
+    "caller": [
+      {
+        "first_frame": 108,
+        "end_frame": 118,
+        "executed": 6673197,
+        "native": 3327098,
+        "native_percent": 49.8576319566169,
+        "madd_executed": 1356897,
+        "madd_native": 1354815
+      },
+      {
+        "first_frame": 118,
+        "end_frame": 128,
+        "executed": 6776317,
+        "native": 3377070,
+        "native_percent": 49.83636391272722,
+        "madd_executed": 1376919,
+        "madd_native": 1375247
+      },
+      {
+        "first_frame": 128,
+        "end_frame": 138,
+        "executed": 6764819,
+        "native": 3372710,
+        "native_percent": 49.85661848454482,
+        "madd_executed": 1375200,
+        "madd_native": 1373432
+      },
+      {
+        "first_frame": 138,
+        "end_frame": 298,
+        "executed": 145222685,
+        "native": 16872412,
+        "native_percent": 11.618303297449707,
+        "madd_executed": 5708793,
+        "madd_native": 5701237
+      }
+    ],
+    "answerer": [
+      {
+        "first_frame": 108,
+        "end_frame": 118,
+        "executed": 3135505,
+        "native": 1388067,
+        "native_percent": 44.26932822623469,
+        "madd_executed": 397080,
+        "madd_native": 396570
+      },
+      {
+        "first_frame": 118,
+        "end_frame": 128,
+        "executed": 1987193,
+        "native": 544359,
+        "native_percent": 27.393363402548218,
+        "madd_executed": 155700,
+        "madd_native": 155540
+      },
+      {
+        "first_frame": 128,
+        "end_frame": 138,
+        "executed": 1110712,
+        "native": 0,
+        "native_percent": 0.0,
+        "madd_executed": 0,
+        "madd_native": 0
+      },
+      {
+        "first_frame": 138,
+        "end_frame": 298,
+        "executed": 156608253,
+        "native": 12784205,
+        "native_percent": 8.16317451673508,
+        "madd_executed": 3474882,
+        "madd_native": 3470425
+      }
+    ]
+  }
+}

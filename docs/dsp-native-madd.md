@@ -37,3 +37,21 @@ The previous MADS physical attempt and its observed response improvement
 are independent evidence; no additional physical call was made for this
 implementation milestone. Keep error correction mandatory and physical
 modem settings untouched.
+
+## Measured initial-training coverage
+
+The diagnostic notebook run at 144a466 establishes
+9600/ARQ/V32/LAPM/V42BIS on both ends and exchanges exact marker data.
+The new helpers admit more than 99.8% of their early caller opcode
+bodies. Total native-body coverage in each of the first three modeled
+caller seconds reaches about 49.85%, versus about 29.5% with only the
+MADS addition and about 13% before both filter families. Early answerer
+coverage also rises. The third answerer interval is waiting work with
+none of these native bodies, rather than proof of missing admission.
+
+Keep these frequencies separate from CPU shares and unprofiled speed.
+The collection includes the C5X_PROFILE_WORK diagnostic build, so its
+36.38-second total run duration is not a controlled timing result.
+Raw work rows and outcomes are in `dsp-madd-work-profile.json.gz` and
+`dsp-madd-work-coverage.json`. A53 validation remains pending; no new
+physical call has run for this MADD batch.
