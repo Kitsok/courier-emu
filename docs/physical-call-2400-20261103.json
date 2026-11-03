@@ -1,0 +1,396 @@
+{
+  "date": "2026-11-03",
+  "host": "nanovax",
+  "revision": "e204d19",
+  "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+  "scope": "One user-authorized 2400-bps attempt after rebuilding the completed follow-up batch.",
+  "temporary_emulator_init": "AT&N3&M5",
+  "settings_verified": "ATI4 confirms &N3 and &M5; S27=0 and S54=96",
+  "result": "FAILED: no error-corrected connection",
+  "emulator_result": "BUSY",
+  "physical_result": "NO CARRIER / A_FAIL",
+  "sip_answered": true,
+  "physical_answer_local": "2026-11-03 11:39:24 +0100",
+  "physical_failure_local": "2026-11-03 11:39:34 +0100",
+  "elapsed_seconds": 74.00099639600012,
+  "dial_at_seconds": 28.01309349300027,
+  "worker_cpu_percent": 101.60266005632512,
+  "cpu_method": "Delta worker /proc/PID/stat user+system ticks over sampled wall interval, CLK_TCK=100",
+  "line_frames": 144,
+  "modeled_audio_seconds": 14.4,
+  "peak_media_lag_ms": 46417.5,
+  "pending_peak_samples": 56240,
+  "rtp_octets_sent": 30400,
+  "rtp_audio_seconds_sent": 3.8,
+  "rtp_octets_received": 85840,
+  "rtp_audio_seconds_received": 10.73,
+  "pacing": {
+    "input_wakeups": 0,
+    "waited_seconds": 0.0,
+    "waits": 0
+  },
+  "training_profile": {
+    "window_monotonic_seconds": [
+      12223,
+      12229
+    ],
+    "samples": 295,
+    "total_period": 6531197805,
+    "lost_samples": 0,
+    "method": "Six-second interior physical training window; perf cycles:u period-weighted shares; short interval limits precision.",
+    "dso_shares_percent": {
+      "libcourier_c5x.so": 57.61,
+      "_x86_native.cpython-311-aarch64-linux-gnu.so": 28.45,
+      "python3.11": 11.52,
+      "libc.so.6": 1.71,
+      "_ctypes.cpython-311-aarch64-linux-gnu.so": 0.71
+    },
+    "symbols": [
+      {
+        "percent": 21.79,
+        "samples": 64,
+        "period": 1423127994,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "run_batch<true>"
+      },
+      {
+        "percent": 3.96,
+        "samples": 11,
+        "period": 258626292,
+        "dso": "python3.11",
+        "symbol": "_PyEval_EvalFrameDefault"
+      },
+      {
+        "percent": 3.03,
+        "samples": 9,
+        "period": 198211246,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_adrk>"
+      },
+      {
+        "percent": 2.41,
+        "samples": 7,
+        "period": 157114081,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::delay_slot"
+      },
+      {
+        "percent": 2.22,
+        "samples": 7,
+        "period": 144813933,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_group_be>"
+      },
+      {
+        "percent": 2.08,
+        "samples": 6,
+        "period": 135703484,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "(anonymous namespace)::Core<true>::read"
+      },
+      {
+        "percent": 2.07,
+        "samples": 6,
+        "period": 135359898,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::resample::Timed::run"
+      },
+      {
+        "percent": 1.89,
+        "samples": 6,
+        "period": 123498199,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_norm>"
+      },
+      {
+        "percent": 1.87,
+        "samples": 6,
+        "period": 121818271,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "(anonymous namespace)::Core<true>::ea"
+      },
+      {
+        "percent": 1.77,
+        "samples": 5,
+        "period": 115769887,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_dmov"
+      },
+      {
+        "percent": 1.75,
+        "samples": 5,
+        "period": 114285892,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sacl>"
+      },
+      {
+        "percent": 1.69,
+        "samples": 5,
+        "period": 110585149,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_spl>"
+      },
+      {
+        "percent": 1.68,
+        "samples": 5,
+        "period": 109751626,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lacc_mem>"
+      },
+      {
+        "percent": 1.67,
+        "samples": 5,
+        "period": 109253465,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::try_repeat_mac"
+      },
+      {
+        "percent": 1.44,
+        "samples": 4,
+        "period": 94141100,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_call>"
+      },
+      {
+        "percent": 1.41,
+        "samples": 4,
+        "period": 92209608,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_madd>"
+      },
+      {
+        "percent": 1.38,
+        "samples": 4,
+        "period": 90338479,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_adds>"
+      },
+      {
+        "percent": 1.38,
+        "samples": 4,
+        "period": 89888960,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_add_s16_mem"
+      },
+      {
+        "percent": 1.36,
+        "samples": 4,
+        "period": 88549944,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::mac_program_span"
+      },
+      {
+        "percent": 1.35,
+        "samples": 4,
+        "period": 88347904,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_rpt_simm>"
+      },
+      {
+        "percent": 1.34,
+        "samples": 4,
+        "period": 87452212,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_adds"
+      },
+      {
+        "percent": 1.3,
+        "samples": 4,
+        "period": 85104905,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_calld>"
+      },
+      {
+        "percent": 1.26,
+        "samples": 4,
+        "period": 82165695,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_retcd>"
+      },
+      {
+        "percent": 1.25,
+        "samples": 4,
+        "period": 81472964,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sach>"
+      },
+      {
+        "percent": 1.1,
+        "samples": 3,
+        "period": 71628047,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_sach>"
+      },
+      {
+        "percent": 1.07,
+        "samples": 3,
+        "period": 70057978,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lacc_limm>"
+      },
+      {
+        "percent": 1.04,
+        "samples": 3,
+        "period": 68210378,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpy_mem>"
+      },
+      {
+        "percent": 1.03,
+        "samples": 3,
+        "period": 67348300,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "(anonymous namespace)::Core<true>::alu"
+      },
+      {
+        "percent": 0.98,
+        "samples": 3,
+        "period": 64149326,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_retc>"
+      },
+      {
+        "percent": 0.94,
+        "samples": 3,
+        "period": 61109993,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::GET_ZLVC_CONDITION"
+      },
+      {
+        "percent": 0.87,
+        "samples": 3,
+        "period": 57123677,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_samm"
+      },
+      {
+        "percent": 0.74,
+        "samples": 2,
+        "period": 48226583,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lt>"
+      },
+      {
+        "percent": 0.73,
+        "samples": 2,
+        "period": 47955003,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_lt"
+      },
+      {
+        "percent": 0.72,
+        "samples": 2,
+        "period": 46806363,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lamm>"
+      },
+      {
+        "percent": 0.71,
+        "samples": 2,
+        "period": 46598895,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_group_bf>"
+      },
+      {
+        "percent": 0.71,
+        "samples": 2,
+        "period": 46508002,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "(anonymous namespace)::Core<true>::push"
+      },
+      {
+        "percent": 0.71,
+        "samples": 2,
+        "period": 46458484,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_sacl>"
+      },
+      {
+        "percent": 0.71,
+        "samples": 2,
+        "period": 46052015,
+        "dso": "python3.11",
+        "symbol": "_PyObject_GenericSetAttrWithDict"
+      },
+      {
+        "percent": 0.7,
+        "samples": 2,
+        "period": 45921739,
+        "dso": "libc.so.6",
+        "symbol": "__GI_____strtod_l_internal"
+      },
+      {
+        "percent": 0.7,
+        "samples": 2,
+        "period": 45700435,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::check_interrupts"
+      },
+      {
+        "percent": 0.7,
+        "samples": 2,
+        "period": 45653290,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpyu>"
+      },
+      {
+        "percent": 0.69,
+        "samples": 2,
+        "period": 45281941,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_bd>"
+      },
+      {
+        "percent": 0.65,
+        "samples": 2,
+        "period": 42397400,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_spl"
+      },
+      {
+        "percent": 0.65,
+        "samples": 2,
+        "period": 42212959,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+        "symbol": "(anonymous namespace)::Core<true>::pop"
+      },
+      {
+        "percent": 0.64,
+        "samples": 2,
+        "period": 41721891,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_sph"
+      },
+      {
+        "percent": 0.63,
+        "samples": 2,
+        "period": 41336747,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier::C5xCore::op_lamm"
+      },
+      {
+        "percent": 0.61,
+        "samples": 2,
+        "period": 39817144,
+        "dso": "libcourier_c5x.so",
+        "symbol": "courier_worker_poll"
+      }
+    ],
+    "journal_anchor": {
+      "realtime_us": 1793702374732059,
+      "monotonic_us": 12231663776
+    }
+  },
+  "configuration_hashes_before_after": {
+    "ini": "ef4436728f57f1dce3626b2675d5d7b8b6ba321459336ca16b4443a9d89f9dfd",
+    "eeprom": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db"
+  },
+  "physical_commands": "None from probe; existing mgetty answer and reinitialization unchanged",
+  "remote_evidence": "/tmp/courier-physical-2400-20261103",
+  "limits": [
+    "Different bitrate, native revision and much shorter physical session: not a controlled comparison with the 9600-bps attempt.",
+    "No physical-modem settings were queried or altered, so its saved lower-rate capabilities are unverified.",
+    "No successful carrier or error-correction negotiation was observed."
+  ],
+  "diagnosis": "Network/SIP/physical answer worked. RTP delivery remained below real time even at the lower requested rate. The earlier physical loss of carrier does not by itself identify the handshake failure cause."
+}

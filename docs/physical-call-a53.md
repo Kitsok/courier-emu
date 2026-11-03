@@ -394,3 +394,46 @@ stopped. Native yield counters were not enabled, so their empty snapshot
 is not interpreted as zero yields. Full evidence remains at
 `nanovax:/tmp/courier-physical-inspection-20261103-1125`. The goal remains
 unmet.
+
+## Authorized lower-rate attempt after follow-up build
+
+The user authorized lower rates using temporary emulator settings only.
+After rebuilding both follow-up optimizations at `e204d19`, a short native
+ARM comparison validated selective load/store inlining (see
+`dsp-hot-inline-arm-results.json`). The saved emulator INI and EEPROM
+were retained. The next probe copied the EEPROM and issued `AT&N3&M5`,
+then confirmed &N3/&M5, S27=0 and S54=96 before dialing 100. The bundled
+USR manual maps &N3 to 2400 bps. Error correction stayed mandatory.
+
+SIP reached 200/ACK. Physical mgetty logged RING/ATA at 11:39:24 and
+NO CARRIER/A_FAIL at 11:39:34. The emulator returned BUSY at approximately
+72.9 seconds; shutdown finished at 74.00 seconds. No carrier connection
+or ARQ negotiation succeeded. This physical training interval was much
+shorter than the 9600-bps attempt; the cause of the earlier loss of
+carrier is unproven.
+
+Worker CPU averaged 101.60% of one core. The run processed 144 line frames
+(14.4 modeled seconds), with peak lag 46.42 seconds and pending receive
+peak 56240 samples. PCMU delivery was 30400 octets sent (3.8 seconds audio)
+and 85840 received (10.73 seconds). There were zero pacing waits. The
+lower requested bitrate did not eliminate the real-time deficit.
+
+A strictly interior six-second interval at monotonic 12223–12229 contains
+295 user-cycle samples, with none lost: 57.61% C5x/devices, 28.45% native
+x86 and 11.52% Python. This short profile has limited precision and is
+not a controlled comparison with the earlier, longer 9600-bps attempt.
+
+Review of existing provisioning does not show S54=96 disabling V.22bis.
+The retained S54 bits are documented as the V.34 3429-symbol workaround
+and disabled optional V.8 call-indicate tone. Physical saved lower-rate
+capabilities remain unverified: no direct commands or settings changes
+were made to that modem. The early failure must not be attributed to a
+specific physical setting without evidence. Further protocol diagnosis
+needs correlated transmitted/received training audio, alongside the CPU
+work; another bitrate-only trial would not distinguish these causes.
+
+Original INI and EEPROM hashes still match; normal mgetty remains active
+and probe/emulator/perf processes stopped. No temperatures were queried.
+Structured results are in `physical-call-2400-20261103.json`; full capture
+is `nanovax:/tmp/courier-physical-2400-20261103`. The requested established
+connection remains unachieved.
