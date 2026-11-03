@@ -138,3 +138,26 @@ smoke check at ef retains matching disabled/enabled state and 62500 hits
 per one million modeled cycles. The queued refined A53 comparison asserts
 that its training case actually uses ef. This does not yet establish the
 refined target gain or a physical connection.
+
+## Refined A53 validation at observed CBCR
+
+The exact guard refinement rebuilt successfully as an isolated library.
+Three alternating reference/disabled/enabled orders on CPU 3 explicitly
+program CBCR ef for the training kernel. All per-case architectural
+digests match, counters run at 100%, and enabled training records 62500
+hits per million modeled cycles. Median cycles are 117697653 reference,
+111481319 disabled and 70335512 enabled: about 40.24% fewer cycles than
+reference. Instructions are 126053819 versus 80778716, about 35.92% fewer.
+
+DMOV control cycles are about 2.7% lower, with roughly 0.7% more
+instructions; address control cycles are about 0.6% higher, with roughly
+0.9% more instructions. These small control costs must remain separate
+from the block-kernel gain. This stage validates the refined target
+variant, not real-time physical modem training.
+
+Manifest and full raw runs are in `dsp-native-block-refined-arm.json`.
+The normal library remains unchanged; the next bounded physical attempt
+will select the isolated library and opt-in flag explicitly, copy the
+existing 9600-bps ARQ EEPROM profile, and record block hits and media.
+Existing autoanswer is active and the physical line is idle. No direct
+physical settings commands are authorized or needed.

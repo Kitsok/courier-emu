@@ -1,0 +1,601 @@
+{
+  "summary": {
+    "training": {
+      "reference": {
+        "cycles:u": 117697653,
+        "instructions:u": 126053819
+      },
+      "disabled": {
+        "cycles:u": 111481319,
+        "instructions:u": 127866895
+      },
+      "enabled": {
+        "cycles:u": 70335512,
+        "instructions:u": 80778716
+      }
+    },
+    "dmov": {
+      "reference": {
+        "cycles:u": 147690128,
+        "instructions:u": 151815965
+      },
+      "disabled": {
+        "cycles:u": 143760194,
+        "instructions:u": 152950415
+      },
+      "enabled": {
+        "cycles:u": 143649556,
+        "instructions:u": 152924432
+      }
+    },
+    "address": {
+      "reference": {
+        "cycles:u": 193170246,
+        "instructions:u": 230702741
+      },
+      "disabled": {
+        "cycles:u": 194046483,
+        "instructions:u": 232687443
+      },
+      "enabled": {
+        "cycles:u": 194246663,
+        "instructions:u": 232687207
+      }
+    }
+  },
+  "runs": [
+    {
+      "cpu_seconds": 0.09424829099999998,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:30:53 2026\n\n117697653,,cycles:u,94547542,100.00,,\n126046014,,instructions:u,94547542,100.00,1.07,insn per cycle\n",
+      "counters": {
+        "cycles:u": 117697653,
+        "instructions:u": 126046014
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.10228254000000003,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:30:54 2026\n\n111248922,,cycles:u,102567792,100.00,,\n127865906,,instructions:u,102567792,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 111248922,
+        "instructions:u": 127865906
+      },
+      "variant": "disabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.06272349899999996,
+      "block_hits": 62500,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:30:56 2026\n\n70288971,,cycles:u,63000000,100.00,,\n80778669,,instructions:u,63000000,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 70288971,
+        "instructions:u": 80778669
+      },
+      "variant": "enabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.059132789999999935,
+      "block_hits": 62500,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:30:57 2026\n\n70335512,,cycles:u,59415710,100.00,,\n80778716,,instructions:u,59415710,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 70335512,
+        "instructions:u": 80778716
+      },
+      "variant": "enabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.09515916700000004,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:30:58 2026\n\n111588706,,cycles:u,95571582,100.00,,\n127885137,,instructions:u,95571582,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 111588706,
+        "instructions:u": 127885137
+      },
+      "variant": "disabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.09827883299999995,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:30:59 2026\n\n117651371,,cycles:u,98572833,100.00,,\n126053819,,instructions:u,98572833,100.00,1.07,insn per cycle\n",
+      "counters": {
+        "cycles:u": 117651371,
+        "instructions:u": 126053819
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.10119724799999996,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:01 2026\n\n118429617,,cycles:u,101563291,100.00,,\n126089474,,instructions:u,101563291,100.00,1.06,insn per cycle\n",
+      "counters": {
+        "cycles:u": 118429617,
+        "instructions:u": 126089474
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.09237549999999994,
+      "block_hits": 0,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:02 2026\n\n111481319,,cycles:u,92671251,100.00,,\n127866895,,instructions:u,92671251,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 111481319,
+        "instructions:u": 127866895
+      },
+      "variant": "disabled",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.06052141700000002,
+      "block_hits": 62500,
+      "retired_instructions": 812500,
+      "executed_cycles": 1000000,
+      "sha256": "e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4",
+      "case": "training",
+      "modeled_cycles": 1000000,
+      "cbcr": 239,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:03 2026\n\n70348788,,cycles:u,60963290,100.00,,\n80778774,,instructions:u,60963290,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 70348788,
+        "instructions:u": 80778774
+      },
+      "variant": "enabled",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.1331338740000001,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:05 2026\n\n147623595,,cycles:u,133460250,100.00,,\n151836778,,instructions:u,133460250,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 147623595,
+        "instructions:u": 151836778
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.13258962600000002,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:06 2026\n\n144040745,,cycles:u,132888875,100.00,,\n152939559,,instructions:u,132888875,100.00,1.06,insn per cycle\n",
+      "counters": {
+        "cycles:u": 144040745,
+        "instructions:u": 152939559
+      },
+      "variant": "disabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.12237866600000002,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:07 2026\n\n143451822,,cycles:u,122678792,100.00,,\n152932984,,instructions:u,122678792,100.00,1.07,insn per cycle\n",
+      "counters": {
+        "cycles:u": 143451822,
+        "instructions:u": 152932984
+      },
+      "variant": "enabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.12716375000000002,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:08 2026\n\n143649556,,cycles:u,127592500,100.00,,\n152923518,,instructions:u,127592500,100.00,1.06,insn per cycle\n",
+      "counters": {
+        "cycles:u": 143649556,
+        "instructions:u": 152923518
+      },
+      "variant": "enabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.13184470800000003,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:10 2026\n\n143760194,,cycles:u,132130541,100.00,,\n152950415,,instructions:u,132130541,100.00,1.06,insn per cycle\n",
+      "counters": {
+        "cycles:u": 143760194,
+        "instructions:u": 152950415
+      },
+      "variant": "disabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.12143804000000002,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:11 2026\n\n148024108,,cycles:u,121772290,100.00,,\n151802949,,instructions:u,121772290,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 148024108,
+        "instructions:u": 151802949
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.131393792,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:13 2026\n\n147690128,,cycles:u,131664457,100.00,,\n151815965,,instructions:u,131664457,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 147690128,
+        "instructions:u": 151815965
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.12755779200000006,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:14 2026\n\n143613676,,cycles:u,127999374,100.00,,\n152954350,,instructions:u,127999374,100.00,1.07,insn per cycle\n",
+      "counters": {
+        "cycles:u": 143613676,
+        "instructions:u": 152954350
+      },
+      "variant": "disabled",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.1230646660000001,
+      "block_hits": 0,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:15 2026\n\n144225375,,cycles:u,123352832,100.00,,\n152924432,,instructions:u,123352832,100.00,1.06,insn per cycle\n",
+      "counters": {
+        "cycles:u": 144225375,
+        "instructions:u": 152924432
+      },
+      "variant": "enabled",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.173512789,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:16 2026\n\n193183134,,cycles:u,173814666,100.00,,\n230702752,,instructions:u,173814666,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193183134,
+        "instructions:u": 230702752
+      },
+      "variant": "reference",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.17311320600000002,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:18 2026\n\n193865265,,cycles:u,173490044,100.00,,\n232687495,,instructions:u,173490044,100.00,1.20,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193865265,
+        "instructions:u": 232687495
+      },
+      "variant": "disabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.17599574799999995,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:19 2026\n\n194293281,,cycles:u,176439958,100.00,,\n232687207,,instructions:u,176439958,100.00,1.20,insn per cycle\n",
+      "counters": {
+        "cycles:u": 194293281,
+        "instructions:u": 232687207
+      },
+      "variant": "enabled",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.17339933400000007,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:21 2026\n\n194246663,,cycles:u,173750792,100.00,,\n232687122,,instructions:u,173750792,100.00,1.20,insn per cycle\n",
+      "counters": {
+        "cycles:u": 194246663,
+        "instructions:u": 232687122
+      },
+      "variant": "enabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.18081904299999996,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:22 2026\n\n194822991,,cycles:u,181158541,100.00,,\n232687099,,instructions:u,181158541,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 194822991,
+        "instructions:u": 232687099
+      },
+      "variant": "disabled",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.17677479200000001,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:23 2026\n\n193170246,,cycles:u,177091251,100.00,,\n230702737,,instructions:u,177091251,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193170246,
+        "instructions:u": 230702737
+      },
+      "variant": "reference",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.18476733499999998,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 13:31:25 2026\n\n193107435,,cycles:u,185091666,100.00,,\n230702741,,instructions:u,185091666,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193107435,
+        "instructions:u": 230702741
+      },
+      "variant": "reference",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.17899845800000003,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:26 2026\n\n194046483,,cycles:u,179310248,100.00,,\n232687443,,instructions:u,179310248,100.00,1.20,insn per cycle\n",
+      "counters": {
+        "cycles:u": 194046483,
+        "instructions:u": 232687443
+      },
+      "variant": "disabled",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.16926729100000004,
+      "block_hits": 0,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "cbcr": 0,
+      "measurement_sha256": "a5614d03490352a45a24569a86d3a3551a9c15c830576f6498ed86e333bc4577",
+      "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601",
+      "perf_csv": "# started on Tue Nov  3 13:31:28 2026\n\n193894029,,cycles:u,169607084,100.00,,\n232687365,,instructions:u,169607084,100.00,1.20,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193894029,
+        "instructions:u": 232687365
+      },
+      "variant": "enabled",
+      "order": 2
+    }
+  ],
+  "manifest": {
+    "compiler_version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "command": [
+      "/usr/bin/g++",
+      "-std=c++17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-fno-semantic-interposition",
+      "-pthread",
+      "-shared",
+      "-fPIC",
+      "/home/kostik/work/courier-emu/native/c5x_core.cpp",
+      "/home/kostik/work/courier-emu/native/c5x_capi.cpp",
+      "-o",
+      "/tmp/tmpi45ge9gv/libcourier-c5x-training-block-refined.so"
+    ],
+    "source_sha256": {
+      "native/c5x_core.cpp": "2fd9550cac7bf96ebcf8057893803d3cfc5d840c48d96473245ef02da8440a63",
+      "native/c5x_capi.cpp": "ea3f83fcc6fe2ce38dc71aefe497ac5c52e17292036236fecc0e2e796f8df228",
+      "native/c5x_core.h": "5ff888d1b4744eab523613369b34e49061392affe79b75301dda3a9235d6cb45",
+      "native/c5x_ops.ipp": "9ab43baa5fb1c43918438619744a13e805a871edb3226e675dbd8be961844d05",
+      "native/c5x_optable.ipp": "c88d909f048888a31382dc66be51c92bcea0b47587bcc5d5015be96c8f4716d1",
+      "native/bearer.hpp": "582bd12953c0551e9e35d75fce8375b438f7619131a934b8ec0990f7517ce129",
+      "native/resample.hpp": "3908cc39c8eca836b0fc1044a24ce89abc5e879447ac2dd75a4c7570da2bcaa8",
+      "native/timers186.hpp": "358a714bae3c8b2d925942b4a7b674bbb390ef2e314c3246b46ac7ccb0b8bf68",
+      "native/analog_devices.hpp": "b74e546b8c5def4fa161638535dc9c6c3199e7ee48bd670ca83358b0659dce6d",
+      "native/rtp_media.hpp": "410953211a3769057bd15b90f3b3e2e5f00d2ee79ef23cd142bb41156852c22b",
+      "native/stream_resample.hpp": "8595df6fa3306fe62127a8612dbadd399a78452d1729b2cd57e779a3a0490254",
+      "native/line_media.hpp": "fb8f0949d54a8f396dfe6ef89eb8ea7495e98277e575f430d7e8e7bf87675222",
+      "native/sip_port.hpp": "398e27bb9d4e8738658ba4fdb5d7fb88bf1e748a24f4e3a8a566597da93ee6ee",
+      "native/board_media.hpp": "41cededf54adbc49a6d0e52219213bfc9859a2c5d387dc385b10ab8997bae917",
+      "native/silicon_daa.hpp": "59ad9a69c94790c089014feee96005ec28c0560751035cf70ce176346c203513",
+      "native/codec_bringup.hpp": "4aad0fd87c66c848ccd7765d15456774c9fb678f72c4830628825172fee4a825",
+      "native/pcm_recording.hpp": "be4922940e2746e6324bdc3ea4143886be6dd03bc8bb24b68d2247353e4fd453",
+      "native/pacer_wait.hpp": "e5db34dca3d6f81c8191f9b3046dd399040c2ae82c12b77f8ae099ca6084632a"
+    },
+    "library_sha256": "a979ea88379b8d7adccd46b4bc4984c2dfb092fa3963b37d38ab458ceebde601"
+  }
+}
