@@ -34,6 +34,11 @@ LINE_BUFFER_SLOTS = 1024
 RECORD_SLOTS = 4096
 
 
+class PacerWaitState(ctypes.Structure):
+    _fields_ = [(name, U64) for name in ('enabled', 'waits', 'wakeups', 'resume_flags')]
+    _fields_ += [(name, F64) for name in ('interval', 'waited', 'port_waited')]
+
+
 class WorkerPollState(ctypes.Structure):
     _fields_ = [
         ("core", ctypes.c_void_p),
@@ -103,6 +108,7 @@ class WorkerPollState(ctypes.Structure):
         ("service_model", ctypes.c_void_p),
         ("error", ctypes.c_char * 512),
         ("yield_counts", ctypes.c_void_p),
+        ("pacer_wait", PacerWaitState),
     ]
 
 
@@ -130,7 +136,7 @@ YIELD_REASONS = dict(enumerate((
     'comparison_frame_boundary', 'comparison_frame_state', 'comparison_send',
     'comparison_receive')))
 YIELD_REASONS.update({40: 'media_edge', 41: 'media_error',
-                      42: 'dsp_transition', 43: 'dsp_error'})
+                      42: 'dsp_transition', 43: 'dsp_error', 44: 'pacer_event'})
 
 
 class WorkerPoll:
@@ -157,7 +163,8 @@ class WorkerPoll:
 
     def yield_profile(self):
         return {'native': {YIELD_REASONS.get(k, str(k)): int(v) for k, v in enumerate(self._yield_counts) if v},
-                'arm': dict(self.arm_counts)}
+                'arm': dict(self.arm_counts),
+                'pacer': {name: getattr(self.state.pacer_wait, name) for name in ('waits', 'wakeups', 'waited', 'port_waited')}}
 
     def seed_snapshot(self, core, machine, bridge, base, deadline, scheduled,
                       dsp_active, tick_period, timer_period, line_period):

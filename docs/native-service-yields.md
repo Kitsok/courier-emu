@@ -34,3 +34,26 @@ pre-DSP service/interrupt ordering. Required work or unexpected FD states
 must still yield to Python. Waiting itself is not CPU pressure; the target
 is repeated Python service and snapshot reconstruction around each wait.
 No physical call or physical settings change was made.
+
+## Bounded native wait implementation
+
+The persistent native worker can now finish the short media-clock wait
+without returning to Python. It performs all guest-state preflights first,
+pumps the existing native RTP transport, and waits for at most the configured
+pacer interval (2 ms in standard operation). Terminal and SIP readiness,
+expired signalling deadlines, invalid descriptors, interruption and errors
+still return control to Python. Readiness is never consumed in C++.
+
+Completed wait statistics are folded back into DeadlinePacer and the line's
+paced-seconds counter. A readiness continuation advances the pacing deadline
+once and delivers the pending console/signalling action in the Python
+service, avoiding a second wait. Custom consoles and a full input FIFO keep
+the reference path. `COURIER_NATIVE_PACER_WAIT=0` selects the reference.
+Rebuild the DSP library when deploying the changed shared-state layout.
+
+Component and worker checks pass 52 cases: timeout bounds, input arriving
+before/during a wait, signalling deadlines, disabled/invalid-FD paths,
+service-clock commits and original scheduler/interrupt/media regressions.
+Local modem/data and performance validation follow as a separate milestone.
+The previous saturated A53 call did not pace: this optimization benefits
+positive media-clock lead and is not a solution to its catch-up deficit.

@@ -9,6 +9,7 @@
 #include "silicon_daa.hpp"
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
+#include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
 
@@ -2485,6 +2486,7 @@ struct WorkerPollState {
     MachineServiceState *service_model;
     char error[512];
     uint64_t *yield_counts;
+    courier::PacerWait pacer_wait;
 };
 
 // A line frame can change the predicates that made the DSP/ASIC tail static.
@@ -2775,6 +2777,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             // owns those outcomes, including draining its pending output.
             if (::poll(&entry, 1, 0) != 0) { return leave(7); }
         }
+        double native_pacing_deadline=0;
         const bool pacer_due = s.pacer_period && uint64_t(total) >= s.pacer_next;
         if (pacer_due) {
             timespec now;
@@ -2787,7 +2790,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                 ? (media->port.s.clock_started ? media->port.s.next_frame_at-media->port.s.frame_duration
                     + double(media->line_buffer.size())/8000 : wall)
                 : s.pacer_origin + double(s.line_buffer_count) / s.line_rate;
-            if (deadline > wall) { return leave(9); }
+            if (deadline > wall) {
+                if(!media || !s.pacer_wait.enabled || s.console_fd<0)return leave(9);
+                native_pacing_deadline=deadline;
+            }
         }
         bool frame_edge = false;
         uint32_t slots[3];
@@ -2871,6 +2877,22 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
                     converted = true;
                 }
             }
+        }
+        // A wait follows all guest-state preflights, before service commit.
+        if(native_pacing_deadline>0) {
+                auto &port=s.native_media->port;
+                // Same media pump as SipSession.poll; signalling remains a
+                // Python action, bounded by readiness and its next deadline.
+                port.media.transport.poll(courier::pacer_now());
+                if(port.media.transport.snapshot().error)return leave(9);
+                const int waited=courier::pacer_wait(s.pacer_wait,int(s.console_fd),
+                    int(port.control.signal_fd),native_pacing_deadline,port.control.deadline);
+                if(waited<0)return leave(9);
+                if(waited>1) {
+                    s.pacer_wait.resume_flags=uint64_t(waited);
+                    s.pacer_next=uint64_t(total)+s.pacer_period;
+                    return leave(44);
+                }
         }
         s.dirty = 1;
         s.last_service = uint64_t(total);
@@ -3173,6 +3195,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     if (frame && !(s.peer_off_hook && !s.peer_ringing && s.peer_call_state <= 3)) s.armed = 0;
     ++s.polls;
     return 1;
+}
+
+extern "C" int courier_worker_pacer_wait(void *state,int console,int signal,double deadline,double signal_deadline) {
+    return courier::pacer_wait(*static_cast<courier::PacerWait *>(state),console,signal,deadline,signal_deadline);
 }
 
 // For worker_poll.py to check its mirror of WorkerPollState against.
