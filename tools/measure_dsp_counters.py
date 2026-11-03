@@ -2,6 +2,7 @@
 """Measure user hardware counters around a native DSP kernel, excluding setup."""
 import argparse
 import csv
+import ctypes
 import hashlib
 import json
 import os
@@ -21,11 +22,25 @@ def worker(args):
     code = [0xbf09, 0x301, 0x8b89, 0x7790, 0x7780, 0x7980, 0x6000]
     if args.case == 'address':
         code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
+    if args.case == 'training':
+        code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
     with NativeC5x.from_program(0x6000, struct.pack('<%dH' % len(code), *code)) as core:
         for address in range(0x2f0, 0x310):
             core.set_data(address, address ^ 0x55aa)
         core.set_pc(0x6000)
+        if args.case == 'training':
+            core.host_write(7,0x30);core.host_write(0x26,0x10)
+            for a in range(0x300,0x380):core.set_data(a,(a*137)^0xaaaa)
+            core.step(6)
+            block=[0x8b00,0x528a,0x8d7d,0x8c7e,0x7304,0x557e,0x8d7e,
+                   0x547d,0xbe03,0x627e,0x61a0,0x6290,0x7980,0x879c]
+            core.load_program(struct.pack('<14H',*block),0x879c);core.set_pc(0x879c)
+        query=getattr(core.library,'courier_c5x_training_block_hits',None)
+        if query:
+            query.argtypes=[ctypes.c_void_p];query.restype=ctypes.c_uint64
+        def hits():return int(query(core.handle)) if query else 0
         core.step_cycles(100000)
+        before_hits=hits()
         with open(args.folder / 'control', 'w', buffering=1) as control, open(args.folder / 'ack') as ack:
             def command(value):
                 control.write(value + '\n')
@@ -38,17 +53,18 @@ def worker(args):
                 elapsed = time.process_time() - start
             finally:
                 command('disable')
+        addresses=range(0x300,0x380) if args.case=='training' else range(0x2f0,0x310)
         state = [core.state(), core.serial_state(), core.memory_map(),
-                 [core.data(a) for a in range(0x2f0, 0x310)],
-                 [core.data_write_count(a) for a in range(0x2f0, 0x310)]]
+                 [core.data(a) for a in addresses],
+                 [core.data_write_count(a) for a in addresses]]
         (args.folder / 'kernel.json').write_text(json.dumps(dict(
-            cpu_seconds=elapsed, retired_instructions=retired, executed_cycles=executed_cycles, sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
+            cpu_seconds=elapsed, block_hits=hits()-before_hits, retired_instructions=retired, executed_cycles=executed_cycles, sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--case', choices=['dmov', 'address'], default='dmov')
+    parser.add_argument('--case', choices=['dmov', 'address', 'training'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--folder', type=Path, help=argparse.SUPPRESS)
@@ -70,6 +86,7 @@ def main():
         subprocess.run(command, check=True, timeout=60)
         result = json.loads((folder / 'kernel.json').read_text())
         result.update(case=args.case, modeled_cycles=args.cycles,
+                      measurement_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       library_sha256=hashlib.sha256(args.library.read_bytes()).hexdigest(),
                       perf_csv=(folder / 'stat').read_text())
         counters = {}

@@ -37,3 +37,21 @@ including controls for the new eligibility branch and a training trace
 eligibility sample. Reject if this does not reduce useful execution work.
 No new physical call or settings change was made for the prototype. The
 broader executor and physical ARQ connection remain unfinished.
+
+## Counter workload preparation
+
+The phase-controlled counter tool now offers --case training. It sets up
+the observed code and DARAM operands, stops the synthetic timer to admit
+an event-free window, and loops through the exact block and an ordinary
+branch. It records block hits separately from the architectural digest,
+plus the measurement-source hash. The DMOV/address controls retain their
+previous setup (the DMOV case name is dmov).
+
+A notebook workload smoke check used a local acknowledgement responder,
+not perf counters: disabled and enabled runs both execute one million
+modeled cycles and produce digest
+`e5741405abc660a90432ca16818415c4a0fd21a9276f97ca6c9da3d3d33306b4`.
+Hits are zero versus 62500, proving admission throughout this synthetic
+window. No hardware count or target gain is inferred from that smoke test.
+A53 reference/disabled/enabled counter comparisons are queued after the
+isolated target build, with state and positive-hit assertions.
