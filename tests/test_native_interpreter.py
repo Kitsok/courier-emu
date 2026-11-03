@@ -417,3 +417,26 @@ def test_native_software_interrupt_matches_the_harness_hook(profile):
     assert seen[1] == [0x31]
     assert fast._native.take_interrupt_counts() == {0x30: 2}
     assert fast._native.take_interrupt_counts() == {}
+
+
+@pytest.mark.parametrize('profile,prefix', [('186eb',b''),('386ex',b'\x66')])
+@pytest.mark.parametrize('cs,ip',[(0,0x1000),(0,0xfffd),(0,0xfffe),
+                                (0xffff,0xd),(0xffff,0xe),(0xffff,0xf)])
+def test_native_immediate_fetch_preserves_segment_and_bus_wrap(profile,prefix,cs,ip):
+    slow,fast=pair(profile)
+    code=prefix+b'\xb8\x12\x34'+(b'\x56\x78' if prefix else b'')
+    for cpu in (slow,fast):
+        cpu.regs[x86.UC_X86_REG_CS]=cs
+        cpu.regs[x86.UC_X86_REG_IP]=ip
+        for offset,byte in enumerate(code):
+            cpu.memory[cpu._physical(cs,(ip+offset)&0xffff)]=byte
+        cpu.emu_start(cpu._physical(cs,ip),0,count=1)
+    assert fast.regs[x86.UC_X86_REG_AX]==(0x78563412 if prefix else 0x3412)
+    assert fast.regs[x86.UC_X86_REG_IP]==(ip+len(code))&0xffff
+    assert fast.regs[x86.UC_X86_REG_CS]==cs
+    # Python's inline 16-bit MOV currently reads the second immediate byte
+    # linearly across IP=ffff. The existing native bytewise path wraps it.
+    if not (profile=='186eb' and ip==0xfffe):
+        assert slow.regs==fast.regs
+    assert slow.memory==fast.memory
+    assert fast._native.retired==1

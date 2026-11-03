@@ -109,7 +109,24 @@ struct Core {
         return true;
     }
     uint32_t phys(uint32_t s,uint32_t o) { return ((s&65535)*16+(o&65535))&mask; }
-    uint32_t fetch(int n=1) { uint32_t v=0; for(int i=0;i<n;++i) {v|=uint32_t(mem[phys(r[CS],r[IP])])<<(i*8); r[IP]=(r[IP]+1)&65535;} return v; }
+    uint32_t fetch(int n=1) {
+        const uint32_t ip=r[IP], address=phys(r[CS],ip);
+        // Immediates usually occupy consecutive physical bytes. Advance IP
+        // once, retaining bytewise segment and address wrap at either edge.
+        if (n==1) { r[IP]=(ip+1)&65535; return mem[address]; }
+        if (ip+unsigned(n)<=0x10000 && address+unsigned(n)<=mask+1) {
+            uint32_t value=mem[address]|(uint32_t(mem[address+1])<<8);
+            if(n==4) value|=uint32_t(mem[address+2])<<16|uint32_t(mem[address+3])<<24;
+            r[IP]=(ip+n)&65535;
+            return value;
+        }
+        uint32_t value=0;
+        for(int i=0;i<n;++i) {
+            value|=uint32_t(mem[phys(r[CS],r[IP])])<<(i*8);
+            r[IP]=(r[IP]+1)&65535;
+        }
+        return value;
+    }
     void check(uint32_t a,int n,int p,uint32_t value=0) {
         if(a+unsigned(n)>mask+1) yield(2);
         // Mapping regions are page-aligned. Watched bytes force a fallback,
