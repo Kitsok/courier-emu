@@ -797,6 +797,7 @@ private:
     uint64_t m_timer_expiries = 0;
 
     void consume_cycles(unsigned cycles);
+    void consume_address_cycle();
     uint64_t advance_timer(uint64_t elapsed);
     Region program_region(uint16_t address) const;
     Region data_region(uint16_t address) const;

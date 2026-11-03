@@ -50,3 +50,18 @@ def test_logical_long_immediates_take_two_cycles(opcode):
     with core:
         core.set_pc(0x6000); before=core.state()['cycles']; core.step(1)
         assert core.state()['cycles']-before==2
+
+
+@pytest.mark.parametrize('address_op', [0x7801, 0x7c01, 0x8b80])
+def test_address_updates_preserve_xc_carry_sample(address_op):
+    # SETC C; address-only update; XC 2,C; SPLK marker.
+    with run((0xbe4f, address_op, 0xf711, 0xae60, 0xaaaa), 4) as core:
+        assert core.data(0x60) == 0xaaaa
+
+
+@pytest.mark.parametrize('address_op', [0x7801, 0x7c01, 0x8b80])
+def test_address_update_in_last_delay_slot_preserves_xc(address_op):
+    # Both slots leave conditions unchanged; outer BD must preserve their sample.
+    with run((0xbe4f, 0x7d80, 0x6005, 0x7800, address_op,
+              0xf711, 0xae60, 0xaaaa), 4) as core:
+        assert core.data(0x60) == 0xaaaa

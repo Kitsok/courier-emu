@@ -1044,7 +1044,7 @@ void C5xCore::op_adrk()
 	uint16_t imm = m_op & 0xff;
 	UPDATE_AR(m_st0.arp, imm);
 
-	CYCLES(1);
+	consume_address_cycle();
 }
 
 void C5xCore::op_cmpr()
@@ -1145,7 +1145,7 @@ void C5xCore::op_mar()
 	{
 		GET_ADDRESS();
 	}
-	CYCLES(1);
+	consume_address_cycle();
 }
 
 void C5xCore::op_sar()
@@ -1163,7 +1163,7 @@ void C5xCore::op_sbrk()
 	uint16_t imm = m_op & 0xff;
 	UPDATE_AR(m_st0.arp, -imm);
 
-	CYCLES(1);
+	consume_address_cycle();
 }
 
 /*****************************************************************************/
