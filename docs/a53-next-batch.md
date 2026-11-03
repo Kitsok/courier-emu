@@ -59,3 +59,14 @@ and hit restricted socket fixtures: 52 passed, two failed and three errored
 at socket creation. The focused rerun permits local socket fixtures and
 excludes the five firmware-scale cases. No physical call was made for an
 individual stage. Target measurements and the final batch call follow.
+
+
+### Reject the fetch candidate after A53 comparison
+
+Three alternating CPU-3 repetitions of one million instructions per
+workload show no useful target gain. The candidate costs 2.36% more CPU
+in mixed memory, 4.17% more in traced memory and 3.37% more in the memory
+control; register and 386 controls are essentially unchanged. All state
+hashes match. Restore the preceding native implementation and retain the
+wrap checks. Raw results are in `x86-fetch-arm-rejected.json`. Do not
+attribute any later call behavior to this rejected candidate.
