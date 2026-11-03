@@ -398,6 +398,10 @@ public:
     const std::deque<uint64_t> &pc_trace() const { return m_pc_trace; }
     // Empty it, so a harness draining it between runs sees each entry once.
     void clear_pc_trace() { m_pc_trace.clear(); }
+#ifdef C5X_PROFILE_WORK
+    bool clear_work_profile();
+    std::size_t work_profile(uint64_t *rows, std::size_t capacity) const;
+#endif
     // Read-only snapshots at an instruction boundary, for comparing a
     // signal-processing decision with the exact samples it consumed.
     void set_pc_capture(uint16_t pc, const std::vector<uint16_t> &addresses)
@@ -502,6 +506,23 @@ private:
     std::array<uint64_t, 65536> m_data_write_counts{};
     std::array<PortStat, 65536> m_io_port_stats{};
     std::deque<uint64_t> m_pc_trace;
+#ifdef C5X_PROFILE_WORK
+    // Diagnostic counts survive architectural reset until explicitly cleared.
+    // Count opcode bodies, including delay slots, but not idle clock skips.
+    struct WorkCount {
+        uint64_t executed=0, native=0, opcode_changes=0;
+        uint16_t last_opcode=0;
+    };
+    std::array<WorkCount,65536> m_work_counts{};
+    void record_work(uint16_t pc, uint16_t opcode, bool native=false)
+    {
+        auto &count=m_work_counts[pc];
+        if (count.executed && count.last_opcode!=opcode) ++count.opcode_changes;
+        ++count.executed;
+        if (native) ++count.native;
+        count.last_opcode=opcode;
+    }
+#endif
     uint16_t m_capture_pc = 0;
     std::vector<uint16_t> m_capture_addresses;
     std::deque<std::vector<uint64_t>> m_pc_captures;

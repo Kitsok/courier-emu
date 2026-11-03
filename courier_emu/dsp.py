@@ -854,6 +854,33 @@ class NativeC5x:
         """
         return int(self.library.courier_c5x_get_program(self.handle, address))
 
+    def clear_work_profile(self) -> bool:
+        """Clear diagnostic opcode counts; false for a normal native build."""
+        clear = getattr(self.library, "courier_c5x_clear_work_profile", None)
+        if clear is None:
+            return False
+        clear.argtypes = [ctypes.c_void_p]
+        clear.restype = ctypes.c_int
+        return bool(clear(self.handle))
+
+    def work_profile(self) -> list[list[int]]:
+        """Sparse [PC, executed, native, last opcode, opcode changes] rows.
+
+        Available only in a C5X_PROFILE_WORK diagnostic library. Hardware
+        repeat micro-operations are one opcode body; delay slots are separate.
+        Architectural reset retains these counts until explicitly cleared.
+        """
+        query = getattr(self.library, "courier_c5x_get_work_profile", None)
+        if query is None:
+            raise RuntimeError("DSP library was not built with C5X_PROFILE_WORK")
+        query.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint64), ctypes.c_size_t]
+        query.restype = ctypes.c_size_t
+        count = int(query(self.handle, None, 0))
+        rows = (ctypes.c_uint64 * (count*5))()
+        if int(query(self.handle, rows, count)) != count:
+            raise RuntimeError("DSP work counts changed during snapshot")
+        return [list(map(int, rows[i:i+5])) for i in range(0, count*5, 5)]
+
     def data(self, address: int) -> int:
         return int(self.library.courier_c5x_get_data(self.handle, address))
 

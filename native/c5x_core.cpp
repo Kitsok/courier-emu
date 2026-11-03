@@ -1536,6 +1536,30 @@ void C5xCore::cpuregs_w(uint16_t offset, uint16_t value)
 #undef CYCLES
 
 // An observed arithmetic block, admitted only in an event-free run window.
+#ifdef C5X_PROFILE_WORK
+bool C5xCore::clear_work_profile()
+{
+    m_work_counts.fill({});
+    return true;
+}
+
+std::size_t C5xCore::work_profile(uint64_t *rows, std::size_t capacity) const
+{
+    std::size_t used=0;
+    for (unsigned pc=0; pc<65536; ++pc) {
+        const auto &count=m_work_counts[pc];
+        if (!count.executed) continue;
+        if (rows && used<capacity) {
+            const uint64_t row[]={pc,count.executed,count.native,
+                count.last_opcode,count.opcode_changes};
+            std::copy(std::begin(row),std::end(row),rows+5*used);
+        }
+        ++used;
+    }
+    return used;
+}
+#endif
+
 bool C5xCore::try_training_block(uint64_t target)
 {
     static constexpr uint16_t code[] = {0x528a,0x8d7d,0x8c7e,0x7304,0x557e,
@@ -1561,6 +1585,9 @@ bool C5xCore::try_training_block(uint64_t target)
         || (m_call_tdm_active && (m_line_dac_slot == high || m_line_dac_slot == low)))
         return false;
     ++m_training_block_hits;
+#ifdef C5X_PROFILE_WORK
+    for (unsigned i=0; i<11; ++i) record_work(uint16_t(0x879d+i),code[i],true);
+#endif
     m_map.program_external += 10; // The first opcode was already fetched.
     auto store = [&](uint16_t address, uint16_t value) {
         ++m_data_write_counts[address]; m_data[address] = value;
@@ -1638,6 +1665,9 @@ bool C5xCore::try_complex_block(uint64_t target)
             cells[i]={&data_cell(kind,address),&(&m_map.data_registers)[kind&7]};
         }
         if (!safe) break;
+#ifdef C5X_PROFILE_WORK
+        for (unsigned i=0; i<14; ++i) record_work(uint16_t(first_pc+i),code[i],true);
+#endif
         auto load = [&](unsigned cell) { ++*cells[cell].reads; return *cells[cell].value; };
         auto store = [&](unsigned cell, uint16_t value) {
             ++m_data_write_counts[addresses[cell]]; *cells[cell].value = value;
@@ -1686,6 +1716,9 @@ void C5xCore::op_group_bf() { s_opcode_table_bf[m_op & 0xff](this); }
 
 void C5xCore::execute_opcode()
 {
+#ifdef C5X_PROFILE_WORK
+    record_work(uint16_t(m_pc-1),m_op);
+#endif
     m_condition_start = condition_state();
     s_opcode_table[m_op >> 8].plain(this);
 }
@@ -2112,6 +2145,9 @@ inline __attribute__((always_inline)) void C5xCore::step_inline()
         if (step_front_rare()) return;
     } else {
         step_begin();
+#ifdef C5X_PROFILE_WORK
+        record_work(m_previous_pc,m_op);
+#endif
         s_opcode_table[m_op >> 8].plain(this);
         step_repeat_edge();
     }
@@ -2137,6 +2173,9 @@ void C5xCore::threaded(C5xCore *core)
             translated=core->try_complex_block(core->m_run_target);
     }
     if (!translated) {
+#ifdef C5X_PROFILE_WORK
+        core->record_work(core->m_previous_pc,core->m_op);
+#endif
         [[clang::always_inline]] (core->*F)();
         core->step_repeat_edge();
         core->step_retire();

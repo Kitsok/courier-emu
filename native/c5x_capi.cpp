@@ -2072,6 +2072,18 @@ uint64_t courier_c5x_complex_block_hits(void *handle)
     return handle ? static_cast<C5xCore *>(handle)->complex_block_hits() : 0;
 }
 
+#ifdef C5X_PROFILE_WORK
+int courier_c5x_clear_work_profile(void *handle)
+{
+    return handle && static_cast<C5xCore *>(handle)->clear_work_profile();
+}
+
+std::size_t courier_c5x_get_work_profile(void *handle, uint64_t *rows, std::size_t capacity)
+{
+    return handle ? static_cast<C5xCore *>(handle)->work_profile(rows,capacity) : 0;
+}
+#endif
+
 std::size_t courier_c5x_get_pc_trace_count(void *handle)
 {
     return handle ? static_cast<C5xCore *>(handle)->pc_trace().size() : 0;
