@@ -1,0 +1,410 @@
+{
+  "source": "/tmp/courier-sequence-local-training-2",
+  "scope": "Notebook loopback V34 training, three one-batch full-range traces per endpoint after SIP answer; diagnostic instrumentation enabled despite profiler disabled.",
+  "result": "Both CONNECT 31200/ARQ/V34/LAPM/V42BIS; exact bidirectional markers",
+  "endpoints": {
+    "caller": {
+      "windows": [
+        {
+          "after_answer": 2.0156110190437175,
+          "entries": 4096
+        },
+        {
+          "after_answer": 3.013337386015337,
+          "entries": 4096
+        },
+        {
+          "after_answer": 4.0113111929968,
+          "entries": 4096
+        }
+      ],
+      "pairs": [
+        {
+          "pc": 34720,
+          "first": 29444,
+          "second": 21886,
+          "count": 154
+        },
+        {
+          "pc": 34725,
+          "first": 25214,
+          "second": 24992,
+          "count": 154
+        },
+        {
+          "pc": 34726,
+          "first": 24992,
+          "second": 25232,
+          "count": 154
+        },
+        {
+          "pc": 34727,
+          "first": 25232,
+          "second": 65280,
+          "count": 154
+        },
+        {
+          "pc": 35511,
+          "first": 30608,
+          "second": 30592,
+          "count": 148
+        },
+        {
+          "pc": 35512,
+          "first": 30592,
+          "second": 41088,
+          "count": 148
+        },
+        {
+          "pc": 35514,
+          "first": 12155,
+          "second": 39040,
+          "count": 148
+        },
+        {
+          "pc": 35515,
+          "first": 39040,
+          "second": 61184,
+          "count": 95
+        },
+        {
+          "pc": 35498,
+          "first": 12155,
+          "second": 39040,
+          "count": 94
+        },
+        {
+          "pc": 35499,
+          "first": 39040,
+          "second": 48838,
+          "count": 94
+        },
+        {
+          "pc": 35772,
+          "first": 26238,
+          "second": 25981,
+          "count": 32
+        },
+        {
+          "pc": 35773,
+          "first": 25981,
+          "second": 58129,
+          "count": 32
+        },
+        {
+          "pc": 35776,
+          "first": 25214,
+          "second": 24957,
+          "count": 21
+        },
+        {
+          "pc": 35777,
+          "first": 24957,
+          "second": 48718,
+          "count": 21
+        },
+        {
+          "pc": 35599,
+          "first": 39293,
+          "second": 28027,
+          "count": 19
+        },
+        {
+          "pc": 35600,
+          "first": 28027,
+          "second": 41088,
+          "count": 19
+        },
+        {
+          "pc": 35623,
+          "first": 39072,
+          "second": 8059,
+          "count": 19
+        },
+        {
+          "pc": 35624,
+          "first": 8059,
+          "second": 48768,
+          "count": 19
+        },
+        {
+          "pc": 35629,
+          "first": 29568,
+          "second": 48768,
+          "count": 19
+        },
+        {
+          "pc": 35634,
+          "first": 29568,
+          "second": 50446,
+          "count": 19
+        },
+        {
+          "pc": 35638,
+          "first": 29568,
+          "second": 57277,
+          "count": 19
+        },
+        {
+          "pc": 35641,
+          "first": 39056,
+          "second": 60928,
+          "count": 19
+        },
+        {
+          "pc": 33677,
+          "first": 36989,
+          "second": 20349,
+          "count": 18
+        },
+        {
+          "pc": 33678,
+          "first": 20349,
+          "second": 60928,
+          "count": 18
+        },
+        {
+          "pc": 33728,
+          "first": 4217,
+          "second": 12408,
+          "count": 18
+        },
+        {
+          "pc": 33729,
+          "first": 12408,
+          "second": 61320,
+          "count": 18
+        },
+        {
+          "pc": 33896,
+          "first": 36989,
+          "second": 19837,
+          "count": 18
+        },
+        {
+          "pc": 33897,
+          "first": 19837,
+          "second": 60928,
+          "count": 18
+        },
+        {
+          "pc": 35610,
+          "first": 29566,
+          "second": 48768,
+          "count": 17
+        },
+        {
+          "pc": 35615,
+          "first": 29568,
+          "second": 48768,
+          "count": 17
+        }
+      ]
+    },
+    "answerer": {
+      "windows": [
+        {
+          "after_answer": 2.0058922589523718,
+          "entries": 1296
+        },
+        {
+          "after_answer": 3.006500169984065,
+          "entries": 1174
+        },
+        {
+          "after_answer": 4.0115685549681075,
+          "entries": 4096
+        }
+      ],
+      "pairs": [
+        {
+          "pc": 35772,
+          "first": 26238,
+          "second": 25981,
+          "count": 96
+        },
+        {
+          "pc": 35773,
+          "first": 25981,
+          "second": 58129,
+          "count": 96
+        },
+        {
+          "pc": 35511,
+          "first": 30608,
+          "second": 30592,
+          "count": 42
+        },
+        {
+          "pc": 35512,
+          "first": 30592,
+          "second": 41088,
+          "count": 42
+        },
+        {
+          "pc": 35514,
+          "first": 12155,
+          "second": 39040,
+          "count": 42
+        },
+        {
+          "pc": 33677,
+          "first": 36989,
+          "second": 20349,
+          "count": 27
+        },
+        {
+          "pc": 33678,
+          "first": 20349,
+          "second": 60928,
+          "count": 27
+        },
+        {
+          "pc": 33728,
+          "first": 4217,
+          "second": 12408,
+          "count": 27
+        },
+        {
+          "pc": 33729,
+          "first": 12408,
+          "second": 61320,
+          "count": 27
+        },
+        {
+          "pc": 33896,
+          "first": 36989,
+          "second": 19837,
+          "count": 27
+        },
+        {
+          "pc": 33897,
+          "first": 19837,
+          "second": 60928,
+          "count": 27
+        },
+        {
+          "pc": 34720,
+          "first": 29444,
+          "second": 21886,
+          "count": 27
+        },
+        {
+          "pc": 34725,
+          "first": 25214,
+          "second": 24992,
+          "count": 27
+        },
+        {
+          "pc": 34726,
+          "first": 24992,
+          "second": 25232,
+          "count": 27
+        },
+        {
+          "pc": 34727,
+          "first": 25232,
+          "second": 65280,
+          "count": 27
+        },
+        {
+          "pc": 33145,
+          "first": 4121,
+          "second": 47617,
+          "count": 20
+        },
+        {
+          "pc": 33147,
+          "first": 36889,
+          "second": 63368,
+          "count": 20
+        },
+        {
+          "pc": 33155,
+          "first": 37024,
+          "second": 34828,
+          "count": 20
+        },
+        {
+          "pc": 33157,
+          "first": 26909,
+          "second": 58248,
+          "count": 20
+        },
+        {
+          "pc": 33166,
+          "first": 28064,
+          "second": 34849,
+          "count": 20
+        },
+        {
+          "pc": 32968,
+          "first": 27264,
+          "second": 15241,
+          "count": 20
+        },
+        {
+          "pc": 32969,
+          "first": 15241,
+          "second": 25869,
+          "count": 20
+        },
+        {
+          "pc": 32970,
+          "first": 25869,
+          "second": 26126,
+          "count": 20
+        },
+        {
+          "pc": 32971,
+          "first": 26126,
+          "second": 38927,
+          "count": 20
+        },
+        {
+          "pc": 32972,
+          "first": 38927,
+          "second": 7183,
+          "count": 20
+        },
+        {
+          "pc": 32973,
+          "first": 7183,
+          "second": 24845,
+          "count": 20
+        },
+        {
+          "pc": 32974,
+          "first": 24845,
+          "second": 25102,
+          "count": 20
+        },
+        {
+          "pc": 32975,
+          "first": 25102,
+          "second": 38925,
+          "count": 20
+        },
+        {
+          "pc": 32976,
+          "first": 38925,
+          "second": 36878,
+          "count": 20
+        },
+        {
+          "pc": 32977,
+          "first": 36878,
+          "second": 48706,
+          "count": 20
+        }
+      ]
+    }
+  },
+  "limits": [
+    "Bounded windows truncate earlier instructions.",
+    "Hardware-repeated micro-operations and delay-slot internals are not individually traced.",
+    "Only whitelisted one-word predecessor families and PC+1 successors enter the pair ranking.",
+    "Observed sequence counts are not full-call frequencies or CPU shares.",
+    "This is not a physical A53 connection or uninstrumented performance run."
+  ]
+}
