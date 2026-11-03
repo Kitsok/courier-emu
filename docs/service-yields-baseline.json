@@ -1,0 +1,409 @@
+{
+  "scope": "Notebook analog403 loopback LAPM training with cProfile and optional native yield counters; no physical modem. Timings include instrumentation and pacing waits.",
+  "exact_bidirectional_data": true,
+  "roles": {
+    "caller": {
+      "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+      "yields": {
+        "native": {
+          "unarmed": 1648,
+          "deadline": 412,
+          "pacing_wait": 6335,
+          "dsp_transition": 341
+        },
+        "arm": {
+          "attempts": 8777,
+          "declined": 10,
+          "armed_mode_3": 8767
+        }
+      },
+      "cpu_seconds": 20.561327764999998,
+      "wall_seconds": 24.788468424987514,
+      "guest_instructions": 84046434,
+      "top_functions": [
+        {
+          "function": "('~', 0, '<built-in method _x86_native.run>')",
+          "calls": 15496,
+          "self_seconds": 12.551903666000001,
+          "cumulative_seconds": 12.551903666000001
+        },
+        {
+          "function": "('~', 0, '<built-in method select.select>')",
+          "calls": 5768,
+          "self_seconds": 4.458134015000001,
+          "cumulative_seconds": 4.458134015000001
+        },
+        {
+          "function": "('courier_emu/dsp.py', 521, 'step_cycles')",
+          "calls": 1513,
+          "self_seconds": 0.662932313,
+          "cumulative_seconds": 0.664757802
+        },
+        {
+          "function": "('courier_emu/x86_native.py', 103, 'execute')",
+          "calls": 15496,
+          "self_seconds": 0.490104309,
+          "cumulative_seconds": 15.217412807
+        },
+        {
+          "function": "('courier_emu/machine.py', 3401, 'arm')",
+          "calls": 8777,
+          "self_seconds": 0.39834391,
+          "cumulative_seconds": 1.352942305
+        },
+        {
+          "function": "('~', 0, '<built-in method builtins.getattr>')",
+          "calls": 503502,
+          "self_seconds": 0.23093997700000002,
+          "cumulative_seconds": 0.24020442900000002
+        },
+        {
+          "function": "('courier_emu/bridge_native.py', 101, '__setattr__')",
+          "calls": 76040,
+          "self_seconds": 0.174684639,
+          "cumulative_seconds": 0.24049271200000003
+        },
+        {
+          "function": "('courier_emu/board_media_native.py', 175, '__len__')",
+          "calls": 16665,
+          "self_seconds": 0.164280385,
+          "cumulative_seconds": 0.18463767
+        },
+        {
+          "function": "('courier_emu/x86_interpreter.py', 845, 'emu_start')",
+          "calls": 7069,
+          "self_seconds": 0.158497151,
+          "cumulative_seconds": 23.954128309
+        },
+        {
+          "function": "('courier_emu/bridge.py', 3048, 'clock_x86')",
+          "calls": 8436,
+          "self_seconds": 0.152257733,
+          "cumulative_seconds": 1.3284939530000002
+        },
+        {
+          "function": "('courier_emu/machine.py', 2249, 'service_chunk_body')",
+          "calls": 8435,
+          "self_seconds": 0.14779324400000002,
+          "cumulative_seconds": 8.217699302
+        },
+        {
+          "function": "('courier_emu/machine.py', 3152, 'record_dsp_queue_write')",
+          "calls": 9711,
+          "self_seconds": 0.143408886,
+          "cumulative_seconds": 0.156662713
+        },
+        {
+          "function": "('courier_emu/machine.py', 3987, 'refresh_native_lanes')",
+          "calls": 13199,
+          "self_seconds": 0.137978963,
+          "cumulative_seconds": 0.415773384
+        },
+        {
+          "function": "('courier_emu/bridge.py', 3301, 'fast_clock_static')",
+          "calls": 8772,
+          "self_seconds": 0.125373321,
+          "cumulative_seconds": 0.374901898
+        },
+        {
+          "function": "('courier_emu/service_native.py', 23, '__get__')",
+          "calls": 166982,
+          "self_seconds": 0.12352030100000001,
+          "cumulative_seconds": 0.186495676
+        },
+        {
+          "function": "('/usr/lib/python3.14/queue.py', 177, 'get')",
+          "calls": 475,
+          "self_seconds": 0.117524001,
+          "cumulative_seconds": 24.832339605
+        },
+        {
+          "function": "('courier_emu/machine.py', 3777, 'after_run')",
+          "calls": 15496,
+          "self_seconds": 0.116649947,
+          "cumulative_seconds": 0.116649947
+        },
+        {
+          "function": "('courier_emu/machine.py', 1835, 'service_after_tick')",
+          "calls": 8465,
+          "self_seconds": 0.11380603500000001,
+          "cumulative_seconds": 0.33911391700000004
+        },
+        {
+          "function": "('courier_emu/sip_line_native.py', 122, '_sync_control')",
+          "calls": 11535,
+          "self_seconds": 0.11178692200000001,
+          "cumulative_seconds": 0.241853104
+        },
+        {
+          "function": "('courier_emu/machine.py', 2157, 'service_tail')",
+          "calls": 8436,
+          "self_seconds": 0.097026576,
+          "cumulative_seconds": 0.6318930220000001
+        },
+        {
+          "function": "('courier_emu/service_native.py', 79, 'fold_native_eois')",
+          "calls": 9898,
+          "self_seconds": 0.096108049,
+          "cumulative_seconds": 0.12168793200000001
+        },
+        {
+          "function": "('~', 0, \"<method 'recvfrom' of '_socket.socket' objects>\")",
+          "calls": 5767,
+          "self_seconds": 0.09221607500000001,
+          "cumulative_seconds": 0.09221607500000001
+        },
+        {
+          "function": "('~', 0, '<built-in method builtins.len>')",
+          "calls": 250726,
+          "self_seconds": 0.08817643400000001,
+          "cumulative_seconds": 0.184175277
+        },
+        {
+          "function": "('courier_emu/analog_native.py', 45, '__get__')",
+          "calls": 78887,
+          "self_seconds": 0.08500261,
+          "cumulative_seconds": 0.12077409400000001
+        },
+        {
+          "function": "('courier_emu/media_native.py', 94, 'snapshot')",
+          "calls": 17301,
+          "self_seconds": 0.079858786,
+          "cumulative_seconds": 0.090699793
+        },
+        {
+          "function": "('courier_emu/worker_poll.py', 162, 'seed_snapshot')",
+          "calls": 8767,
+          "self_seconds": 0.079724767,
+          "cumulative_seconds": 0.15422760200000002
+        },
+        {
+          "function": "('courier_emu/dsp.py', 945, 'pc')",
+          "calls": 21966,
+          "self_seconds": 0.076506604,
+          "cumulative_seconds": 0.08067134000000001
+        },
+        {
+          "function": "('courier_emu/sip.py', 1090, 'poll')",
+          "calls": 5767,
+          "self_seconds": 0.07580059,
+          "cumulative_seconds": 0.582201757
+        },
+        {
+          "function": "('courier_emu/dsp.py', 1415, 'boot_pending')",
+          "calls": 17569,
+          "self_seconds": 0.07452154500000001,
+          "cumulative_seconds": 0.07452154500000001
+        },
+        {
+          "function": "('courier_emu/machine.py', 1815, 'sip_idle_wait')",
+          "calls": 5767,
+          "self_seconds": 0.069825026,
+          "cumulative_seconds": 5.433759578
+        }
+      ]
+    },
+    "answerer": {
+      "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+      "yields": {
+        "native": {
+          "unarmed": 1717,
+          "deadline": 411,
+          "pacing_wait": 5724,
+          "media_edge": 1,
+          "dsp_transition": 237
+        },
+        "arm": {
+          "attempts": 8137,
+          "declined": 17,
+          "armed_mode_3": 8120
+        }
+      },
+      "cpu_seconds": 19.730538985,
+      "wall_seconds": 24.78821882000193,
+      "guest_instructions": 84323328,
+      "top_functions": [
+        {
+          "function": "('~', 0, '<built-in method _x86_native.run>')",
+          "calls": 14818,
+          "self_seconds": 11.439908949000001,
+          "cumulative_seconds": 11.439908949000001
+        },
+        {
+          "function": "('~', 0, '<built-in method select.select>')",
+          "calls": 5440,
+          "self_seconds": 5.285063416000001,
+          "cumulative_seconds": 5.285063416000001
+        },
+        {
+          "function": "('courier_emu/dsp.py', 521, 'step_cycles')",
+          "calls": 2412,
+          "self_seconds": 1.016274484,
+          "cumulative_seconds": 1.019512403
+        },
+        {
+          "function": "('courier_emu/x86_native.py', 103, 'execute')",
+          "calls": 14818,
+          "self_seconds": 0.466604365,
+          "cumulative_seconds": 14.014581225
+        },
+        {
+          "function": "('courier_emu/machine.py', 3401, 'arm')",
+          "calls": 8137,
+          "self_seconds": 0.38006181800000005,
+          "cumulative_seconds": 1.222440983
+        },
+        {
+          "function": "('~', 0, '<built-in method builtins.getattr>')",
+          "calls": 454331,
+          "self_seconds": 0.22341728300000002,
+          "cumulative_seconds": 0.232627997
+        },
+        {
+          "function": "('courier_emu/bridge_native.py', 101, '__setattr__')",
+          "calls": 78449,
+          "self_seconds": 0.197421706,
+          "cumulative_seconds": 0.268945367
+        },
+        {
+          "function": "('courier_emu/bridge.py', 3048, 'clock_x86')",
+          "calls": 7900,
+          "self_seconds": 0.184174407,
+          "cumulative_seconds": 1.8299041930000002
+        },
+        {
+          "function": "('courier_emu/x86_interpreter.py', 845, 'emu_start')",
+          "calls": 6156,
+          "self_seconds": 0.162023877,
+          "cumulative_seconds": 26.551747355000003
+        },
+        {
+          "function": "('courier_emu/machine.py', 3152, 'record_dsp_queue_write')",
+          "calls": 13112,
+          "self_seconds": 0.16159151500000002,
+          "cumulative_seconds": 0.17631216900000002
+        },
+        {
+          "function": "('courier_emu/board_media_native.py', 175, '__len__')",
+          "calls": 16198,
+          "self_seconds": 0.16101167800000002,
+          "cumulative_seconds": 0.18166216200000002
+        },
+        {
+          "function": "('courier_emu/machine.py', 2249, 'service_chunk_body')",
+          "calls": 7898,
+          "self_seconds": 0.139141909,
+          "cumulative_seconds": 9.487273233
+        },
+        {
+          "function": "('courier_emu/machine.py', 3987, 'refresh_native_lanes')",
+          "calls": 12224,
+          "self_seconds": 0.132892282,
+          "cumulative_seconds": 0.41773769200000005
+        },
+        {
+          "function": "('courier_emu/sip_line_native.py', 122, '_sync_control')",
+          "calls": 10879,
+          "self_seconds": 0.11752061500000001,
+          "cumulative_seconds": 0.242566674
+        },
+        {
+          "function": "('courier_emu/service_native.py', 23, '__get__')",
+          "calls": 154463,
+          "self_seconds": 0.11635355500000001,
+          "cumulative_seconds": 0.176480506
+        },
+        {
+          "function": "('courier_emu/machine.py', 3777, 'after_run')",
+          "calls": 14818,
+          "self_seconds": 0.11376614800000001,
+          "cumulative_seconds": 0.11376614800000001
+        },
+        {
+          "function": "('courier_emu/machine.py', 1835, 'service_after_tick')",
+          "calls": 7921,
+          "self_seconds": 0.110359996,
+          "cumulative_seconds": 0.32715716300000003
+        },
+        {
+          "function": "('/usr/lib/python3.14/queue.py', 177, 'get')",
+          "calls": 474,
+          "self_seconds": 0.10302277200000001,
+          "cumulative_seconds": 20.978117106000003
+        },
+        {
+          "function": "('courier_emu/bridge.py', 3301, 'fast_clock_static')",
+          "calls": 8125,
+          "self_seconds": 0.10061234100000001,
+          "cumulative_seconds": 0.286756783
+        },
+        {
+          "function": "('courier_emu/machine.py', 2157, 'service_tail')",
+          "calls": 7899,
+          "self_seconds": 0.09757731800000001,
+          "cumulative_seconds": 0.616618285
+        },
+        {
+          "function": "('courier_emu/service_native.py', 79, 'fold_native_eois')",
+          "calls": 9359,
+          "self_seconds": 0.08852746,
+          "cumulative_seconds": 0.11229246300000001
+        },
+        {
+          "function": "('~', 0, \"<method 'recvfrom' of '_socket.socket' objects>\")",
+          "calls": 5439,
+          "self_seconds": 0.085992076,
+          "cumulative_seconds": 0.085992076
+        },
+        {
+          "function": "('~', 0, '<built-in method builtins.len>')",
+          "calls": 247921,
+          "self_seconds": 0.08423862,
+          "cumulative_seconds": 0.172508444
+        },
+        {
+          "function": "('courier_emu/media_native.py', 94, 'snapshot')",
+          "calls": 16317,
+          "self_seconds": 0.07885045,
+          "cumulative_seconds": 0.089149907
+        },
+        {
+          "function": "('courier_emu/worker_poll.py', 162, 'seed_snapshot')",
+          "calls": 8120,
+          "self_seconds": 0.075672209,
+          "cumulative_seconds": 0.14659454500000002
+        },
+        {
+          "function": "('courier_emu/sip.py', 1090, 'poll')",
+          "calls": 5439,
+          "self_seconds": 0.073965285,
+          "cumulative_seconds": 0.5687407250000001
+        },
+        {
+          "function": "('courier_emu/dsp.py', 923, 'state')",
+          "calls": 5176,
+          "self_seconds": 0.071954586,
+          "cumulative_seconds": 0.073732218
+        },
+        {
+          "function": "('courier_emu/machine.py', 1815, 'sip_idle_wait')",
+          "calls": 5439,
+          "self_seconds": 0.069585925,
+          "cumulative_seconds": 6.229127393000001
+        },
+        {
+          "function": "('courier_emu/dsp.py', 945, 'pc')",
+          "calls": 20304,
+          "self_seconds": 0.069571715,
+          "cumulative_seconds": 0.07339441000000001
+        },
+        {
+          "function": "('~', 0, \"<method 'get' of 'dict' objects>\")",
+          "calls": 184944,
+          "self_seconds": 0.068792616,
+          "cumulative_seconds": 0.068792616
+        }
+      ]
+    }
+  }
+}

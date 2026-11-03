@@ -37,6 +37,7 @@ def worker(config, instrument, arguments):
         return dict(wall=time.monotonic(), cpu=time.process_time(),
                     instructions=machine.instructions, batches=native.batches,
                     zero_batches=native.zero_batches,
+                    worker_yields=machine._worker_poll.yield_profile() if hasattr(machine, '_worker_poll') else {},
                     exits=[[list(key), value] for key, value in native.exits.items()])
 
     def stop(*_):

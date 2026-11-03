@@ -3878,6 +3878,15 @@ class CourierMachine:
                 fast_service_rest(_uc, state.resume_elapsed)
                 worker_arm[0] = True
 
+            if poll.profile_enabled:
+                original_arm = arm
+
+                def arm():
+                    poll.arm_counts['attempts'] = poll.arm_counts.get('attempts', 0)+1
+                    original_arm()
+                    key = 'armed_mode_'+str(state.scheduled) if state.armed else 'declined'
+                    poll.arm_counts[key] = poll.arm_counts.get(key, 0)+1
+
             uc.native_before_run = before_run
             uc.native_after_run = after_run
             uc.native_poll = (poll.function, poll.context)
