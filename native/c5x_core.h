@@ -825,6 +825,16 @@ private:
     void UPDATE_AR(int ar, int step);
     uint16_t indirect_address_rare(uint16_t ea, int arp, int nar);
     void UPDATE_ARP(int nar);
+    // The data access before a delay-line copy has usually validated this
+    // table already. Dirty maps retain the original architectural classifier.
+    bool internal_data(uint16_t address) const {
+        if (!m_maps_dirty) {
+            const unsigned kind = m_dmap[address] & 7;
+            return kind == 1 || kind == 2;
+        }
+        const Region region = data_region(address);
+        return region == Region::Daram || region == Region::Saram;
+    }
     uint16_t GET_ADDRESS();
     uint16_t &data_cell(uint8_t kind, uint16_t address);
     bool GET_ZLVC_CONDITION(int zlvc, int zlvc_mask);

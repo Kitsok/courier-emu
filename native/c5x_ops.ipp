@@ -1611,8 +1611,7 @@ void C5xCore::op_dmov()
 	uint16_t value = DM_READ16(ea);
 	// SPRU056D 6-104: the delay-line copy exists only in on-chip RAM.
 	// External memory and memory-mapped registers are read, without a write.
-	const Region region = data_region(ea);
-	if (region == Region::Daram || region == Region::Saram)
+	if (internal_data(ea))
 		DM_WRITE16(uint16_t(ea + 1), value);
 	else {
 		++m_delay_move_ignored;
@@ -1884,8 +1883,7 @@ void C5xCore::op_ltd()
 	uint16_t value = DM_READ16(ea);
 	m_treg0 = value;
 	// LTD includes DMOV's on-chip-only delay-line copy (SPRU056D 6-142).
-	const Region region = data_region(ea);
-	if (region == Region::Daram || region == Region::Saram)
+	if (internal_data(ea))
 		DM_WRITE16(uint16_t(ea + 1), value);
 	else {
 		++m_delay_move_ignored;
@@ -1982,8 +1980,7 @@ void C5xCore::op_macd()
 		m_preg = int32_t(int16_t(PM_READ16(pfc))) * int32_t(int16_t(data));
 		// The delay-line move is available only in on-chip data RAM.
 		// External data and registers behave as MAC (SPRU056D 6-154).
-		const Region region = data_region(ea);
-		if (region == Region::Daram || region == Region::Saram)
+		if (internal_data(ea))
 			DM_WRITE16(uint16_t(ea + 1), data);
 		pfc++;
 		++count;
@@ -2011,8 +2008,7 @@ void C5xCore::op_madd()
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
 		m_preg = int32_t(int16_t(data)) * int32_t(int16_t(PM_READ16(pfc)));
-		const Region region = data_region(ea);
-		if (region == Region::Daram || region == Region::Saram)
+		if (internal_data(ea))
 			DM_WRITE16(uint16_t(ea + 1), data);
 		pfc++;
 		++count;

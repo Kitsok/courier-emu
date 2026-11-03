@@ -1,0 +1,1035 @@
+{
+  "scope": "Fixed-work DSP delay-line/MAC kernels; no physical call or remote checkout changes.",
+  "method": "Four fresh-process reference/candidate pairs, reversing order on alternate pairs; two million modeled cycles after 10000 warmup cycles per case. A53 affinity CPU 3. CPU time excludes setup and state capture.",
+  "notebook": {
+    "cycles": 2000000,
+    "repeat": 4,
+    "libraries": {
+      "reference": "/tmp/libcourier-before-internal-data.so",
+      "candidate": "/home/kostik/work/voip/courier-emu/.build/libcourier_c5x.so"
+    },
+    "summary": {
+      "madd_daram": {
+        "reference": 0.030526082500000003,
+        "candidate": 0.024940109999999995,
+        "cpu_reduction_percent": 18.299015276526255
+      },
+      "madd_saram": {
+        "reference": 0.01931706599999998,
+        "candidate": 0.016290396,
+        "cpu_reduction_percent": 15.668373240532407
+      },
+      "macd_daram": {
+        "reference": 0.030240386000000008,
+        "candidate": 0.025978673999999993,
+        "cpu_reduction_percent": 14.092783074925086
+      },
+      "dmov_daram": {
+        "reference": 0.08237362699999999,
+        "candidate": 0.07971657449999998,
+        "cpu_reduction_percent": 3.2256106678415497
+      },
+      "ltd_saram": {
+        "reference": 0.09475169949999998,
+        "candidate": 0.08999515050000001,
+        "cpu_reduction_percent": 5.020014443118215
+      },
+      "madd_external": {
+        "reference": 0.01725625650000001,
+        "candidate": 0.013059709500000016,
+        "cpu_reduction_percent": 24.318988304328883
+      },
+      "mads_control": {
+        "reference": 0.02114250150000002,
+        "candidate": 0.021052728999999992,
+        "cpu_reduction_percent": 0.42460680445041143
+      },
+      "primary_control": {
+        "reference": 0.07001122000000004,
+        "candidate": 0.0695278,
+        "cpu_reduction_percent": 0.6904893244254806
+      }
+    },
+    "runs": {
+      "reference": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.02996173699999999,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.019483946999999974,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.03323771599999997,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.083039215,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.10805512300000003,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.017500188000000028,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.020968174000000006,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.06912568700000005,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.03125583100000001,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.019139618999999997,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.029263150999999987,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.08170803899999998,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.092316236,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.017012324999999995,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.021514937000000012,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.07094518900000002,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.03038426899999999,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.020039896,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.031155531000000014,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.08305137199999998,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.09718716299999997,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.01765411299999997,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.021231372999999998,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.07089675300000003,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.030667896000000014,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.019150184999999986,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.029325241000000002,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.08140232899999997,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.090459179,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.016613237000000003,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.021053630000000045,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.067997048,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.023780992,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.015547455000000016,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.026427389999999995,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.07794752899999999,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.08502630099999997,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.01254781100000002,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.022570845000000006,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.06789709100000002,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.026099227999999988,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.021171986000000004,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.031501521000000005,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.08129064,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.11065302899999996,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.012476479999999956,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.021008122000000018,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.069779113,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.02680732799999999,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.015666123000000004,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.025100462000000018,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.08213133900000003,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.08529610900000001,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.013571608000000013,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.021097335999999967,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.069276487,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.02372458700000002,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.016914668999999993,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.02552995799999999,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.07814250899999997,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.09469419200000001,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.015330001000000038,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.020960970000000023,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.070165529,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        }
+      ]
+    }
+  },
+  "a53": {
+    "cycles": 2000000,
+    "repeat": 4,
+    "libraries": {
+      "reference": "/tmp/courier-dsp-delay-a53/reference.so",
+      "candidate": "/tmp/courier-dsp-delay-a53/candidate.so"
+    },
+    "summary": {
+      "madd_daram": {
+        "reference": 0.21387522850000001,
+        "candidate": 0.19336070700000002,
+        "cpu_reduction_percent": 9.591817455381468
+      },
+      "madd_saram": {
+        "reference": 0.13732424949999994,
+        "candidate": 0.11969314500000006,
+        "cpu_reduction_percent": 12.839032118649873
+      },
+      "macd_daram": {
+        "reference": 0.22540087449999996,
+        "candidate": 0.20472199949999997,
+        "cpu_reduction_percent": 9.174265648201818
+      },
+      "dmov_daram": {
+        "reference": 0.5185951435,
+        "candidate": 0.49641185350000006,
+        "cpu_reduction_percent": 4.277573802616985
+      },
+      "ltd_saram": {
+        "reference": 0.6233604970000001,
+        "candidate": 0.5842229154999998,
+        "cpu_reduction_percent": 6.278482786181472
+      },
+      "madd_external": {
+        "reference": 0.11969970750000014,
+        "candidate": 0.107756395,
+        "cpu_reduction_percent": 9.977729060031425
+      },
+      "mads_control": {
+        "reference": 0.14847306150000006,
+        "candidate": 0.1505799160000001,
+        "cpu_reduction_percent": -1.4190146540489001
+      },
+      "primary_control": {
+        "reference": 0.36299083249999997,
+        "candidate": 0.355758373,
+        "cpu_reduction_percent": 1.9924634047059464
+      }
+    },
+    "runs": {
+      "reference": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.214349625,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.15534079099999998,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.21626849800000003,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.5051955380000002,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.61010454,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.11934037500000017,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.14296129099999977,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.36471312499999975,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.221741332,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.13108958199999998,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.25310512399999996,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.516431997,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.6346926210000001,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.12005904000000012,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.15206654099999994,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.37433987300000027,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.21340083200000004,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.1373799579999999,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.2286182499999999,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.5207582900000001,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.626385081,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.11669583300000008,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.14897020799999972,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.3612685400000002,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.21280845699999995,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.13726854099999997,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.222183499,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.5215277059999999,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.6203359130000001,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.1290858319999999,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.1479759150000004,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.3572009570000003,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.18976999800000005,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.12580633399999996,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.19053095799999997,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.478236788,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.565165707,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.11262387400000007,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.15162787399999988,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.3398383329999999,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.196951416,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.12099324900000008,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.1865322060000001,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.4925447919999999,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.5710579569999998,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.10288891599999994,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.1394817070000003,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.3457066630000001,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.18686500000000006,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.11751308299999996,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.22053675100000003,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.5002789150000002,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.5973878739999998,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.11770616600000006,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.15132687299999992,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.38341216599999983,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.21109637299999995,
+            "sha256": "23620872e5cab9268a394a64385412d28cb80917c8b0835003cf6dbbe4955abb",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.11839304100000003,
+            "sha256": "fe3361e107087ded6fbe5ec9dfe93fe2922fb5765d6a561140daad9cef902bdd",
+            "instructions": 30369,
+            "cycles": 2010490
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.21891304099999997,
+            "sha256": "1524c92dd44279fa276df799dbdeaf60a84e3f623792e764d60f88aeb7f9a928",
+            "instructions": 58434,
+            "cycles": 2010160
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.501648289,
+            "sha256": "2ee0a8a6bf429b8d8ebd1c0c964877a6435485696e3af85455d040515fd43642",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.605613747,
+            "sha256": "3d19b92f4df29026e075b6f9e466e1616e136f73b4ce223381bfea5dc8c82f45",
+            "instructions": 1962707,
+            "cycles": 2010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.09801108299999983,
+            "sha256": "c963248e70f0b970f947954cd9176fe06bb5f38ab7a94ca13c84ab06edc7a444",
+            "instructions": 30185,
+            "cycles": 2010321
+          },
+          "mads_control": {
+            "cpu_seconds": 0.14983295900000027,
+            "sha256": "d9e5ad966a6d92d2382bbacc89f86b0ff32c0640195ffb935b751b0713edf9b9",
+            "instructions": 58774,
+            "cycles": 2010101
+          },
+          "primary_control": {
+            "cpu_seconds": 0.36581008299999995,
+            "sha256": "18941fc64775d293d40ccfcf1784e953b071876d199e5ff1552f4213efe6ad4d",
+            "instructions": 1978256,
+            "cycles": 2010000
+          }
+        }
+      ]
+    }
+  },
+  "source_sha256": {
+    "native/c5x_core.h": "d173d46fe1bcba1f5b889a3553c653c101fb36aea340137506efb840d5def1f4",
+    "native/c5x_ops.ipp": "eb54366653bee9157faacef2acbe75586d1470fa6fef6e6ec06380412e684acc",
+    "tools/benchmark_dsp_delay_moves.py": "3a5db97d40a50edb56487ce959065a7e196a4dcc2774e41364b3d4a5612863a4"
+  },
+  "validation": {
+    "focused_tests_passed": 69,
+    "models": [
+      "c51",
+      "c52",
+      "c53"
+    ],
+    "remap_and_trace_checks": true,
+    "boot_guest_instructions": 8000000,
+    "boot_matching_fields": [
+      "memory_sha256",
+      "registers",
+      "dsp_state",
+      "dsp_serial",
+      "serial_text",
+      "timers",
+      "interrupt_state"
+    ],
+    "local_lapm_data": {
+      "instrumented": false,
+      "batch_exits_counted": false,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 32.07243864797056,
+      "endpoints": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 432037.62220095,
+              "cpu": 9.350623589,
+              "instructions": 38765568,
+              "batches": 100767,
+              "zero_batches": 23284,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 432057.045281542,
+              "cpu": 24.359962935,
+              "instructions": 104639205,
+              "batches": 114146,
+              "zero_batches": 23786,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "window": {
+            "start": {
+              "wall": 432037.630105931,
+              "cpu": 8.942436545,
+              "instructions": 38916096,
+              "batches": 109554,
+              "zero_batches": 23697,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            },
+            "end": {
+              "wall": 432057.045425127,
+              "cpu": 23.083281749,
+              "instructions": 105061375,
+              "batches": 122399,
+              "zero_batches": 24252,
+              "worker_yields": {
+                "native": {},
+                "arm": {},
+                "pacer": {
+                  "waits": 0,
+                  "wakeups": 0,
+                  "waited": 0.0,
+                  "port_waited": 0.0
+                }
+              },
+              "exits": []
+            }
+          }
+        }
+      }
+    }
+  },
+  "limits": [
+    "These kernels exercise sampled training instructions but do not replay an entire training attempt.",
+    "No full-training CPU speedup is inferred by applying a kernel percentage to the full 66.83 percent native C5x/device share.",
+    "The prior physical real-time deficit and connection goal remain unresolved."
+  ]
+}

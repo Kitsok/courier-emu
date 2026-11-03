@@ -46,3 +46,9 @@ temperature sampling occurred during this analysis.
 
 Full weighted symbol rows, interval controls and clock anchor are retained
 in `docs/a53-training-hotspots.json`.
+
+The cached-region candidate is validated and retained: 69 focused checks,
+exact reference/candidate boot state and local LAPM/data transfer pass.
+Affected A53 kernels improve by roughly 4–13%; this is not an inferred
+whole-training gain. See `docs/dsp-delay-move-optimization.md` and its raw
+results for controls and limitations.
