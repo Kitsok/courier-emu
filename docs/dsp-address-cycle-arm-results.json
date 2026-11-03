@@ -1,0 +1,406 @@
+{
+  "kernels": {
+    "cycles": 1000000,
+    "repeat": 3,
+    "libraries": {
+      "reference": "/home/kostik/work/courier-emu/.build/libcourier_c5x.so",
+      "candidate": "/tmp/libcourier-c5x-address-cycle.so"
+    },
+    "summary": {
+      "madd_daram": {
+        "reference": 0.027321292000000108,
+        "candidate": 0.028172373999999945,
+        "cpu_reduction_percent": -3.115086943911116
+      },
+      "madd_saram": {
+        "reference": 0.01942237499999999,
+        "candidate": 0.017915333000000033,
+        "cpu_reduction_percent": 7.759308529466447
+      },
+      "macd_daram": {
+        "reference": 0.028919626000000087,
+        "candidate": 0.031244791999999966,
+        "cpu_reduction_percent": -8.04009706072919
+      },
+      "dmov_daram": {
+        "reference": 0.26275637399999996,
+        "candidate": 0.262035374,
+        "cpu_reduction_percent": 0.2743986716759794
+      },
+      "ltd_saram": {
+        "reference": 0.2837750390000001,
+        "candidate": 0.277004876,
+        "cpu_reduction_percent": 2.3857500024870415
+      },
+      "madd_external": {
+        "reference": 0.05303025000000017,
+        "candidate": 0.05333241599999994,
+        "cpu_reduction_percent": -0.5697993126560164
+      },
+      "mads_control": {
+        "reference": 0.02420395799999997,
+        "candidate": 0.02810820700000005,
+        "cpu_reduction_percent": -16.130622107343306
+      },
+      "primary_control": {
+        "reference": 0.18435928999999995,
+        "candidate": 0.17870999799999998,
+        "cpu_reduction_percent": 3.0642838774221692
+      }
+    },
+    "runs": {
+      "reference": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.026634999999999964,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.02070133400000007,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.03851691699999993,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.26275637399999996,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.28277316500000005,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.06634687500000003,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.026009665999999987,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.19277008299999987,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.03139762400000001,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.01733404099999991,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.028919626000000087,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.2582825000000001,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.2837750390000001,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.051261,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.02420395799999997,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.18435928999999995,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.027321292000000108,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.01942237499999999,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.025351667000000022,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.284550875,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.29052012399999994,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.05303025000000017,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.023664373999999988,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.18328099899999994,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        }
+      ],
+      "candidate": [
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.028172373999999945,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.017294375000000084,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.03128095799999997,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.262035374,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.27587408300000005,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.05943116700000006,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.023600208999999817,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.17870999799999998,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.027857083000000005,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.017915333000000033,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.03114824999999999,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.262885582,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.280233916,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.05063683299999999,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.02810820700000005,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.18735762200000017,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        },
+        {
+          "madd_daram": {
+            "cpu_seconds": 0.029473207999999973,
+            "sha256": "d90f21be446d12d4edfb7e8ff70aab7953eb22424eef98678e114f3eafde760f",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "madd_saram": {
+            "cpu_seconds": 0.02060508299999997,
+            "sha256": "598e64a4124fad89b03c87f83715532313ea46e91c46d134d65ac11bf2766671",
+            "instructions": 15264,
+            "cycles": 1010539
+          },
+          "macd_daram": {
+            "cpu_seconds": 0.031244791999999966,
+            "sha256": "bcc9c9fd3453cde891211697707f81f45578598e53bc733d326be2c7a860136f",
+            "instructions": 29364,
+            "cycles": 1010152
+          },
+          "dmov_daram": {
+            "cpu_seconds": 0.25423737300000004,
+            "sha256": "34594e9e0b28481b2dd8fe924ad1dd79278a9ef6eadca5713c4ec17dbbc0f6ac",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "ltd_saram": {
+            "cpu_seconds": 0.277004876,
+            "sha256": "a25143d4cbbff1aea3184d96f40760a999062ea43b9caadcbbb37a37684e9387",
+            "instructions": 986235,
+            "cycles": 1010000
+          },
+          "madd_external": {
+            "cpu_seconds": 0.05333241599999994,
+            "sha256": "43cf49ad0fac5bb55422b5195516fd8d8b7341decd6dd89e0f95cc69cd90b74c",
+            "instructions": 15170,
+            "cycles": 1010322
+          },
+          "mads_control": {
+            "cpu_seconds": 0.031440208000000025,
+            "sha256": "d827d73ad4fcdf13ba21dfb2275ab4b090c2c5e8f94515fbdd253557eedd14b8",
+            "instructions": 29534,
+            "cycles": 1010093
+          },
+          "primary_control": {
+            "cpu_seconds": 0.17098229199999992,
+            "sha256": "e3f2047afa914963dc18b9721198a4ad0fc33b3dda75291b7910918f3d37f569",
+            "instructions": 993616,
+            "cycles": 1010000
+          }
+        }
+      ]
+    }
+  },
+  "reference_xc": {
+    "cases": 12,
+    "sha256": "b526f837a04b60b2e0f4df8da781250e531d1f8e05df7aa4a644dc7b0952e73f"
+  },
+  "candidate_xc": {
+    "cases": 12,
+    "sha256": "b526f837a04b60b2e0f4df8da781250e531d1f8e05df7aa4a644dc7b0952e73f"
+  },
+  "manifest": {
+    "compiler_version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "command": [
+      "/usr/bin/g++",
+      "-std=c++17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-fno-semantic-interposition",
+      "-pthread",
+      "-shared",
+      "-fPIC",
+      "/home/kostik/work/courier-emu/native/c5x_core.cpp",
+      "/home/kostik/work/courier-emu/native/c5x_capi.cpp",
+      "-o",
+      "/tmp/tmpzpio9cme/libcourier-c5x-address-cycle.so"
+    ],
+    "source_sha256": {
+      "native/c5x_core.cpp": "8f59df2e49f48a35b96bc77d95296b77e65b4fd6d9d303c168b113fb5bde6b09",
+      "native/c5x_capi.cpp": "679ea0c8470ebca6434ee8d3db13c667a136c40cf584a6bb09e9b6015cd4fce1",
+      "native/c5x_core.h": "85b157510bce94c8996424270e9021b2e8265e4113d7dc3cfe9b9b2c365da200",
+      "native/c5x_ops.ipp": "9cacd5e2a6b35597f6e523af290478ec7598f6612c7ddeee3076ab155facb56e",
+      "native/c5x_optable.ipp": "c88d909f048888a31382dc66be51c92bcea0b47587bcc5d5015be96c8f4716d1",
+      "native/bearer.hpp": "582bd12953c0551e9e35d75fce8375b438f7619131a934b8ec0990f7517ce129",
+      "native/resample.hpp": "3908cc39c8eca836b0fc1044a24ce89abc5e879447ac2dd75a4c7570da2bcaa8",
+      "native/timers186.hpp": "358a714bae3c8b2d925942b4a7b674bbb390ef2e314c3246b46ac7ccb0b8bf68",
+      "native/analog_devices.hpp": "b74e546b8c5def4fa161638535dc9c6c3199e7ee48bd670ca83358b0659dce6d",
+      "native/rtp_media.hpp": "410953211a3769057bd15b90f3b3e2e5f00d2ee79ef23cd142bb41156852c22b",
+      "native/stream_resample.hpp": "8595df6fa3306fe62127a8612dbadd399a78452d1729b2cd57e779a3a0490254",
+      "native/line_media.hpp": "fb8f0949d54a8f396dfe6ef89eb8ea7495e98277e575f430d7e8e7bf87675222",
+      "native/sip_port.hpp": "398e27bb9d4e8738658ba4fdb5d7fb88bf1e748a24f4e3a8a566597da93ee6ee",
+      "native/board_media.hpp": "41cededf54adbc49a6d0e52219213bfc9859a2c5d387dc385b10ab8997bae917",
+      "native/silicon_daa.hpp": "59ad9a69c94790c089014feee96005ec28c0560751035cf70ce176346c203513",
+      "native/codec_bringup.hpp": "4aad0fd87c66c848ccd7765d15456774c9fb678f72c4830628825172fee4a825",
+      "native/pcm_recording.hpp": "be4922940e2746e6324bdc3ea4143886be6dd03bc8bb24b68d2247353e4fd453",
+      "native/pacer_wait.hpp": "e5db34dca3d6f81c8191f9b3046dd399040c2ae82c12b77f8ae099ca6084632a"
+    },
+    "library_sha256": "95df7179a3ccd5ec31a21f2c7b7bea54b9c8fd5da2bbb1b9746d4492fa8eaeed"
+  }
+}

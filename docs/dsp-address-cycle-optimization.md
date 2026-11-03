@@ -22,3 +22,23 @@ delayed-branch slot. This establishes focused correctness, not a target
 speedup or complete interrupt coverage. ARM comparison against a preserved
 reference, including arithmetic and memory controls, is still required.
 No new physical call or settings change was made for this stage.
+
+## Reject after A53 control regressions
+
+The isolated normal-GCC build completed. Twelve direct XC cases match
+the preserved reference on A53 (plain/threaded, immediate predecessor/
+last delay slot), with digest
+`b526f837a04b60b2e0f4df8da781250e531d1f8e05df7aa4a644dc7b0952e73f`.
+All timed kernel state/counter digests match too. Three alternating pairs
+on CPU 3 used one million modeled cycles per case. The address-update
+control improves by 3.06%, but MACD-DARAM regresses by 8.04% and MADS by
+16.13%. Other kernels are mixed, including SARAM MADD improving by 7.76%.
+Short controls limit precise attribution; the broad negative tradeoff
+does not justify keeping this candidate on the isolated control gain.
+
+Restore generic cycle accounting for all three opcodes and remove the
+special helper. Retain the six architectural XC tests, which also pass
+the reference and do not depend on the removed optimization. The variant
+was never deployed; the active runtime remains unchanged. Raw manifest,
+XC comparisons and timings are in `dsp-address-cycle-arm-results.json`.
+No new physical call or modem-setting change was made.

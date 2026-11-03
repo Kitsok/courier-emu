@@ -932,15 +932,6 @@ void C5xCore::consume_cycles(unsigned cycles)
     m_cycles += cycles;
 }
 
-// ADRK/SBRK/MAR only update auxiliary address state, not ACC/OV/C/TC.
-// Their current condition state equals the snapshot taken before dispatch.
-inline __attribute__((always_inline)) void C5xCore::consume_address_cycle()
-{
-    if (!m_delay_condition_pending) m_xc_condition = m_condition_start;
-    m_delay_condition_pending = false;
-    ++m_cycles;
-}
-
 C5xCore::Region C5xCore::program_region(uint16_t address) const
 {
     // SPRU056D figures 8-2 and 8-4: model-specific ROM and SARAM windows.
