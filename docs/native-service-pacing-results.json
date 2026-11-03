@@ -1,0 +1,960 @@
+{
+  "scope": "Final native pacing validation; no physical calls or remote checkout changes. Candidate remains opt-in after mixed local LAPM outcomes.",
+  "benchmarks": {
+    "pacing-notebook": {
+      "services": 200,
+      "lead": 0.001,
+      "repeat": 4,
+      "medians": {
+        "reference": 0.06382158200000002,
+        "native": 0.020735889499999993
+      },
+      "runs": {
+        "reference": [
+          {
+            "cpu_seconds": 0.04663824100000001,
+            "wall_seconds": 0.2577277690288611,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.07653122199999998,
+            "wall_seconds": 0.2838014899753034,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.05141663699999999,
+            "wall_seconds": 0.257951480045449,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.07622652700000004,
+            "wall_seconds": 0.28412761201616377,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          }
+        ],
+        "native": [
+          {
+            "cpu_seconds": 0.012316380999999987,
+            "wall_seconds": 0.22106131201144308,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.025337919000000014,
+            "wall_seconds": 0.2298613570164889,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.021405094999999985,
+            "wall_seconds": 0.2273801569826901,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.020066684,
+            "wall_seconds": 0.22775873297359794,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          }
+        ]
+      },
+      "cpu_reduction_percent": 67.5095965186197
+    },
+    "pacing-a53": {
+      "services": 200,
+      "lead": 0.001,
+      "repeat": 4,
+      "medians": {
+        "reference": 0.13566802249999999,
+        "native": 0.021453105999999944
+      },
+      "runs": {
+        "reference": [
+          {
+            "cpu_seconds": 0.13897742200000007,
+            "wall_seconds": 0.3365190919998895,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.1348316679999999,
+            "wall_seconds": 0.33247675799998433,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.135677791,
+            "wall_seconds": 0.33323453200000586,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.13565825399999998,
+            "wall_seconds": 0.3323764230001416,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          }
+        ],
+        "native": [
+          {
+            "cpu_seconds": 0.021154864999999967,
+            "wall_seconds": 0.22186166500000581,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.02158449600000001,
+            "wall_seconds": 0.22267835700017713,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.022701876000000176,
+            "wall_seconds": 0.22277315099995576,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          },
+          {
+            "cpu_seconds": 0.02132171599999988,
+            "wall_seconds": 0.2219920860000002,
+            "state": {
+              "polls": 200,
+              "last_service": 204800,
+              "instructions": 204800,
+              "timer_poll_owed": 1024,
+              "console_owed": 999795200,
+              "pacer_next": 214800
+            },
+            "waits": 200
+          }
+        ]
+      },
+      "cpu_reduction_percent": 84.18705778659084
+    },
+    "catchup-notebook": {
+      "services": 20000,
+      "lead": -0.1,
+      "repeat": 4,
+      "medians": {
+        "reference": 0.040761529500000004,
+        "native": 0.038715342000000014
+      },
+      "runs": {
+        "reference": [
+          {
+            "cpu_seconds": 0.04127668600000001,
+            "wall_seconds": 0.04157309699803591,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.03880093000000001,
+            "wall_seconds": 0.038778575020842254,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.042465109,
+            "wall_seconds": 0.0426251040189527,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.040246373,
+            "wall_seconds": 0.040215986024122685,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          }
+        ],
+        "native": [
+          {
+            "cpu_seconds": 0.03840233999999998,
+            "wall_seconds": 0.038714883965440094,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.040900251,
+            "wall_seconds": 0.04084825102472678,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.038669691000000006,
+            "wall_seconds": 0.03864472603891045,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.03876099300000002,
+            "wall_seconds": 0.03874283499317244,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          }
+        ]
+      },
+      "cpu_reduction_percent": 5.01989872583165
+    },
+    "catchup-a53": {
+      "services": 20000,
+      "lead": -0.1,
+      "repeat": 4,
+      "medians": {
+        "reference": 0.2985397910000001,
+        "native": 0.3003179359999999
+      },
+      "runs": {
+        "reference": [
+          {
+            "cpu_seconds": 0.296770541,
+            "wall_seconds": 0.2973514210000303,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.3104666220000001,
+            "wall_seconds": 0.3107028760000503,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.2867202900000001,
+            "wall_seconds": 0.286881429999994,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.3003090410000002,
+            "wall_seconds": 0.301480674000004,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          }
+        ],
+        "native": [
+          {
+            "cpu_seconds": 0.29549420699999995,
+            "wall_seconds": 0.2960076710000976,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.30928566600000007,
+            "wall_seconds": 0.3094381700000213,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.30514166499999984,
+            "wall_seconds": 0.30537629399987054,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          },
+          {
+            "cpu_seconds": 0.29172295700000017,
+            "wall_seconds": 0.2919977139999901,
+            "state": {
+              "polls": 20000,
+              "last_service": 20480000,
+              "instructions": 20480000,
+              "timer_poll_owed": 1024,
+              "console_owed": 979520000,
+              "pacer_next": 20490000
+            },
+            "waits": 0
+          }
+        ]
+      },
+      "cpu_reduction_percent": -0.5956140700854817
+    }
+  },
+  "captures": {
+    "instrumented_native_success": {
+      "instrumented": true,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 37.741901619010605,
+      "roles": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "cpu_seconds": 17.622450564,
+          "wall_seconds": 24.44275052199373,
+          "guest_instructions": 82915053,
+          "batches": 9646,
+          "yield_profile": {
+            "native": {
+              "unarmed": 1730,
+              "deadline": 391,
+              "dsp_transition": 355
+            },
+            "arm": {
+              "attempts": 2928,
+              "declined": 23,
+              "armed_mode_3": 2905
+            },
+            "pacer": {
+              "waits": 6854,
+              "waited": 6.950398145185318,
+              "port_waited": 6.950398145185318
+            }
+          },
+          "line": {
+            "frames": 368,
+            "paced_ms": 9213,
+            "peak_late_ms": 2952.7,
+            "pending_peak": 2720,
+            "underrun_frames": 24,
+            "underrun_samples": 1920
+          },
+          "top_functions": [
+            {
+              "function": "('~', 0, '<built-in method _x86_native.run>')",
+              "calls": 9646,
+              "self_seconds": 20.576265764000002,
+              "cumulative_seconds": 20.576265764000002
+            },
+            {
+              "function": "('courier_emu/dsp.py', 521, 'step_cycles')",
+              "calls": 742,
+              "self_seconds": 0.43939155700000004,
+              "cumulative_seconds": 0.440367726
+            },
+            {
+              "function": "('courier_emu/x86_native.py', 103, 'execute')",
+              "calls": 9646,
+              "self_seconds": 0.305947116,
+              "cumulative_seconds": 18.991508305
+            },
+            {
+              "function": "('courier_emu/machine.py', 3408, 'arm')",
+              "calls": 2928,
+              "self_seconds": 0.165372434,
+              "cumulative_seconds": 0.55724249
+            },
+            {
+              "function": "('courier_emu/machine.py', 3159, 'record_dsp_queue_write')",
+              "calls": 9523,
+              "self_seconds": 0.121375324,
+              "cumulative_seconds": 0.133814026
+            },
+            {
+              "function": "('courier_emu/machine.py', 3791, 'after_run')",
+              "calls": 9646,
+              "self_seconds": 0.09661174800000001,
+              "cumulative_seconds": 0.09661174800000001
+            },
+            {
+              "function": "('~', 0, '<built-in method select.select>')",
+              "calls": 138,
+              "self_seconds": 0.092563377,
+              "cumulative_seconds": 0.092563377
+            },
+            {
+              "function": "('courier_emu/bridge_native.py', 101, '__setattr__')",
+              "calls": 47925,
+              "self_seconds": 0.091196915,
+              "cumulative_seconds": 0.117292113
+            },
+            {
+              "function": "('courier_emu/x86_interpreter.py', 845, 'emu_start')",
+              "calls": 2189,
+              "self_seconds": 0.08862565600000001,
+              "cumulative_seconds": 19.909468890000003
+            },
+            {
+              "function": "('courier_emu/machine.py', 3060, 'on_mmio_write')",
+              "calls": 17078,
+              "self_seconds": 0.08514653700000001,
+              "cumulative_seconds": 0.205736844
+            },
+            {
+              "function": "('~', 0, '<built-in method builtins.getattr>')",
+              "calls": 166885,
+              "self_seconds": 0.084588147,
+              "cumulative_seconds": 0.08957522600000001
+            },
+            {
+              "function": "('courier_emu/machine.py', 4012, 'refresh_native_lanes')",
+              "calls": 7288,
+              "self_seconds": 0.07396238100000001,
+              "cumulative_seconds": 0.22537704900000002
+            },
+            {
+              "function": "('courier_emu/bridge.py', 3048, 'clock_x86')",
+              "calls": 2573,
+              "self_seconds": 0.061373887,
+              "cumulative_seconds": 0.745788513
+            },
+            {
+              "function": "('courier_emu/machine.py', 1768, 'replay_mmio_writes')",
+              "calls": 4227,
+              "self_seconds": 0.061092333000000006,
+              "cumulative_seconds": 0.303644683
+            },
+            {
+              "function": "('courier_emu/dsp.py', 1415, 'boot_pending')",
+              "calls": 11593,
+              "self_seconds": 0.049275387000000004,
+              "cumulative_seconds": 0.049275387000000004
+            },
+            {
+              "function": "('~', 0, '<built-in method builtins.len>')",
+              "calls": 164682,
+              "self_seconds": 0.046792532000000005,
+              "cumulative_seconds": 0.059358617
+            },
+            {
+              "function": "('courier_emu/board_media_native.py', 175, '__len__')",
+              "calls": 3936,
+              "self_seconds": 0.046651040000000005,
+              "cumulative_seconds": 0.052783551000000005
+            },
+            {
+              "function": "('/usr/lib/python3.14/queue.py', 177, 'get')",
+              "calls": 422,
+              "self_seconds": 0.04641817,
+              "cumulative_seconds": 24.545565314
+            },
+            {
+              "function": "('courier_emu/bridge.py', 3301, 'fast_clock_static')",
+              "calls": 2923,
+              "self_seconds": 0.044926022,
+              "cumulative_seconds": 0.146897003
+            },
+            {
+              "function": "('courier_emu/machine.py', 2631, 'on_in')",
+              "calls": 3787,
+              "self_seconds": 0.044229792000000004,
+              "cumulative_seconds": 0.195880827
+            }
+          ]
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "cpu_seconds": 16.673325130000002,
+          "wall_seconds": 24.443090701010078,
+          "guest_instructions": 83231743,
+          "batches": 9353,
+          "yield_profile": {
+            "native": {
+              "unarmed": 1775,
+              "deadline": 398,
+              "console_ready": 1,
+              "media_edge": 1,
+              "dsp_transition": 270
+            },
+            "arm": {
+              "attempts": 2937,
+              "declined": 21,
+              "armed_mode_3": 2916
+            },
+            "pacer": {
+              "waits": 6541,
+              "waited": 7.890153884189203,
+              "port_waited": 7.890153884189203
+            }
+          },
+          "line": {
+            "frames": 368,
+            "paced_ms": 10583,
+            "peak_late_ms": 2841.0,
+            "pending_peak": 2080,
+            "underrun_frames": 52,
+            "underrun_samples": 4160
+          },
+          "top_functions": [
+            {
+              "function": "('~', 0, '<built-in method _x86_native.run>')",
+              "calls": 9354,
+              "self_seconds": 20.641282345,
+              "cumulative_seconds": 20.641282345
+            },
+            {
+              "function": "('courier_emu/dsp.py', 521, 'step_cycles')",
+              "calls": 710,
+              "self_seconds": 0.38699764200000003,
+              "cumulative_seconds": 0.38797954900000003
+            },
+            {
+              "function": "('courier_emu/x86_native.py', 103, 'execute')",
+              "calls": 9354,
+              "self_seconds": 0.293014853,
+              "cumulative_seconds": 19.392882552
+            },
+            {
+              "function": "('courier_emu/machine.py', 3408, 'arm')",
+              "calls": 2937,
+              "self_seconds": 0.159810173,
+              "cumulative_seconds": 0.507796122
+            },
+            {
+              "function": "('courier_emu/machine.py', 3159, 'record_dsp_queue_write')",
+              "calls": 12900,
+              "self_seconds": 0.136790154,
+              "cumulative_seconds": 0.150272438
+            },
+            {
+              "function": "('~', 0, '<built-in method select.select>')",
+              "calls": 141,
+              "self_seconds": 0.119288235,
+              "cumulative_seconds": 0.119288235
+            },
+            {
+              "function": "('courier_emu/machine.py', 3060, 'on_mmio_write')",
+              "calls": 18533,
+              "self_seconds": 0.09961260000000001,
+              "cumulative_seconds": 0.23399644100000003
+            },
+            {
+              "function": "('courier_emu/machine.py', 3791, 'after_run')",
+              "calls": 9353,
+              "self_seconds": 0.094829297,
+              "cumulative_seconds": 0.094829297
+            },
+            {
+              "function": "('courier_emu/bridge_native.py', 101, '__setattr__')",
+              "calls": 48599,
+              "self_seconds": 0.090342267,
+              "cumulative_seconds": 0.11737747300000001
+            },
+            {
+              "function": "('courier_emu/x86_interpreter.py', 845, 'emu_start')",
+              "calls": 2280,
+              "self_seconds": 0.087066366,
+              "cumulative_seconds": 20.504707736
+            },
+            {
+              "function": "('~', 0, '<built-in method builtins.getattr>')",
+              "calls": 155808,
+              "self_seconds": 0.076964823,
+              "cumulative_seconds": 0.08062524900000001
+            },
+            {
+              "function": "('courier_emu/machine.py', 4012, 'refresh_native_lanes')",
+              "calls": 6756,
+              "self_seconds": 0.06932579600000001,
+              "cumulative_seconds": 0.214883115
+            },
+            {
+              "function": "('courier_emu/machine.py', 1768, 'replay_mmio_writes')",
+              "calls": 4335,
+              "self_seconds": 0.066406112,
+              "cumulative_seconds": 0.33629354
+            },
+            {
+              "function": "('courier_emu/bridge.py', 3048, 'clock_x86')",
+              "calls": 2667,
+              "self_seconds": 0.060006475000000004,
+              "cumulative_seconds": 0.712438503
+            },
+            {
+              "function": "('courier_emu/dsp.py', 923, 'state')",
+              "calls": 2996,
+              "self_seconds": 0.054435051000000005,
+              "cumulative_seconds": 0.0556875
+            },
+            {
+              "function": "('/usr/lib/python3.14/queue.py', 177, 'get')",
+              "calls": 428,
+              "self_seconds": 0.051779663000000004,
+              "cumulative_seconds": 0.0
+            },
+            {
+              "function": "('courier_emu/board_media_native.py', 175, '__len__')",
+              "calls": 3935,
+              "self_seconds": 0.048544313000000006,
+              "cumulative_seconds": 0.054558008000000005
+            },
+            {
+              "function": "('~', 0, '<built-in method builtins.len>')",
+              "calls": 172021,
+              "self_seconds": 0.047142488,
+              "cumulative_seconds": 0.059669126
+            },
+            {
+              "function": "('courier_emu/service_native.py', 23, '__get__')",
+              "calls": 53335,
+              "self_seconds": 0.043054845,
+              "cumulative_seconds": 0.065742112
+            },
+            {
+              "function": "('courier_emu/service_native.py', 79, 'fold_native_eois')",
+              "calls": 4335,
+              "self_seconds": 0.042937155000000005,
+              "cumulative_seconds": 0.054182226
+            }
+          ]
+        }
+      },
+      "capture_directory": "/tmp/courier-native-pacer-validation"
+    },
+    "uninstrumented_reference_success": {
+      "instrumented": false,
+      "exact_bidirectional_data": true,
+      "elapsed_seconds": 32.36706314096227,
+      "roles": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+          "cpu_seconds": 15.474154277000002,
+          "wall_seconds": 19.7276679330389,
+          "guest_instructions": 66912011,
+          "batches": 13915,
+          "yield_profile": {
+            "native": {
+              "unarmed": 1334,
+              "deadline": 323,
+              "pacing_wait": 6174,
+              "dsp_transition": 321
+            },
+            "arm": {
+              "attempts": 8170,
+              "declined": 13,
+              "armed_mode_3": 8157
+            },
+            "pacer": {}
+          },
+          "line": {
+            "frames": 316,
+            "paced_ms": 5894,
+            "peak_late_ms": 3271.1,
+            "pending_peak": 1280,
+            "underrun_frames": 10,
+            "underrun_samples": 800
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 31200/ARQ/V34/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+          "cpu_seconds": 14.319129372999999,
+          "wall_seconds": 19.727467754972167,
+          "guest_instructions": 67209216,
+          "batches": 12929,
+          "yield_profile": {
+            "native": {
+              "unarmed": 1358,
+              "deadline": 324,
+              "pacing_wait": 5580,
+              "media_edge": 1,
+              "dsp_transition": 241
+            },
+            "arm": {
+              "attempts": 7522,
+              "declined": 10,
+              "armed_mode_3": 7512
+            },
+            "pacer": {}
+          },
+          "line": {
+            "frames": 316,
+            "paced_ms": 7599,
+            "peak_late_ms": 2940.3,
+            "pending_peak": 1280,
+            "underrun_frames": 30,
+            "underrun_samples": 2400
+          }
+        }
+      },
+      "capture_directory": "/tmp/courier-pacer-reference-final"
+    },
+    "uninstrumented_native_failure": {
+      "instrumented": false,
+      "exact_bidirectional_data": false,
+      "elapsed_seconds": 180.75098329404136,
+      "roles": {
+        "caller": {
+          "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nNO CARRIER\r\n",
+          "cpu_seconds": 94.953938626,
+          "wall_seconds": 168.94868914503604,
+          "guest_instructions": 573060095,
+          "batches": 236483,
+          "yield_profile": {
+            "native": {
+              "unarmed": 75082,
+              "deadline": 2124,
+              "media_edge": 2,
+              "dsp_transition": 397,
+              "pacer_event": 1
+            },
+            "arm": {
+              "attempts": 77958,
+              "declined": 381,
+              "armed_mode_3": 77576,
+              "armed_mode_1": 1
+            },
+            "pacer": {
+              "waits": 53496,
+              "waited": 65.18891278438969,
+              "port_waited": 65.18891278438969
+            }
+          },
+          "line": {
+            "frames": 1795,
+            "paced_ms": 77823,
+            "peak_late_ms": 3038.5,
+            "pending_peak": 1120,
+            "underrun_frames": 22,
+            "underrun_samples": 1760
+          }
+        },
+        "answerer": {
+          "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nNO CARRIER\r\n",
+          "cpu_seconds": 140.059403188,
+          "wall_seconds": 168.99152910202974,
+          "guest_instructions": 573109248,
+          "batches": 235815,
+          "yield_profile": {
+            "native": {
+              "unarmed": 74826,
+              "deadline": 2129,
+              "media_edge": 2,
+              "dsp_transition": 315
+            },
+            "arm": {
+              "attempts": 77674,
+              "declined": 391,
+              "armed_mode_3": 77283
+            },
+            "pacer": {
+              "waits": 29571,
+              "waited": 26.378558594500646,
+              "port_waited": 26.378558594500646
+            }
+          },
+          "line": {
+            "frames": 1795,
+            "paced_ms": 32430,
+            "peak_late_ms": 3101.0,
+            "pending_peak": 2080,
+            "underrun_frames": 90,
+            "underrun_samples": 7200
+          }
+        }
+      },
+      "capture_directory": "/tmp/courier-pacer-native-final"
+    }
+  },
+  "default": "Reference wait; enable candidate explicitly with COURIER_NATIVE_PACER_WAIT=1",
+  "source_sha256": {
+    "native/pacer_wait.hpp": "e5db34dca3d6f81c8191f9b3046dd399040c2ae82c12b77f8ae099ca6084632a",
+    "native/c5x_capi.cpp": "679ea0c8470ebca6434ee8d3db13c667a136c40cf584a6bb09e9b6015cd4fce1",
+    "courier_emu/machine.py": "e32a3f5e3e0847a77efdd6b0d74299404864e8bb57d4098ad7f640eb156935cf",
+    "tools/benchmark_service_pacing.py": "de74ba5b7336a8963f7905661b4a1d01c191c77808b1f0dee3bdef0103cde422"
+  },
+  "validation": {
+    "component_and_worker_cases_passed": 52,
+    "additional_positive_lead_firmware_comparison_passed": true,
+    "outcome": "Not approved as the normal default: an uninstrumented candidate call returned NO CARRIER despite an earlier instrumented LAPM/data pass. No full-call speedup is claimed."
+  }
+}

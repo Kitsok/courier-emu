@@ -57,3 +57,61 @@ service-clock commits and original scheduler/interrupt/media regressions.
 Local modem/data and performance validation follow as a separate milestone.
 The previous saturated A53 call did not pace: this optimization benefits
 positive media-clock lead and is not a solution to its catch-up deficit.
+
+## Final measurements and adoption decision
+
+`tools/benchmark_service_pacing.py` compares a fixed number of stable
+native services. The reference yields for Python SIP polling and
+DeadlinePacer waiting, then resumes the same service. The candidate
+completes its wait inside the native worker. This excludes full Python
+snapshot reconstruction and all modem/DSP firmware work. Four paired
+repetitions reverse order on alternate pairs. The A53 package is isolated
+under `/tmp/courier-service-pacing-a53`, pinned to CPU 3; the normal checkout
+is unchanged. Setup/build is excluded, and final service state must match.
+
+| Fixed-service workload | Reference CPU | Native CPU | CPU reduction |
+| --- | ---: | ---: | ---: |
+| Notebook: 200 services, 1 ms positive lead | 0.06382 s | 0.02074 s | 67.5% |
+| A53: 200 services, 1 ms positive lead | 0.13567 s | 0.02145 s | 84.2% |
+| Notebook: 20,000 services, past deadline | 0.04076 s | 0.03872 s | small/noisy |
+| A53: 20,000 services, past deadline | 0.29854 s | 0.30032 s | -0.6% |
+
+The catch-up control performs no waits and shows no material change in
+this isolated workload. It does not establish full-emulator throughput.
+The old saturated A53 physical call had no pacing sleeps, so the positive-
+lead gains must not be presented as a solution to its real-time shortfall.
+
+A deterministic positive-lead firmware comparison additionally matches
+memory, registers, DSP/serial state, timers, service phases, I/O counts and
+queue diagnostics for eight million guest instructions. The native side
+must actually perform waits. This brings the selected checks to 53.
+
+The instrumented local candidate pair established
+`CONNECT 31200/ARQ/V34/LAPM/V42BIS` at both ends and transferred exact data.
+Caller/answerer rearm attempts fell from 8777/8137 in the initial reference
+profile to 2928/2937. Native pacing-wait yields fell to zero while 6854/6541
+waits stayed native. These differing training runs locate work; they are
+not a fixed-work CPU improvement measurement.
+
+Final uninstrumented validation had mixed results. The reference pair
+connected and transferred exact data, but the candidate pair returned
+`NO CARRIER` at both ends and transferred no markers. The failed capture
+is retained alongside the successful captures. Fixed-work state equality
+and component tests do not explain or outweigh this failed training gate;
+timing-sensitive modem/audio behavior remains unresolved. No whole-call
+speedup is claimed, and there was no additional physical call.
+
+**The reference wait remains the normal default.** The candidate requires
+explicit `COURIER_NATIVE_PACER_WAIT=1`. Its code and measurements are kept
+for investigation, but it is not an accepted normal-operation enhancement.
+The earlier implementation milestone supplied the candidate; final
+validation is what determined this conservative default. No deployment or
+physical modem settings change was made, and no temperatures were sampled.
+Raw benchmark repetitions and successful/failed call summaries are retained
+in `docs/native-service-pacing-results.json`.
+
+The next useful investigation is the remaining unarmed-snapshot yields
+and their invalidating port/memory callbacks. Unlike pacing waits, that
+handoff work can matter while A53 is behind real time. Establishing safe
+reuse across those boundaries still requires measured attribution and
+state-equivalence checks.

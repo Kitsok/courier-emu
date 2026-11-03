@@ -549,3 +549,24 @@ ordinary-execution overhead and controls are in `docs/native-queue-trace.md`
 and `docs/native-queue-trace-results.json`. Nanovax benchmarks use an
 isolated temporary package, leaving its working checkout unchanged. No
 physical call, physical settings change or temperature sampling occurred.
+
+## Remaining service yields and experimental native pacing
+
+Commit `5ce4f8d` attributes 71–73% of the remaining profiled training yields
+to positive-lead pacing. The bounded native wait in `f814a1e` passes
+component/worker checks, and an additional future-origin firmware test
+matches exact guest/device state. Fixed-service pacing/handoff CPU falls
+by 67.5% on the notebook and 84.2% on A53; the no-wait A53 control differs
+by only 0.6%. These gains concern pacing lead, which was absent in the
+previous saturated physical call.
+
+Final local modem validation is mixed: a profiled candidate pair connects
+with LAPM/V42bis and transfers exact data, but an unprofiled candidate pair
+returns NO CARRIER while the reference passes. The normal default therefore
+retains Python waiting; native waiting requires explicit
+`COURIER_NATIVE_PACER_WAIT=1`. No full-call gain or normal-operation
+acceptance is claimed. Results and failure evidence are in
+`docs/native-service-yields.md` and `docs/native-service-pacing-results.json`.
+No physical call, remote checkout deployment, physical settings change or
+temperature sampling occurred. Remaining unarmed snapshots are a more
+relevant next target for A53 catch-up execution.
