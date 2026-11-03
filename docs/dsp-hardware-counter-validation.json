@@ -1,0 +1,28 @@
+{
+  "initial": {
+    "cpu_seconds": 0.11480816599999999,
+    "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+    "case": "dmov",
+    "modeled_cycles": 1000000,
+    "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+    "perf_csv": "# started on Tue Nov  3 12:55:35 2026\n\n148169323,,cycles:u,115060457,100.00,,\n151850571,,instructions:u,115060457,100.00,1.02,insn per cycle\n",
+    "counters": {
+      "cycles:u": 148169323,
+      "instructions:u": 151850571
+    }
+  },
+  "final": {
+    "cpu_seconds": 0.11439487500000001,
+    "retired_instructions": 555556,
+    "executed_cycles": 1000000,
+    "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+    "case": "dmov",
+    "modeled_cycles": 1000000,
+    "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+    "perf_csv": "# started on Tue Nov  3 12:57:00 2026\n\n147578860,,cycles:u,114692667,100.00,,\n151818082,,instructions:u,114692667,100.00,1.03,insn per cycle\n",
+    "counters": {
+      "cycles:u": 147578860,
+      "instructions:u": 151818082
+    }
+  }
+}

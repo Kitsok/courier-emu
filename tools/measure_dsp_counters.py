@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Measure user hardware counters around a native DSP kernel, excluding setup."""
+import argparse
+import csv
+import hashlib
+import json
+import os
+from pathlib import Path
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def worker(args):
+    from courier_emu.dsp import NativeC5x
+    code = [0xbf09, 0x301, 0x8b89, 0x7790, 0x7780, 0x7980, 0x6000]
+    if args.case == 'address':
+        code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
+    with NativeC5x.from_program(0x6000, struct.pack('<%dH' % len(code), *code)) as core:
+        for address in range(0x2f0, 0x310):
+            core.set_data(address, address ^ 0x55aa)
+        core.set_pc(0x6000)
+        core.step_cycles(100000)
+        with open(args.folder / 'control', 'w', buffering=1) as control, open(args.folder / 'ack') as ack:
+            def command(value):
+                control.write(value + '\n')
+                if ack.readline().strip('\x00\r\n ') != 'ack':
+                    raise RuntimeError('perf did not acknowledge phase control')
+            command('enable')
+            start = time.process_time()
+            try:
+                retired, executed_cycles = core.step_cycles(args.cycles)
+                elapsed = time.process_time() - start
+            finally:
+                command('disable')
+        state = [core.state(), core.serial_state(), core.memory_map(),
+                 [core.data(a) for a in range(0x2f0, 0x310)],
+                 [core.data_write_count(a) for a in range(0x2f0, 0x310)]]
+        (args.folder / 'kernel.json').write_text(json.dumps(dict(
+            cpu_seconds=elapsed, retired_instructions=retired, executed_cycles=executed_cycles, sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library', type=Path, required=True)
+    parser.add_argument('--case', choices=['dmov', 'address'], default='dmov')
+    parser.add_argument('--cycles', type=int, default=1000000)
+    parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument('--folder', type=Path, help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    if args.cycles <= 0:
+        parser.error('cycles must be positive')
+    os.environ['COURIER_C5X_LIBRARY'] = str(args.library.resolve())
+    if args.worker:
+        return worker(args)
+    with tempfile.TemporaryDirectory(prefix='courier-perf-') as directory:
+        folder = Path(directory)
+        for name in ('control', 'ack'):
+            os.mkfifo(folder / name)
+        command = ['perf', 'stat', '-x,', '-e', 'cycles:u,instructions:u', '-D', '-1',
+                   '--control=fifo:%s,%s' % (folder / 'control', folder / 'ack'),
+                   '-o', str(folder / 'stat'), '--', sys.executable, str(Path(__file__).resolve()),
+                   '--worker', '--folder', str(folder), '--library', str(args.library.resolve()),
+                   '--case', args.case, '--cycles', str(args.cycles)]
+        subprocess.run(command, check=True, timeout=60)
+        result = json.loads((folder / 'kernel.json').read_text())
+        result.update(case=args.case, modeled_cycles=args.cycles,
+                      library_sha256=hashlib.sha256(args.library.read_bytes()).hexdigest(),
+                      perf_csv=(folder / 'stat').read_text())
+        counters = {}
+        for row in csv.reader(result['perf_csv'].splitlines()):
+            if len(row) >= 3 and row[2] in ('cycles:u', 'instructions:u'):
+                if len(row) < 5 or float(row[4]) < 99.0:
+                    raise RuntimeError('hardware counters were significantly multiplexed')
+                counters[row[2]] = int(row[0].strip())
+        if len(counters) != 2:
+            raise RuntimeError('hardware counter results are missing or unsupported')
+        result['counters'] = counters
+        print(json.dumps(result, indent=2))
+
+
+if __name__ == '__main__':
+    main()
