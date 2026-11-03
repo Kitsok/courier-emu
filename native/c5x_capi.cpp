@@ -2067,6 +2067,11 @@ uint64_t courier_c5x_training_block_hits(void *handle)
     return handle ? static_cast<C5xCore *>(handle)->training_block_hits() : 0;
 }
 
+uint64_t courier_c5x_complex_block_hits(void *handle)
+{
+    return handle ? static_cast<C5xCore *>(handle)->complex_block_hits() : 0;
+}
+
 std::size_t courier_c5x_get_pc_trace_count(void *handle)
 {
     return handle ? static_cast<C5xCore *>(handle)->pc_trace().size() : 0;

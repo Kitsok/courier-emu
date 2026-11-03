@@ -1,0 +1,358 @@
+{
+  "scope": "Exact copied &M5/&N6,S34=129,S54=96,S56=192,S58=97 profile; three one-batch diagnostic windows per endpoint at approximately 2,6,10 seconds after SIP answer. Tracing changes timing and disables native block admission during each traced batch. Counts are not full-call CPU shares.",
+  "source_revision": "24d6ea5",
+  "source_eeprom_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+  "result": {
+    "instrumented": false,
+    "batch_exits_counted": false,
+    "rate_index": null,
+    "mandatory_arq": true,
+    "nvram_source": "/home/kostik/work/voip/courier-emu/artifacts/courier-emu-v32.nvram",
+    "nvram_source_sha256": "b405a1b8b8ae0faac707de5f2accdb241599bac5594b6479e8c4c122519504db",
+    "modem_failure": null,
+    "exact_bidirectional_data": true,
+    "elapsed_seconds": 33.73139779799385,
+    "endpoints": {
+      "caller": {
+        "terminal": "AT\r\r\nOK\r\nATDT100\r\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nANSWERER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 448087.0554996,
+            "cpu": 9.291098691,
+            "instructions": 38564864,
+            "batches": 100788,
+            "zero_batches": 23284,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 448105.033978217,
+            "cpu": 22.308441384,
+            "instructions": 99657312,
+            "batches": 114858,
+            "zero_batches": 24094,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          }
+        }
+      },
+      "answerer": {
+        "terminal": "ATS0=1\r\r\nOK\r\n\r\nRING\r\n\r\nCONNECT 9600/ARQ/V32/LAPM/V42BIS\r\nCALLER-DATA-MARKER\r\n",
+        "window": {
+          "start": {
+            "wall": 448087.058181373,
+            "cpu": 9.066053088,
+            "instructions": 38636544,
+            "batches": 109352,
+            "zero_batches": 23685,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          },
+          "end": {
+            "wall": 448105.03407331,
+            "cpu": 21.533492696,
+            "instructions": 100010154,
+            "batches": 122622,
+            "zero_batches": 24587,
+            "worker_yields": {
+              "native": {},
+              "arm": {},
+              "pacer": {
+                "waits": 0,
+                "wakeups": 0,
+                "waited": 0.0,
+                "port_waited": 0.0
+              }
+            },
+            "exits": []
+          }
+        }
+      }
+    }
+  },
+  "windows": {
+    "courier-v32-sequences-664906.json": [
+      {
+        "after_answer": 2.014417511993088,
+        "entries": 4096
+      },
+      {
+        "after_answer": 6.018294100998901,
+        "entries": 4096
+      },
+      {
+        "after_answer": 10.02467097400222,
+        "entries": 4096
+      }
+    ],
+    "courier-v32-sequences-664905.json": [
+      {
+        "after_answer": 2.014626193966251,
+        "entries": 4096
+      },
+      {
+        "after_answer": 6.017955512972549,
+        "entries": 4096
+      },
+      {
+        "after_answer": 10.033518501964863,
+        "entries": 4096
+      }
+    ]
+  },
+  "frequent_sites": [
+    {
+      "pc": "0x8bc3",
+      "opcode": "0xbe14",
+      "count": 293
+    },
+    {
+      "pc": "0x8bbc",
+      "opcode": "0x667e",
+      "count": 292
+    },
+    {
+      "pc": "0x8bbd",
+      "opcode": "0x657d",
+      "count": 292
+    },
+    {
+      "pc": "0x8bbe",
+      "opcode": "0xe311",
+      "count": 292
+    },
+    {
+      "pc": "0x80e8",
+      "opcode": "0x880",
+      "count": 215
+    },
+    {
+      "pc": "0x80e9",
+      "opcode": "0xef00",
+      "count": 215
+    },
+    {
+      "pc": "0x8bc1",
+      "opcode": "0x617d",
+      "count": 160
+    },
+    {
+      "pc": "0x8bc2",
+      "opcode": "0xbe4e",
+      "count": 160
+    },
+    {
+      "pc": "0x8bc0",
+      "opcode": "0x627e",
+      "count": 159
+    },
+    {
+      "pc": "0xd8e3",
+      "opcode": "0x2ca0",
+      "count": 150
+    },
+    {
+      "pc": "0xd8e6",
+      "opcode": "0x7790",
+      "count": 150
+    },
+    {
+      "pc": "0xb950",
+      "opcode": "0x6a8a",
+      "count": 126
+    },
+    {
+      "pc": "0xb951",
+      "opcode": "0x628e",
+      "count": 126
+    },
+    {
+      "pc": "0xb952",
+      "opcode": "0x747e",
+      "count": 126
+    },
+    {
+      "pc": "0xb953",
+      "opcode": "0x548d",
+      "count": 126
+    },
+    {
+      "pc": "0xb954",
+      "opcode": "0x5199",
+      "count": 126
+    },
+    {
+      "pc": "0xb955",
+      "opcode": "0x98aa",
+      "count": 126
+    },
+    {
+      "pc": "0xb956",
+      "opcode": "0x90ab",
+      "count": 126
+    },
+    {
+      "pc": "0xb957",
+      "opcode": "0x6a8c",
+      "count": 126
+    },
+    {
+      "pc": "0xb958",
+      "opcode": "0x628e",
+      "count": 126
+    },
+    {
+      "pc": "0xb959",
+      "opcode": "0x747d",
+      "count": 126
+    },
+    {
+      "pc": "0xb95a",
+      "opcode": "0x549d",
+      "count": 126
+    },
+    {
+      "pc": "0xb95b",
+      "opcode": "0x508b",
+      "count": 126
+    },
+    {
+      "pc": "0xb95c",
+      "opcode": "0x98ac",
+      "count": 126
+    },
+    {
+      "pc": "0xb95d",
+      "opcode": "0x90a9",
+      "count": 126
+    },
+    {
+      "pc": "0x80c3",
+      "opcode": "0x10",
+      "count": 119
+    },
+    {
+      "pc": "0x80c4",
+      "opcode": "0xbf44",
+      "count": 119
+    },
+    {
+      "pc": "0x80c5",
+      "opcode": "0xe100",
+      "count": 119
+    },
+    {
+      "pc": "0x8aae",
+      "opcode": "0x81f",
+      "count": 112
+    },
+    {
+      "pc": "0x8aaf",
+      "opcode": "0xb805",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab0",
+      "opcode": "0x881f",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab1",
+      "opcode": "0x7804",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab2",
+      "opcode": "0xbe59",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab3",
+      "opcode": "0xbb04",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab4",
+      "opcode": "0xaa90",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab5",
+      "opcode": "0xbe04",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab6",
+      "opcode": "0x7805",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab7",
+      "opcode": "0x7790",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab8",
+      "opcode": "0x7780",
+      "count": 112
+    },
+    {
+      "pc": "0x8ab9",
+      "opcode": "0xa080",
+      "count": 112
+    },
+    {
+      "pc": "0x8aba",
+      "opcode": "0x2f7b",
+      "count": 112
+    },
+    {
+      "pc": "0x8abb",
+      "opcode": "0x9880",
+      "count": 112
+    },
+    {
+      "pc": "0x8868",
+      "opcode": "0x7790",
+      "count": 112
+    },
+    {
+      "pc": "0x879d",
+      "opcode": "0x528a",
+      "count": 88
+    },
+    {
+      "pc": "0x879e",
+      "opcode": "0x8d7d",
+      "count": 88
+    }
+  ],
+  "raw_sha256": "39e0b3e8512bb7e389960f30426cd8f41c41a565e830fd9095958b808b99456f"
+}

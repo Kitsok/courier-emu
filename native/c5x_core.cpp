@@ -98,6 +98,7 @@ void C5xCore::reset()
     m_delay_move_ignored = 0;
     m_delay_move_last_pc = m_delay_move_last_address = 0;
     m_pc = m_op = 0;
+    m_complex_block_hits = 0;
     m_acc = m_accb = m_preg = 0;
     m_treg0 = m_treg1 = m_treg2 = 0;
     std::fill(std::begin(m_ar), std::end(m_ar), 0);
@@ -1581,6 +1582,81 @@ bool C5xCore::try_training_block(uint64_t target)
     return true;
 }
 
+// Observed V.32 complex arithmetic loop. Only ordinary DARAM is admitted,
+// so no intermediate read/write can change mappings, code or device state.
+bool C5xCore::try_complex_block(uint64_t target)
+{
+    static constexpr uint16_t code[] = {0x6a8a,0x628e,0x747e,0x548d,0x5199,
+        0x98aa,0x90ab,0x6a8c,0x628e,0x747d,0x549d,0x508b,0x98ac,0x90a9};
+    constexpr uint16_t first_pc = 0xb950, end_pc = 0xb95e;
+    if (m_pc != first_pc || m_maps_dirty || m_trace_data_writes
+        || m_repeat_active || m_rptc || m_in_delay_slot || m_delay_condition_pending
+        || step_is_rare() || (m_pmst.braf && m_paer < end_pc)
+        || target - m_cycles < 14 || m_event_deadline <= m_cycles + 14
+        || m_pmap[first_pc] != 3
+        || !std::equal(std::begin(code),std::end(code),m_program.data()+first_pc))
+        return false;
+    auto daram = [&](uint16_t address) { return (m_dmap[address] & 0x3f) == 1; };
+    auto next_ar = [&](unsigned ar, int step) -> uint16_t {
+        if ((m_cbcr & 8) && ar == (m_cbcr & 7) && m_ar[ar] == m_cber1)
+            return m_cbsr1;
+        // Buffer 1 has priority even when it does not wrap this update.
+        if (!((m_cbcr & 8) && ar == (m_cbcr & 7))
+            && (m_cbcr & 0x80) && ar == ((m_cbcr >> 4) & 7)
+            && m_ar[ar] == m_cber2) return m_cbsr2;
+        return uint16_t(m_ar[ar] + step);
+    };
+    bool executed = false;
+    do {
+        const uint16_t initial = m_ar[m_st0.arp], a1=m_ar[1], a2=m_ar[2],
+            a3=m_ar[3], a4=m_ar[4], a5=m_ar[5], a6=m_ar[6],
+            next5=next_ar(5,-1), high=m_st0.dp|0x7d, low=m_st0.dp|0x7e;
+        if (!daram(initial) || !daram(a1) || !daram(a2) || !daram(a3)
+            || !daram(a4) || !daram(a5) || !daram(a6) || !daram(next5)
+            || !daram(high) || !daram(low)
+            || (m_call_tdm_active && (m_line_dac_slot == a1 || m_line_dac_slot == a2
+                || m_line_dac_slot == a3 || m_line_dac_slot == a4))) break;
+        auto store = [&](uint16_t address, uint16_t value) {
+            ++m_data_write_counts[address]; m_data[address] = value;
+        };
+        int32_t acc = int32_t(uint32_t(m_data[initial]) << 16), preg=m_preg;
+        acc=ADD(uint32_t(acc),m_data[a2],false);
+        uint16_t temp=m_data[low];
+        acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a6]));
+        acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a5]));
+        store(a1,uint16_t(uint32_t(acc)>>16)); store(a2,uint16_t(acc));
+        acc=int32_t(uint32_t(m_data[a3])<<16);
+        acc=ADD(uint32_t(acc),m_data[a4],false);
+        temp=m_data[high];
+        acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a6]));
+        acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[next5]));
+        store(a3,uint16_t(uint32_t(acc)>>16)); store(a4,uint16_t(acc));
+        // No updated AR is read again except AR5, represented by next5.
+        for (unsigned ar=1; ar<=4; ++ar) m_ar[ar]=next_ar(ar,1);
+        m_ar[5]=next5; m_ar[6]=next_ar(6,-1);
+        m_st0.arp=1; m_st1.arb=4;
+        m_acc=acc; m_preg=preg; m_treg0=temp;
+        if (!m_pmst.trm) m_treg1=m_treg2=temp;
+        m_condition_start=m_xc_condition=condition_state();
+        m_pc=end_pc; m_previous_pc=end_pc-1; m_op=code[13];
+        m_map.program_external+=14; m_map.data_daram+=10;
+        m_cycles+=14; m_instructions+=14; m_tail_cycle=m_cycles;
+        ++m_complex_block_hits; executed=true;
+        // Apply a repeat edge only when another complete body can execute.
+        // Otherwise ordinary stepping retains the next boundary/edge.
+        if (!m_pmst.braf || m_pasr != first_pc || m_paer != end_pc
+            || m_brcr <= 0 || target-m_cycles < 14
+            || m_event_deadline <= m_cycles+14) break;
+        m_pc=first_pc;
+        if (--m_brcr <= 0) m_pmst.braf=0;
+    } while (true);
+    return executed;
+}
+
 void C5xCore::op_group_be() { s_opcode_table_be[m_op & 0xff](this); }
 void C5xCore::op_group_bf() { s_opcode_table_bf[m_op & 0xff](this); }
 
@@ -2035,6 +2111,10 @@ void C5xCore::threaded(C5xCore *core)
         return;
     if (core->m_pc == 0x879d && core->m_native_training_block
         && core->try_training_block(core->m_run_target)
+        && core->m_cycles >= core->m_run_target)
+        return;
+    if (core->m_pc == 0xb950 && core->m_native_training_block
+        && core->try_complex_block(core->m_run_target)
         && core->m_cycles >= core->m_run_target)
         return;
     // consume_cycles left the architectural conditions for this next step.

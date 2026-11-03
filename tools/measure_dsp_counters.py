@@ -24,6 +24,8 @@ def worker(args):
         code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
     if args.case == 'training':
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
+    if args.case == 'complex':
+        code = [0xbc06,0xbf00,0xbe42,0x8b89]
     if args.case in ('madd-circular', 'mads-circular'):
         opcode = 0xab90 if args.case == 'madd-circular' else 0xaa90
         code = [0xbf0f,0x330,0x8b8f,0xbb04,opcode,0x7980,0x6000]
@@ -31,6 +33,21 @@ def worker(args):
         for address in range(0x2f0, 0x310):
             core.set_data(address, address ^ 0x55aa)
         core.set_pc(0x6000)
+        if args.case == 'complex':
+            core.host_write(7,0x30);core.host_write(0x26,0x10)
+            core.host_write(0x1e,args.cbcr)
+            core.host_write(0x1a,0x3e0);core.host_write(0x1b,0x3b0)
+            core.host_write(0x1c,0x3f0);core.host_write(0x1d,0x3a0)
+            for a in range(0x300,0x500):core.set_data(a,((a*137)^0xaaaa)&65535)
+            core.step(4)
+            block=[]
+            for ar in range(8):block += [0xbf08|ar,0x340+ar*0x10]
+            block += [0xb929,0x8809,0xbec6,0xb95d,
+                      0x6a8a,0x628e,0x747e,0x548d,0x5199,0x98aa,0x90ab,
+                      0x6a8c,0x628e,0x747d,0x549d,0x508b,0x98ac,0x90a9,
+                      0x7980,0xb93c]
+            core.load_program(struct.pack('<%dH'%len(block),*block),0xb93c)
+            core.set_pc(0xb93c)
         if args.case in ('madd-circular', 'mads-circular'):
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,0xef)
@@ -50,8 +67,13 @@ def worker(args):
         if query:
             query.argtypes=[ctypes.c_void_p];query.restype=ctypes.c_uint64
         def hits():return int(query(core.handle)) if query else 0
+        complex_query=getattr(core.library,'courier_c5x_complex_block_hits',None)
+        if complex_query:
+            complex_query.argtypes=[ctypes.c_void_p];complex_query.restype=ctypes.c_uint64
+        def complex_hits():return int(complex_query(core.handle)) if complex_query else 0
         core.step_cycles(100000)
         before_hits=hits()
+        before_complex_hits=complex_hits()
         with open(args.folder / 'control', 'w', buffering=1) as control, open(args.folder / 'ack') as ack:
             def command(value):
                 control.write(value + '\n')
@@ -64,24 +86,29 @@ def worker(args):
                 elapsed = time.process_time() - start
             finally:
                 command('disable')
-        addresses=(range(0x300,0x380) if args.case=='training' else
+        addresses=(range(0x300,0x500) if args.case=='complex' else
+                   range(0x300,0x380) if args.case=='training' else
                    range(0x300,0x340) if args.case in ('madd-circular','mads-circular')
                    else range(0x2f0,0x310))
         state = [core.state(), core.serial_state(), core.memory_map(),
                  [core.data(a) for a in addresses],
                  [core.data_write_count(a) for a in addresses]]
+        if args.case=='complex':state.append([core.register(a) for a in range(9,0x20)])
         (args.folder / 'kernel.json').write_text(json.dumps(dict(
-            cpu_seconds=elapsed, block_hits=hits()-before_hits, retired_instructions=retired, executed_cycles=executed_cycles, sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
+            cpu_seconds=elapsed, block_hits=hits()-before_hits,
+            complex_block_hits=complex_hits()-before_complex_hits,
+            retired_instructions=retired, executed_cycles=executed_cycles,
+            sha256=hashlib.sha256(json.dumps(state, sort_keys=True).encode()).hexdigest())))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--case', choices=['dmov', 'address', 'training',
+    parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex',
                                          'madd-circular', 'mads-circular'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,
-                        help='circular-buffer configuration for the training case')
+                        help='circular-buffer configuration for training/complex cases')
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--folder', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
