@@ -823,7 +823,7 @@ private:
     int32_t SUB(uint32_t a, uint32_t b, bool shift16);
     int32_t ADD(uint32_t a, uint32_t b, bool shift16);
     void UPDATE_AR(int ar, int step);
-    uint16_t indirect_address_rare(uint16_t ea, int arp, int nar);
+    uint16_t indirect_address_rare(uint16_t ea, int arp, int nar, unsigned mode);
     void UPDATE_ARP(int nar);
     // The data access before a delay-line copy has usually validated this
     // table already. Dirty maps retain the original architectural classifier.
@@ -835,6 +835,11 @@ private:
         const Region region = data_region(address);
         return region == Region::Daram || region == Region::Saram;
     }
+    struct RepeatAddress { unsigned mode, offset; };
+    RepeatAddress decode_repeat_address() const {
+        return {m_op & 0x80 ? (m_op >> 3) & 15u : 16u, m_op & 0x7fu};
+    }
+    uint16_t GET_REPEAT_ADDRESS(const RepeatAddress &operand);
     uint16_t GET_ADDRESS();
     uint16_t &data_cell(uint8_t kind, uint16_t address);
     bool GET_ZLVC_CONDITION(int zlvc, int zlvc_mask);
