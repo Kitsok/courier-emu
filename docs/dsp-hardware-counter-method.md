@@ -31,3 +31,23 @@ comparisons; do not retroactively declare earlier candidate rejections
 incorrect from these two reference observations. Raw successful probes
 are in dsp-hardware-counter-validation.json. This improves measurement
 quality and does not itself accelerate or establish a physical call.
+
+## Compiler comparison with controlled phases
+
+Three alternating GCC/Clang 16 pairs per kernel confirm matching state
+while measuring only acknowledged execution phases. Median paired-DMOV
+host cycles are 147814759 versus 166771541 (12.82% more with Clang); host
+instructions are 151803733 versus 165140342 (8.79% more). Address-update
+cycles are 193194868 versus 215161780 (11.37% more), and instructions
+230702488 versus 248327878 (7.64% more). Raw counters all report 100%
+running. These two kernels support the Clang rejection independently of
+CPU-time variation; they do not validate every earlier microbenchmark or
+quantify whole-training performance. Raw runs and medians are retained in
+`dsp-compiler-phase-counters.json`. No new call or host-policy change was
+needed.
+
+The training trace prose previously swapped caller and answerer labels.
+The authoritative raw windows and structured summary were correctly
+labeled; prose is corrected to caller 12288 entries, answerer 6566.
+The observed DMOV pair counts are caller 148 and answerer 42. This changes
+no aggregate counts or physical-connection conclusions.

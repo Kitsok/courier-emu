@@ -1,0 +1,218 @@
+{
+  "summary": {
+    "dmov": {
+      "gcc": {
+        "cycles:u": 147814759,
+        "instructions:u": 151803733
+      },
+      "clang16": {
+        "cycles:u": 166771541,
+        "instructions:u": 165140342
+      }
+    },
+    "address": {
+      "gcc": {
+        "cycles:u": 193194868,
+        "instructions:u": 230702488
+      },
+      "clang16": {
+        "cycles:u": 215161780,
+        "instructions:u": 248327878
+      }
+    }
+  },
+  "runs": [
+    {
+      "cpu_seconds": 0.11431379000000008,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:03 2026\n\n147471797,,cycles:u,114608958,100.00,,\n151842216,,instructions:u,114608958,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 147471797,
+        "instructions:u": 151842216
+      },
+      "variant": "gcc",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.12927979099999998,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:04 2026\n\n166771541,,cycles:u,129540250,100.00,,\n165140338,,instructions:u,129540250,100.00,0.99,insn per cycle\n",
+      "counters": {
+        "cycles:u": 166771541,
+        "instructions:u": 165140338
+      },
+      "variant": "clang16",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.12933753999999997,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:06 2026\n\n166969011,,cycles:u,129626581,100.00,,\n165140342,,instructions:u,129626581,100.00,0.99,insn per cycle\n",
+      "counters": {
+        "cycles:u": 166969011,
+        "instructions:u": 165140342
+      },
+      "variant": "clang16",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.11453225,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:07 2026\n\n147814759,,cycles:u,114789500,100.00,,\n151803733,,instructions:u,114789500,100.00,1.03,insn per cycle\n",
+      "counters": {
+        "cycles:u": 147814759,
+        "instructions:u": 151803733
+      },
+      "variant": "gcc",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.11510829099999997,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:08 2026\n\n148486474,,cycles:u,115372834,100.00,,\n151784617,,instructions:u,115372834,100.00,1.02,insn per cycle\n",
+      "counters": {
+        "cycles:u": 148486474,
+        "instructions:u": 151784617
+      },
+      "variant": "gcc",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.12907299799999994,
+      "retired_instructions": 555556,
+      "executed_cycles": 1000000,
+      "sha256": "03ffe69e6421f1b019ba0b4fae354cd4ffcad42742116f489da8974d092be58f",
+      "case": "dmov",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:09 2026\n\n166582472,,cycles:u,129355041,100.00,,\n165140475,,instructions:u,129355041,100.00,0.99,insn per cycle\n",
+      "counters": {
+        "cycles:u": 166582472,
+        "instructions:u": 165140475
+      },
+      "variant": "clang16",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.14972883400000003,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:10 2026\n\n193171903,,cycles:u,149989583,100.00,,\n230702429,,instructions:u,149989583,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193171903,
+        "instructions:u": 230702429
+      },
+      "variant": "gcc",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.16671200100000005,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:12 2026\n\n215154604,,cycles:u,166978583,100.00,,\n248327681,,instructions:u,166978583,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 215154604,
+        "instructions:u": 248327681
+      },
+      "variant": "clang16",
+      "order": 0
+    },
+    {
+      "cpu_seconds": 0.16682079000000005,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:13 2026\n\n215250858,,cycles:u,167178082,100.00,,\n248328016,,instructions:u,167178082,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 215250858,
+        "instructions:u": 248328016
+      },
+      "variant": "clang16",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.14978133299999996,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:14 2026\n\n193194868,,cycles:u,150092540,100.00,,\n230702488,,instructions:u,150092540,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193194868,
+        "instructions:u": 230702488
+      },
+      "variant": "gcc",
+      "order": 1
+    },
+    {
+      "cpu_seconds": 0.149773457,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "1b215212c54722fedb41a75a690be51788f75e50bc1a0ae35f4d79bdfc1f3c56",
+      "perf_csv": "# started on Tue Nov  3 12:59:15 2026\n\n193197051,,cycles:u,150099832,100.00,,\n230702588,,instructions:u,150099832,100.00,1.19,insn per cycle\n",
+      "counters": {
+        "cycles:u": 193197051,
+        "instructions:u": 230702588
+      },
+      "variant": "gcc",
+      "order": 2
+    },
+    {
+      "cpu_seconds": 0.16677354,
+      "retired_instructions": 992266,
+      "executed_cycles": 1000000,
+      "sha256": "bba40e3265eef492395cb2d3f56a0de3a1568cadb8f7f66b37492b13fdc16c0d",
+      "case": "address",
+      "modeled_cycles": 1000000,
+      "library_sha256": "bf82743ed3126ffd12983e41ef54d40da03f9e341082333d2dc7ea4e7e224ede",
+      "perf_csv": "# started on Tue Nov  3 12:59:17 2026\n\n215161780,,cycles:u,167052083,100.00,,\n248327878,,instructions:u,167052083,100.00,1.15,insn per cycle\n",
+      "counters": {
+        "cycles:u": 215161780,
+        "instructions:u": 248327878
+      },
+      "variant": "clang16",
+      "order": 2
+    }
+  ]
+}

@@ -76,11 +76,11 @@ The profiling tool reports `instrumented=false` because cProfile was off,
 but the separate sequence hook was enabled, so that label cannot be used
 to characterize this run as uninstrumented.
 
-All six windows contain actual opcode entries: 12288 at the answerer and
-6566 at the caller. Rank adjacent PC+1 records only when the predecessor
+All six windows contain actual opcode entries: 12288 at the caller and
+6566 at the answerer. Rank adjacent PC+1 records only when the predecessor
 is in a known one-word arithmetic/load/store family. The DMOV pair
-`7790,7780` at PC `8ab7` occurs 148 times at the answerer and 42 times at
-the caller. A first executor prototype can target this observed pair,
+`7790,7780` at PC `8ab7` occurs 148 times at the caller and 42 times at
+the answerer. A first executor prototype can target this observed pair,
 removing an intermediate indirect dispatch while preserving both ordinary
 retirement boundaries, live memory accesses and code-identity checks.
 This is a prototype candidate, not an implemented broad accelerator.
