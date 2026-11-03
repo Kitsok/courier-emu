@@ -29,3 +29,18 @@ kernels with unaffected controls before a bounded full-training check.
 Do not infer an A53 connection from a compiler or kernel result. No new
 physical call, physical setting change, governor change or temperature
 query was performed in this preparation stage.
+
+## Separate GCC code-generation diagnostic
+
+While package installation remains pending, the isolated builder also
+accepts repeated --extra-flag arguments and records them in the command
+manifest. This permits a current-source GCC integration diagnostic without
+changing host packages or the active library. CLI and syntax checks pass.
+
+Earlier paired-performance notes mention unsuccessful inline-limit tuning;
+therefore no gain is presumed from revisiting flags. The narrower question
+is whether current GCC 12 integrates the actual sampled opcode bodies with
+larger automatic-inlining and unit-growth limits. Inspect generated hot
+wrappers before deciding whether further timing is justified. Stop if
+integration does not occur; broader code growth can regress instruction
+cache behavior even if calls disappear. This remains an isolated experiment.

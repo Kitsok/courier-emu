@@ -17,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler', required=True, help='compiler executable path')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--extra-flag', action='append', default=[],
+                        help='append one compiler flag; use --extra-flag=-FLAG')
     args = parser.parse_args()
     output = args.output.resolve()
     metadata = Path(str(output) + '.json')
@@ -27,6 +29,7 @@ def main():
     flags = ['-std=c++17', '-O3', '-Wall', '-Wextra', '-Wpedantic',
              '-fno-semantic-interposition', '-pthread']
     flags += ['-dynamiclib'] if sys.platform == 'darwin' else ['-shared', '-fPIC']
+    flags += args.extra_flag
     with tempfile.TemporaryDirectory(dir=output.parent) as folder:
         temporary = Path(folder) / output.name
         command = [args.compiler, *flags, *(str(p) for p in LIBRARY_SOURCES[:2]),
