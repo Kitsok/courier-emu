@@ -1,0 +1,173 @@
+{
+  "manifest": {
+    "compiler_version": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "command": [
+      "/usr/bin/g++",
+      "-std=c++17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-fno-semantic-interposition",
+      "-pthread",
+      "-shared",
+      "-fPIC",
+      "--param=max-inline-insns-auto=1000",
+      "--param=inline-unit-growth=100",
+      "/home/kostik/work/courier-emu/native/c5x_core.cpp",
+      "/home/kostik/work/courier-emu/native/c5x_capi.cpp",
+      "-o",
+      "/tmp/tmppsx53qc4/libcourier-c5x-gcc-inline-diagnostic.so"
+    ],
+    "source_sha256": {
+      "native/c5x_core.cpp": "e721abec7e88f1bce5e366bccef0c89a8b4d16318ab1e45e27747a5cc9a55fd1",
+      "native/c5x_capi.cpp": "679ea0c8470ebca6434ee8d3db13c667a136c40cf584a6bb09e9b6015cd4fce1",
+      "native/c5x_core.h": "fd7bd92e6af75e1352ae2bd8170f86354288d2d61514b74fe106719a3e86f904",
+      "native/c5x_ops.ipp": "9ab43baa5fb1c43918438619744a13e805a871edb3226e675dbd8be961844d05",
+      "native/c5x_optable.ipp": "c88d909f048888a31382dc66be51c92bcea0b47587bcc5d5015be96c8f4716d1",
+      "native/bearer.hpp": "582bd12953c0551e9e35d75fce8375b438f7619131a934b8ec0990f7517ce129",
+      "native/resample.hpp": "3908cc39c8eca836b0fc1044a24ce89abc5e879447ac2dd75a4c7570da2bcaa8",
+      "native/timers186.hpp": "358a714bae3c8b2d925942b4a7b674bbb390ef2e314c3246b46ac7ccb0b8bf68",
+      "native/analog_devices.hpp": "b74e546b8c5def4fa161638535dc9c6c3199e7ee48bd670ca83358b0659dce6d",
+      "native/rtp_media.hpp": "410953211a3769057bd15b90f3b3e2e5f00d2ee79ef23cd142bb41156852c22b",
+      "native/stream_resample.hpp": "8595df6fa3306fe62127a8612dbadd399a78452d1729b2cd57e779a3a0490254",
+      "native/line_media.hpp": "fb8f0949d54a8f396dfe6ef89eb8ea7495e98277e575f430d7e8e7bf87675222",
+      "native/sip_port.hpp": "398e27bb9d4e8738658ba4fdb5d7fb88bf1e748a24f4e3a8a566597da93ee6ee",
+      "native/board_media.hpp": "41cededf54adbc49a6d0e52219213bfc9859a2c5d387dc385b10ab8997bae917",
+      "native/silicon_daa.hpp": "59ad9a69c94790c089014feee96005ec28c0560751035cf70ce176346c203513",
+      "native/codec_bringup.hpp": "4aad0fd87c66c848ccd7765d15456774c9fb678f72c4830628825172fee4a825",
+      "native/pcm_recording.hpp": "be4922940e2746e6324bdc3ea4143886be6dd03bc8bb24b68d2247353e4fd453",
+      "native/pacer_wait.hpp": "e5db34dca3d6f81c8191f9b3046dd399040c2ae82c12b77f8ae099ca6084632a"
+    },
+    "library_sha256": "6f6f8bb31166be4f7e5bd6e9e5d29c5bb956fd0bafe9c14c39beb339413ea6c8"
+  },
+  "codegen": {
+    ".build/libcourier_c5x.so": {
+      "bytes": 826400,
+      "handlers": {
+        "op_madd": {
+          "instructions": 172,
+          "calls": [
+            "65598:\t97ff5aae \tbl\t3c050 <courier::C5xCore::op_madd()>",
+            "65778:\t97ff67b3 \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "65780:\t97ff0704 \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "65790:\t97ff0eb8 \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>"
+          ]
+        },
+        "op_dmov": {
+          "instructions": 172,
+          "calls": [
+            "5b838:\t97ff7152 \tbl\t37d80 <courier::C5xCore::op_dmov()>",
+            "5ba18:\t97ff8f0b \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "5ba20:\t97ff2e5c \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "5ba30:\t97ff3610 \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>"
+          ]
+        },
+        "op_lacc_mem": {
+          "instructions": 324,
+          "calls": [
+            "62bcc:\t97ff2835 \tbl\t2cca0 <courier::C5xCore::dm_read_slow(unsigned short)>",
+            "62c50:\t97ff0ec8 \tbl\t26770 <courier::C5xCore::cpuregs_r(unsigned short)>",
+            "62da0:\t97ff7229 \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "62da8:\t97ff117a \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "62db8:\t97ff192e \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>",
+            "62e04:\t97fefae4 \tbl\t21994 <courier::C5xCore::indirect_address_rare(unsigned short, int, int, unsigned int)>"
+          ]
+        },
+        "op_add_mem": {
+          "instructions": 172,
+          "calls": [
+            "626c8:\t97ff29fa \tbl\t2ceb0 <courier::C5xCore::op_add_mem()>",
+            "628a8:\t97ff7367 \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "628b0:\t97ff12b8 \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "628c0:\t97ff1a6c \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>"
+          ]
+        },
+        "op_sach": {
+          "instructions": 336,
+          "calls": [
+            "56fe0:\t97ff7a6c \tbl\t35990 <courier::C5xCore::dm_write_slow(unsigned short, unsigned short)>",
+            "57200:\t97ff78b4 \tbl\t354d0 <courier::C5xCore::cpuregs_w(unsigned short, unsigned short)>",
+            "57324:\t97ffa0c8 \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "5732c:\t97ff4019 \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "5733c:\t97ff47cd \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>",
+            "57370:\t97ff2989 \tbl\t21994 <courier::C5xCore::indirect_address_rare(unsigned short, int, int, unsigned int)>"
+          ]
+        },
+        "op_group_be": {
+          "instructions": 176,
+          "calls": [
+            "53c34:\td63f0020 \tblr\tx1",
+            "53e0c:\t97ffae0e \tbl\t3f644 <courier::C5xCore::step_events()>",
+            "53e14:\t97ff4d5f \tbl\t27390 <courier::C5xCore::refresh_event_deadline()>",
+            "53e24:\t97ff5513 \tbl\t29270 <courier::C5xCore::fetch_slow(unsigned short)>"
+          ]
+        }
+      }
+    },
+    "/tmp/libcourier-c5x-gcc-inline-diagnostic.so": {
+      "bytes": 889608,
+      "handlers": {
+        "op_madd": {
+          "instructions": 100,
+          "calls": [
+            "7677c:\t97ff12cd \tbl\t3b2b0 <courier::C5xCore::op_madd()>",
+            "768b4:\t97ff17b3 \tbl\t3c780 <courier::C5xCore::step_events()>",
+            "768bc:\t97ff3b56 \tbl\t45614 <courier::C5xCore::refresh_event_deadline()>"
+          ]
+        },
+        "op_dmov": {
+          "instructions": 100,
+          "calls": [
+            "6e4cc:\t97ff261d \tbl\t37d40 <courier::C5xCore::op_dmov()>",
+            "6e604:\t97ff385f \tbl\t3c780 <courier::C5xCore::step_events()>",
+            "6e60c:\t97ff5c02 \tbl\t45614 <courier::C5xCore::refresh_event_deadline()>"
+          ]
+        },
+        "op_lacc_mem": {
+          "instructions": 248,
+          "calls": [
+            "736cc:\t97fee75d \tbl\t2d440 <courier::C5xCore::dm_read_slow(unsigned short)>",
+            "73750:\t97fee608 \tbl\t2cf70 <courier::C5xCore::cpuregs_r(unsigned short)>",
+            "737bc:\t97ff23f1 \tbl\t3c780 <courier::C5xCore::step_events()>",
+            "737c4:\t97ff4794 \tbl\t45614 <courier::C5xCore::refresh_event_deadline()>",
+            "73810:\t97febc95 \tbl\t22a64 <courier::C5xCore::indirect_address_rare(unsigned short, int, int, unsigned int)>"
+          ]
+        },
+        "op_add_mem": {
+          "instructions": 95,
+          "calls": [
+            "2173c:\t97fffe4e \tbl\t21074 <courier::C5xCore::rebuild_maps()>"
+          ]
+        },
+        "op_sach": {
+          "instructions": 264,
+          "calls": [
+            "6ac70:\t97ff3168 \tbl\t37210 <courier::C5xCore::dm_write_slow(unsigned short, unsigned short)>",
+            "6ae00:\t97ff2f68 \tbl\t36ba0 <courier::C5xCore::cpuregs_w(unsigned short, unsigned short)>",
+            "6af10:\t97ff461c \tbl\t3c780 <courier::C5xCore::step_events()>",
+            "6af18:\t97ff69bf \tbl\t45614 <courier::C5xCore::refresh_event_deadline()>",
+            "6af4c:\t97fedec6 \tbl\t22a64 <courier::C5xCore::indirect_address_rare(unsigned short, int, int, unsigned int)>"
+          ]
+        },
+        "op_group_be": {
+          "instructions": 108,
+          "calls": [
+            "64ae4:\td63f0020 \tblr\tx1",
+            "64c18:\t97ff5eda \tbl\t3c780 <courier::C5xCore::step_events()>",
+            "64c20:\t97ff827d \tbl\t45614 <courier::C5xCore::refresh_event_deadline()>"
+          ]
+        }
+      }
+    }
+  },
+  "codegen_note": "Ambiguous prefix match for op_lt excluded; only remaining named handlers used.",
+  "reference_check": {
+    "cases": 36,
+    "sha256": "dae44553bdbad6ebe96492509c631a93859b4278a095e6c6e57a89f2c7e001f7"
+  },
+  "candidate_check": {
+    "cases": 36,
+    "sha256": "dae44553bdbad6ebe96492509c631a93859b4278a095e6c6e57a89f2c7e001f7"
+  }
+}

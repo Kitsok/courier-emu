@@ -44,3 +44,29 @@ larger automatic-inlining and unit-growth limits. Inspect generated hot
 wrappers before deciding whether further timing is justified. Stop if
 integration does not occur; broader code growth can regress instruction
 cache behavior even if calls disappear. This remains an isolated experiment.
+
+## Current-source GCC diagnostic built
+
+The separate build with max-inline-insns-auto=1000 and inline-unit-growth=100
+completed. It is 889608 bytes versus the deployed 826400 bytes, about 7.65%
+larger. Actual ADD-memory integration occurs, while MADD and DMOV still
+call separate bodies. Wrapper instruction counts alone are not execution
+costs and do not establish a throughput gain. An ambiguous LT/LTS prefix
+match in the inspection helper was excluded from retained results.
+
+More inlining emitted low-address LAMM/SAMM/LMMR SARAM-bound warnings.
+Those opcodes mask operands below 0080; valid maps classify that range as
+registers or low DARAM. Thirty-six short cases covering GREG and DARAM
+0060/007f across C51/C52/C53, tracing enabled/disabled, and plain/threaded
+execution match the deployed reference, including expected results and
+state/access/write counters. Digest:
+`dae44553bdbad6ebe96492509c631a93859b4278a095e6c6e57a89f2c7e001f7`.
+This checks the warning paths but does not establish complete correctness
+or prove every compiler warning benign. No benchmark or physical call
+was made with the variant yet. The active runtime remains unchanged.
+
+The build manifest, source/library hashes, selected generated-handler
+calls and matching checks are in `dsp-gcc-inline-diagnostic.json`. This
+partial code integration justifies a bounded kernel comparison, with
+unaffected controls, before deciding whether any larger validation is
+worthwhile. Clang installation remains pending the user's preference.
