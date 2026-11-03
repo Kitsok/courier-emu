@@ -81,3 +81,30 @@ practical alternative. Current evidence supports neither declaring the
 hardware fundamentally incapable nor promising that another small batch
 will make it reliable. No call, build, hardware query or setting change
 was performed for this review.
+
+## Alternative host: dev.ne-arch.online
+
+Read-only SSH inspection finds a KVM x86_64 guest with two online vCPUs,
+a generic `Common KVM processor` CPU model and 7.7 GiB RAM (about 3.9 GiB
+available). Python 3.12.3 and GCC 13.3 are installed. Load averages at
+inspection are 0.02/0.21/0.28; two one-second vmstat intervals report zero
+CPU steal. These brief observations do not establish sustained capacity
+or expose the real physical CPU. BogoMIPS is not a throughput benchmark.
+
+This is a reasonable next validation platform, but no emulator workload
+has been built or measured there. Host x86_64 does not automatically run
+the guest 80186 firmware natively: the selected CPU and C5x backends remain
+interpreters/native blocks. Better single-thread capacity is a hypothesis
+to test, not a quantified gain from the generic virtual CPU identity.
+
+The route lookup for PBX 192.168.196.254 selects gateway 172.20.20.254 on
+ens18 with source 172.20.20.207. This establishes a routing decision only;
+SIP/RTP reachability, return routing and any firewall/NAT behavior remain
+unverified. No PBX registration or physical call was attempted.
+
+Next validation should build an isolated checkout, establish exact-profile
+notebook-style ARQ/data correctness and fixed-audio processing headroom,
+then verify bidirectional PBX media routing before a physical call. Avoid
+simultaneous registration using the existing active SIP identity. Using
+this host can separate SBC capacity limits from modem interoperability,
+but success there would not establish A35/A53 feasibility.
