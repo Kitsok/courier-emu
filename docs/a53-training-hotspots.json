@@ -1,0 +1,2161 @@
+{
+  "source": "nanovax /tmp/courier-physical-rebuilt-20261103-092544/perf.data",
+  "event": "cycles:u",
+  "lost_samples": 0,
+  "window_monotonic_seconds": [
+    4255,
+    4305
+  ],
+  "method": "Interior window after physical ATA and before physical NO CARRIER. Percentages weight perf periods, not raw sample counts.",
+  "journal_anchor": {
+    "event": "mgetty physical call A_FAIL",
+    "realtime_us": 1793694453527752,
+    "monotonic_us": 4310459459,
+    "offset_seconds": 1793690143.068293
+  },
+  "physical_answer_monotonic_range": [
+    4247.931707,
+    4248.931707
+  ],
+  "failure_monotonic_seconds": 4310.459459,
+  "total_period": 55350618520,
+  "total_samples": 2467,
+  "dso_shares_percent": {
+    "_x86_native.cpython-311-aarch64-linux-gnu.so": 22.843096433387426,
+    "python3.11": 8.516909931723017,
+    "libcourier_c5x.so": 66.82909403918256,
+    "libc.so.6": 1.5120300050442868,
+    "_ctypes.cpython-311-aarch64-linux-gnu.so": 0.29886959066270613
+  },
+  "symbols": [
+    {
+      "percent": 18.69,
+      "samples": 456,
+      "period": 10344023773,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "run_batch<true>"
+    },
+    {
+      "percent": 3.69,
+      "samples": 91,
+      "period": 2042015150,
+      "dso": "python3.11",
+      "symbol": "_PyEval_EvalFrameDefault"
+    },
+    {
+      "percent": 3.29,
+      "samples": 81,
+      "period": 1818873819,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_group_be>"
+    },
+    {
+      "percent": 3.11,
+      "samples": 77,
+      "period": 1720071268,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_madd"
+    },
+    {
+      "percent": 2.34,
+      "samples": 58,
+      "period": 1293901010,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_adrk>"
+    },
+    {
+      "percent": 1.96,
+      "samples": 48,
+      "period": 1082151380,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::delay_slot"
+    },
+    {
+      "percent": 1.51,
+      "samples": 38,
+      "period": 834202145,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_group_bf>"
+    },
+    {
+      "percent": 1.49,
+      "samples": 37,
+      "period": 824412278,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::resample::Timed::run"
+    },
+    {
+      "percent": 1.47,
+      "samples": 36,
+      "period": 814808056,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sacl>"
+    },
+    {
+      "percent": 1.32,
+      "samples": 32,
+      "period": 728145156,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sach>"
+    },
+    {
+      "percent": 1.3,
+      "samples": 32,
+      "period": 722275455,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_retc>"
+    },
+    {
+      "percent": 1.3,
+      "samples": 32,
+      "period": 719178159,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_call>"
+    },
+    {
+      "percent": 1.29,
+      "samples": 31,
+      "period": 713145682,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::read"
+    },
+    {
+      "percent": 1.27,
+      "samples": 31,
+      "period": 701400241,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_adds"
+    },
+    {
+      "percent": 1.22,
+      "samples": 30,
+      "period": 676373456,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_dmov"
+    },
+    {
+      "percent": 1.21,
+      "samples": 29,
+      "period": 667579937,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_add_s16_mem"
+    },
+    {
+      "percent": 1.17,
+      "samples": 29,
+      "period": 647933861,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sach"
+    },
+    {
+      "percent": 1.16,
+      "samples": 29,
+      "period": 639513033,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_mads"
+    },
+    {
+      "percent": 1.09,
+      "samples": 27,
+      "period": 603317909,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_norm>"
+    },
+    {
+      "percent": 1.09,
+      "samples": 26,
+      "period": 600649293,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_bd>"
+    },
+    {
+      "percent": 1.07,
+      "samples": 27,
+      "period": 591978631,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_calld>"
+    },
+    {
+      "percent": 1.05,
+      "samples": 26,
+      "period": 579448896,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lt>"
+    },
+    {
+      "percent": 1.04,
+      "samples": 26,
+      "period": 576247140,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_bcnd>"
+    },
+    {
+      "percent": 1.03,
+      "samples": 25,
+      "period": 567884100,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_rpt_simm>"
+    },
+    {
+      "percent": 1.01,
+      "samples": 25,
+      "period": 556900549,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lacc_mem>"
+    },
+    {
+      "percent": 0.95,
+      "samples": 23,
+      "period": 524013883,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sph"
+    },
+    {
+      "percent": 0.94,
+      "samples": 23,
+      "period": 521279071,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_retcd>"
+    },
+    {
+      "percent": 0.87,
+      "samples": 21,
+      "period": 479644695,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_sach>"
+    },
+    {
+      "percent": 0.85,
+      "samples": 21,
+      "period": 470422801,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lar_limm>"
+    },
+    {
+      "percent": 0.8,
+      "samples": 20,
+      "period": 443095617,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sub_s16_mem"
+    },
+    {
+      "percent": 0.79,
+      "samples": 19,
+      "period": 439188146,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_add_mem>"
+    },
+    {
+      "percent": 0.79,
+      "samples": 20,
+      "period": 439129372,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lacc_mem"
+    },
+    {
+      "percent": 0.79,
+      "samples": 19,
+      "period": 436835574,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sacl"
+    },
+    {
+      "percent": 0.79,
+      "samples": 20,
+      "period": 436277053,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_samm>"
+    },
+    {
+      "percent": 0.78,
+      "samples": 19,
+      "period": 430326105,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::ea"
+    },
+    {
+      "percent": 0.78,
+      "samples": 19,
+      "period": 429385803,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sph>"
+    },
+    {
+      "percent": 0.77,
+      "samples": 19,
+      "period": 427681785,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_adds>"
+    },
+    {
+      "percent": 0.72,
+      "samples": 18,
+      "period": 401229122,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lt"
+    },
+    {
+      "percent": 0.72,
+      "samples": 18,
+      "period": 400009451,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::cpuregs_w"
+    },
+    {
+      "percent": 0.71,
+      "samples": 17,
+      "period": 392825082,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_samm"
+    },
+    {
+      "percent": 0.7,
+      "samples": 17,
+      "period": 385004381,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_subs"
+    },
+    {
+      "percent": 0.69,
+      "samples": 17,
+      "period": 379324426,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_dmov>"
+    },
+    {
+      "percent": 0.67,
+      "samples": 16,
+      "period": 369452285,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_sacl>"
+    },
+    {
+      "percent": 0.64,
+      "samples": 16,
+      "period": 353678423,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::push"
+    },
+    {
+      "percent": 0.61,
+      "samples": 15,
+      "period": 339144490,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lamm>"
+    },
+    {
+      "percent": 0.61,
+      "samples": 15,
+      "period": 336583274,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::alu"
+    },
+    {
+      "percent": 0.54,
+      "samples": 13,
+      "period": 297558896,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_ldp_imm>"
+    },
+    {
+      "percent": 0.52,
+      "samples": 13,
+      "period": 288681048,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sqra"
+    },
+    {
+      "percent": 0.48,
+      "samples": 12,
+      "period": 265380749,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpy_mem>"
+    },
+    {
+      "percent": 0.48,
+      "samples": 12,
+      "period": 264813193,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_add_mem"
+    },
+    {
+      "percent": 0.48,
+      "samples": 12,
+      "period": 264061607,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_apac>"
+    },
+    {
+      "percent": 0.48,
+      "samples": 12,
+      "period": 263847828,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sub_s16_mem>"
+    },
+    {
+      "percent": 0.46,
+      "samples": 11,
+      "period": 253607462,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_bit>"
+    },
+    {
+      "percent": 0.46,
+      "samples": 11,
+      "period": 252112586,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::data_region"
+    },
+    {
+      "percent": 0.45,
+      "samples": 11,
+      "period": 250434566,
+      "dso": "python3.11",
+      "symbol": "_PyObject_GenericGetAttrWithDict"
+    },
+    {
+      "percent": 0.45,
+      "samples": 11,
+      "period": 248230332,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::bmar_mac_cycles"
+    },
+    {
+      "percent": 0.45,
+      "samples": 11,
+      "period": 247068568,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lacc_limm>"
+    },
+    {
+      "percent": 0.44,
+      "samples": 11,
+      "period": 245877182,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_add_s16_mem>"
+    },
+    {
+      "percent": 0.44,
+      "samples": 11,
+      "period": 245301194,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_subs>"
+    },
+    {
+      "percent": 0.44,
+      "samples": 11,
+      "period": 242288685,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::pop"
+    },
+    {
+      "percent": 0.42,
+      "samples": 10,
+      "period": 230778608,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lamm"
+    },
+    {
+      "percent": 0.41,
+      "samples": 10,
+      "period": 228011452,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_xc>"
+    },
+    {
+      "percent": 0.41,
+      "samples": 10,
+      "period": 226164161,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::GET_ZLVC_CONDITION"
+    },
+    {
+      "percent": 0.4,
+      "samples": 10,
+      "period": 218927998,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::resample::Stream::convert"
+    },
+    {
+      "percent": 0.37,
+      "samples": 9,
+      "period": 205409703,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_mpy_mem"
+    },
+    {
+      "percent": 0.37,
+      "samples": 9,
+      "period": 202665708,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_madd>"
+    },
+    {
+      "percent": 0.36,
+      "samples": 9,
+      "period": 199254365,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mads>"
+    },
+    {
+      "percent": 0.36,
+      "samples": 9,
+      "period": 197111718,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_add_mem>"
+    },
+    {
+      "percent": 0.36,
+      "samples": 9,
+      "period": 196504466,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpy_simm>"
+    },
+    {
+      "percent": 0.32,
+      "samples": 8,
+      "period": 176392746,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_mpya"
+    },
+    {
+      "percent": 0.31,
+      "samples": 8,
+      "period": 172171942,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier_worker_poll"
+    },
+    {
+      "percent": 0.31,
+      "samples": 8,
+      "period": 169587211,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_mpyu"
+    },
+    {
+      "percent": 0.3,
+      "samples": 8,
+      "period": 164854324,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_spl>"
+    },
+    {
+      "percent": 0.28,
+      "samples": 7,
+      "period": 157366694,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpya>"
+    },
+    {
+      "percent": 0.28,
+      "samples": 7,
+      "period": 155149148,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_add_simm>"
+    },
+    {
+      "percent": 0.28,
+      "samples": 7,
+      "period": 154872174,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_samm>"
+    },
+    {
+      "percent": 0.26,
+      "samples": 6,
+      "period": 142364655,
+      "dso": "python3.11",
+      "symbol": "_PyObject_GenericSetAttrWithDict"
+    },
+    {
+      "percent": 0.25,
+      "samples": 6,
+      "period": 139768191,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_rolb>"
+    },
+    {
+      "percent": 0.25,
+      "samples": 6,
+      "period": 138956794,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_spl"
+    },
+    {
+      "percent": 0.25,
+      "samples": 6,
+      "period": 138430040,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sqra>"
+    },
+    {
+      "percent": 0.25,
+      "samples": 6,
+      "period": 136831318,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_cc>"
+    },
+    {
+      "percent": 0.24,
+      "samples": 6,
+      "period": 132418653,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_ltp>"
+    },
+    {
+      "percent": 0.24,
+      "samples": 6,
+      "period": 130803928,
+      "dso": "python3.11",
+      "symbol": "PyObject_GetAttr"
+    },
+    {
+      "percent": 0.24,
+      "samples": 6,
+      "period": 130707214,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_bit"
+    },
+    {
+      "percent": 0.23,
+      "samples": 6,
+      "period": 127566583,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_add_limm>"
+    },
+    {
+      "percent": 0.22,
+      "samples": 5,
+      "period": 119048417,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_mpy_limm>"
+    },
+    {
+      "percent": 0.21,
+      "samples": 5,
+      "period": 117277854,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_zap>"
+    },
+    {
+      "percent": 0.21,
+      "samples": 5,
+      "period": 115184233,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::IO_READ16"
+    },
+    {
+      "percent": 0.21,
+      "samples": 5,
+      "period": 114939185,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_macd"
+    },
+    {
+      "percent": 0.2,
+      "samples": 5,
+      "period": 112416435,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lacl_mem>"
+    },
+    {
+      "percent": 0.2,
+      "samples": 5,
+      "period": 112239368,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_and_limm>"
+    },
+    {
+      "percent": 0.2,
+      "samples": 5,
+      "period": 108433243,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::cpuregs_r"
+    },
+    {
+      "percent": 0.2,
+      "samples": 5,
+      "period": 108354370,
+      "dso": "python3.11",
+      "symbol": "_PyObject_GetMethod"
+    },
+    {
+      "percent": 0.19,
+      "samples": 5,
+      "period": 106235446,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_xor_mem>"
+    },
+    {
+      "percent": 0.17,
+      "samples": 4,
+      "period": 95209915,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sub_mem"
+    },
+    {
+      "percent": 0.17,
+      "samples": 4,
+      "period": 94207107,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sub_simm>"
+    },
+    {
+      "percent": 0.17,
+      "samples": 4,
+      "period": 93818362,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_group_bf>"
+    },
+    {
+      "percent": 0.17,
+      "samples": 4,
+      "period": 92469698,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lacl_simm>"
+    },
+    {
+      "percent": 0.17,
+      "samples": 4,
+      "period": 91505673,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mar>"
+    },
+    {
+      "percent": 0.16,
+      "samples": 4,
+      "period": 90508930,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_or_mem"
+    },
+    {
+      "percent": 0.15,
+      "samples": 4,
+      "period": 84467836,
+      "dso": "libc.so.6",
+      "symbol": "__GI___printf_fp_l"
+    },
+    {
+      "percent": 0.15,
+      "samples": 4,
+      "period": 82114686,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_rptb>"
+    },
+    {
+      "percent": 0.15,
+      "samples": 4,
+      "period": 81445399,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_exar>"
+    },
+    {
+      "percent": 0.14,
+      "samples": 3,
+      "period": 75322143,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_xc>"
+    },
+    {
+      "percent": 0.14,
+      "samples": 2,
+      "period": 74867416,
+      "dso": "libc.so.6",
+      "symbol": "clock_gettime@@GLIBC_2.17"
+    },
+    {
+      "percent": 0.13,
+      "samples": 3,
+      "period": 70775981,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_bcndd"
+    },
+    {
+      "percent": 0.13,
+      "samples": 3,
+      "period": 69585158,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_mpyu>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 68567490,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lar_simm>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 68213590,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lacl_mem>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 68017378,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sbrk>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 66680430,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lacc_s16_mem"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 66304628,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_group_be>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 66179352,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_xc"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 65537252,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_sub_mem>"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 65227935,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lar_mem"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 64953227,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::load"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 64935466,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lacl_mem"
+    },
+    {
+      "percent": 0.12,
+      "samples": 3,
+      "period": 64510116,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_or_mem>"
+    },
+    {
+      "percent": 0.11,
+      "samples": 3,
+      "period": 61596385,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lacc_s16_mem>"
+    },
+    {
+      "percent": 0.11,
+      "samples": 3,
+      "period": 61010367,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lar_mem>"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 49917557,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::step_front_rare"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 49149812,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::serial_frame_interrupt"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 49098251,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_neg>"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 48683683,
+      "dso": "libc.so.6",
+      "symbol": "pthread_mutex_lock@@GLIBC_2.17"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 48227866,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lact>"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 47957705,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::codec_frame"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 47550686,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_cala>"
+    },
+    {
+      "percent": 0.09,
+      "samples": 2,
+      "period": 47429389,
+      "dso": "python3.11",
+      "symbol": "PyNumber_Add"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 46954049,
+      "dso": "libc.so.6",
+      "symbol": "__GI_____strtod_l_internal"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 46859590,
+      "dso": "libc.so.6",
+      "symbol": "__memset_zva64"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 46793385,
+      "dso": "python3.11",
+      "symbol": "PyObject_IsTrue"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 46423221,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_splk>"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 45753725,
+      "dso": "python3.11",
+      "symbol": "PyObject_GetItem"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 45646675,
+      "dso": "python3.11",
+      "symbol": "PyObject_Free"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 45621511,
+      "dso": "python3.11",
+      "symbol": "_PyLong_FormatAdvancedWriter"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 45419695,
+      "dso": "python3.11",
+      "symbol": "_PyType_Lookup"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 45120033,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_sacb>"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 44985575,
+      "dso": "libc.so.6",
+      "symbol": "__memcpy_generic"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 44483184,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_splk"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 44119587,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::store"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43715423,
+      "dso": "libc.so.6",
+      "symbol": "str_to_mpn.part.0.constprop.0"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43597907,
+      "dso": "libc.so.6",
+      "symbol": "pthread_cond_timedwait@@GLIBC_2.17"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43596779,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "(anonymous namespace)::Core<true>::write"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43548494,
+      "dso": "python3.11",
+      "symbol": "_PyObject_MakeTpCall"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43491681,
+      "dso": "python3.11",
+      "symbol": "0x000000000007956c"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 43095593,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_xor_mem"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 42894849,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_bcndd>"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 41901869,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_cmpr>"
+    },
+    {
+      "percent": 0.08,
+      "samples": 2,
+      "period": 41574374,
+      "dso": "libc.so.6",
+      "symbol": "memcmp"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 40698823,
+      "dso": "python3.11",
+      "symbol": "_PyFunction_Vectorcall"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 38574014,
+      "dso": "python3.11",
+      "symbol": "0x000000000012ef8c"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 38535298,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lact"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 37636989,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lacl_simm>"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 37240965,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::resample::Stream::convert@plt"
+    },
+    {
+      "percent": 0.07,
+      "samples": 2,
+      "period": 37097792,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lta"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 25250126,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "PyLong_FromUnsignedLong@plt"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 25174930,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sar"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 25167704,
+      "dso": "python3.11",
+      "symbol": "0x000000000015ba94"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 25010320,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_bsar>"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 24923678,
+      "dso": "python3.11",
+      "symbol": "PyObject_SetAttr"
+    },
+    {
+      "percent": 0.05,
+      "samples": 1,
+      "period": 24916828,
+      "dso": "python3.11",
+      "symbol": "0x00000000000ea9c0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24783092,
+      "dso": "python3.11",
+      "symbol": "0x0000000000097434"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24772819,
+      "dso": "python3.11",
+      "symbol": "0x00000000001896c0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24751880,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "run_python_impl<true>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24740353,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "run_python"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24716072,
+      "dso": "libc.so.6",
+      "symbol": "_int_free"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24713742,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lar_simm>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24702067,
+      "dso": "python3.11",
+      "symbol": "0x000000000010f59c"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24680390,
+      "dso": "python3.11",
+      "symbol": "0x0000000000081f90"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24672424,
+      "dso": "python3.11",
+      "symbol": "0x000000000018d930"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24634287,
+      "dso": "python3.11",
+      "symbol": "0x00000000000d94a0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24562561,
+      "dso": "libc.so.6",
+      "symbol": "sem_clockwait@@GLIBC_2.34"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24501322,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::check_interrupts"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24499611,
+      "dso": "libc.so.6",
+      "symbol": "mbstowcs"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24478784,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_splk>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24421958,
+      "dso": "python3.11",
+      "symbol": "0x00000000001bdc80"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24417138,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::io"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24411730,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_ltp"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24315567,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_lst_st0>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24304872,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_clrc_carry>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24273852,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_lacc_mem>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24263514,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_clrc_xf>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24231115,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "PySequence_Size@plt"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24216166,
+      "dso": "python3.11",
+      "symbol": "0x000000000018d5dc"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24208690,
+      "dso": "python3.11",
+      "symbol": "0x0000000000072dc0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24193780,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "0x0000000000012740"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24180531,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_sst_st0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24138434,
+      "dso": "python3.11",
+      "symbol": "0x00000000001f7c10"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24138169,
+      "dso": "python3.11",
+      "symbol": "0x000000000012ef40"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24122644,
+      "dso": "python3.11",
+      "symbol": "PyObject_Malloc"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24119020,
+      "dso": "python3.11",
+      "symbol": "0x00000000001009a0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24117605,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "0x0000000000016638"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24090027,
+      "dso": "libc.so.6",
+      "symbol": "malloc"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24087660,
+      "dso": "python3.11",
+      "symbol": "0x0000000000079560"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24082644,
+      "dso": "python3.11",
+      "symbol": "0x00000000000bf51c"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24076235,
+      "dso": "libcourier_c5x.so",
+      "symbol": "std::deque<int, std::allocator<int> >::_M_new_elements_at_back"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24072773,
+      "dso": "python3.11",
+      "symbol": "0x00000000000ecd7c"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 24055273,
+      "dso": "libc.so.6",
+      "symbol": "__vfprintf_internal"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23980388,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "0x0000000000015754"
+    },
+    {
+      "percent": 0.04,
+      "samples": 2,
+      "period": 23792252,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::media::Media::receive_locked"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23710865,
+      "dso": "python3.11",
+      "symbol": "0x000000000013efd0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23693384,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::refresh_event_deadline"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23505237,
+      "dso": "python3.11",
+      "symbol": "0x00000000000bf59c"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23398267,
+      "dso": "python3.11",
+      "symbol": "0x0000000000090a28"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23355950,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::analog::BoardMedia::begin"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23269104,
+      "dso": "libc.so.6",
+      "symbol": "__mpn_mul_1"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23060449,
+      "dso": "libc.so.6",
+      "symbol": "__poll"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 23002819,
+      "dso": "python3.11",
+      "symbol": "PyObject_RichCompareBool"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22981685,
+      "dso": "python3.11",
+      "symbol": "0x0000000000097420"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22946606,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_abs>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22806583,
+      "dso": "libcourier_c5x.so",
+      "symbol": "std::deque<courier::C5xCore::IoEvent, std::allocator<courier::C5xCore::IoEvent> >::emplace_back<courier::C5xCore::IoEvent>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22792267,
+      "dso": "python3.11",
+      "symbol": "0x00000000000c67d0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22739848,
+      "dso": "python3.11",
+      "symbol": "0x0000000000089d28"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22727847,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::run_cycles"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22681887,
+      "dso": "python3.11",
+      "symbol": "PyObject_Str"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22577362,
+      "dso": "python3.11",
+      "symbol": "0x00000000000795e8"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22537586,
+      "dso": "python3.11",
+      "symbol": "0x0000000000180284"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22427362,
+      "dso": "python3.11",
+      "symbol": "PyNumber_And"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22399647,
+      "dso": "python3.11",
+      "symbol": "0x0000000000145818"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22387745,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::media::Media::receive_locked@plt"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22386075,
+      "dso": "python3.11",
+      "symbol": "0x000000000012aadc"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22384063,
+      "dso": "python3.11",
+      "symbol": "0x000000000007b300"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22365027,
+      "dso": "python3.11",
+      "symbol": "0x0000000000139180"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22361712,
+      "dso": "python3.11",
+      "symbol": "0x0000000000078b00"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22352824,
+      "dso": "python3.11",
+      "symbol": "0x0000000000072d70"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22349290,
+      "dso": "python3.11",
+      "symbol": "0x0000000000090b34"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22295239,
+      "dso": "python3.11",
+      "symbol": "PyLong_FromLong"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22286140,
+      "dso": "python3.11",
+      "symbol": "PyTuple_New"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22255786,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_cpl_imm"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22221210,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "0x0000000000010f80"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22199697,
+      "dso": "libc.so.6",
+      "symbol": "__mpn_lshift"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22087081,
+      "dso": "python3.11",
+      "symbol": "0x000000000007975c"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 22009092,
+      "dso": "python3.11",
+      "symbol": "PyObject_RichCompare"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21988782,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_macd>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21973080,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::codec_transmit"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21945807,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::mac_cycles"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21876193,
+      "dso": "python3.11",
+      "symbol": "0x00000000000f1180"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21860410,
+      "dso": "libc.so.6",
+      "symbol": "cfree@GLIBC_2.17"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21774765,
+      "dso": "python3.11",
+      "symbol": "0x00000000000a6798"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21721360,
+      "dso": "python3.11",
+      "symbol": "PyNumber_InPlaceOr"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21710512,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_bacc>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21630190,
+      "dso": "libcourier_c5x.so",
+      "symbol": "std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21587397,
+      "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "PyLong_FromUnsignedLong@plt"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21525640,
+      "dso": "python3.11",
+      "symbol": "0x00000000000909c8"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21505229,
+      "dso": "python3.11",
+      "symbol": "_Py_CheckFunctionResult"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21503678,
+      "dso": "python3.11",
+      "symbol": "PySlice_Unpack"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21489571,
+      "dso": "python3.11",
+      "symbol": "PyNumber_InPlaceAdd"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21475894,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_rete>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21431943,
+      "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so",
+      "symbol": "0x000000000000cef8"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21430917,
+      "dso": "python3.11",
+      "symbol": "memcpy@plt"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21401760,
+      "dso": "python3.11",
+      "symbol": "0x00000000000795dc"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21398940,
+      "dso": "python3.11",
+      "symbol": "0x00000000000bf958"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21371225,
+      "dso": "libc.so.6",
+      "symbol": "_setjmp"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21368915,
+      "dso": "python3.11",
+      "symbol": "0x00000000000c6680"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21339696,
+      "dso": "python3.11",
+      "symbol": "0x0000000000205000"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21335920,
+      "dso": "libcourier_c5x.so",
+      "symbol": "(anonymous namespace)::worker_media_guard"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21333849,
+      "dso": "python3.11",
+      "symbol": "0x00000000001452f4"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21332628,
+      "dso": "python3.11",
+      "symbol": "PyObject_Vectorcall"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21302922,
+      "dso": "libc.so.6",
+      "symbol": "pthread_cond_signal@@GLIBC_2.17"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21203495,
+      "dso": "python3.11",
+      "symbol": "0x0000000000177cc0"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21168704,
+      "dso": "libc.so.6",
+      "symbol": "hack_digit"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21147807,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::analog::BoardMedia::queue"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21132051,
+      "dso": "python3.11",
+      "symbol": "0x0000000000079914"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21113878,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::IO_WRITE16"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21043431,
+      "dso": "python3.11",
+      "symbol": "0x00000000000c7528"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21032438,
+      "dso": "python3.11",
+      "symbol": "0x00000000000d9090"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21015450,
+      "dso": "python3.11",
+      "symbol": "PyEval_RestoreThread"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 21001956,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_pac>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20995430,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::resample::Timed::commit"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20807820,
+      "dso": "python3.11",
+      "symbol": "0x00000000000ef280"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20804418,
+      "dso": "python3.11",
+      "symbol": "0x00000000000ff598"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20789997,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_lmmr"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20448261,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::op_mpys"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 20244560,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::threaded<&courier::C5xCore::op_banz>"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 19966919,
+      "dso": "libc.so.6",
+      "symbol": "__GI___pthread_mutex_unlock_usercnt"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 19737862,
+      "dso": "python3.11",
+      "symbol": "0x00000000002430f8"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 19624462,
+      "dso": "python3.11",
+      "symbol": "0x000000000012a9c8"
+    },
+    {
+      "percent": 0.04,
+      "samples": 1,
+      "period": 19485087,
+      "dso": "python3.11",
+      "symbol": "0x00000000000bf4e4"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 19335193,
+      "dso": "python3.11",
+      "symbol": "0x0000000000146ee0"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 19284332,
+      "dso": "python3.11",
+      "symbol": "0x00000000000c7780"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 19167263,
+      "dso": "libc.so.6",
+      "symbol": "__memmove_generic"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 18960219,
+      "dso": "libc.so.6",
+      "symbol": "_IO_setb"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 18471974,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::resample::kernel_for"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 18400965,
+      "dso": "python3.11",
+      "symbol": "0x00000000000a6780"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 18326914,
+      "dso": "python3.11",
+      "symbol": "0x0000000000090b68"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 17716184,
+      "dso": "python3.11",
+      "symbol": "0x00000000000973e8"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 17633695,
+      "dso": "python3.11",
+      "symbol": "0x000000000011a610"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 17132505,
+      "dso": "python3.11",
+      "symbol": "0x00000000000bf538"
+    },
+    {
+      "percent": 0.03,
+      "samples": 1,
+      "period": 16175645,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::C5xCore::thunk<&courier::C5xCore::op_spm>"
+    },
+    {
+      "percent": 0.02,
+      "samples": 2,
+      "period": 12609810,
+      "dso": "libc.so.6",
+      "symbol": "__GI___pthread_disable_asynccancel"
+    },
+    {
+      "percent": 0.02,
+      "samples": 2,
+      "period": 12053279,
+      "dso": "libc.so.6",
+      "symbol": "pthread_cond_clockwait@@GLIBC_2.34"
+    },
+    {
+      "percent": 0.0,
+      "samples": 1,
+      "period": 2298562,
+      "dso": "libc.so.6",
+      "symbol": "_int_malloc"
+    },
+    {
+      "percent": 0.0,
+      "samples": 1,
+      "period": 2298562,
+      "dso": "libcourier_c5x.so",
+      "symbol": "courier::media::Media::flush_locked"
+    }
+  ],
+  "controls": {
+    "4250-4310": [
+      {
+        "percent": 66.35,
+        "samples": 1965,
+        "period": 44238220545,
+        "dso": "libcourier_c5x.so"
+      },
+      {
+        "percent": 23.1,
+        "samples": 674,
+        "period": 15398712138,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so"
+      },
+      {
+        "percent": 8.77,
+        "samples": 260,
+        "period": 5844840173,
+        "dso": "python3.11"
+      },
+      {
+        "percent": 1.46,
+        "samples": 46,
+        "period": 972078904,
+        "dso": "libc.so.6"
+      },
+      {
+        "percent": 0.32,
+        "samples": 9,
+        "period": 212430525,
+        "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so"
+      },
+      {
+        "percent": 0.01,
+        "samples": 1,
+        "period": 5240649,
+        "dso": "ld-linux-aarch64.so.1"
+      }
+    ],
+    "4270-4300": [
+      {
+        "percent": 66.74,
+        "samples": 990,
+        "period": 21884972018,
+        "dso": "libcourier_c5x.so"
+      },
+      {
+        "percent": 22.26,
+        "samples": 326,
+        "period": 7297778634,
+        "dso": "_x86_native.cpython-311-aarch64-linux-gnu.so"
+      },
+      {
+        "percent": 9.36,
+        "samples": 139,
+        "period": 3069856123,
+        "dso": "python3.11"
+      },
+      {
+        "percent": 1.43,
+        "samples": 23,
+        "period": 467337863,
+        "dso": "libc.so.6"
+      },
+      {
+        "percent": 0.22,
+        "samples": 3,
+        "period": 70532595,
+        "dso": "_ctypes.cpython-311-aarch64-linux-gnu.so"
+      }
+    ]
+  },
+  "interpretation": [
+    "Training is dominated by native C5x/device execution and native x86, with Python a much smaller share than the whole attempt.",
+    "Whole-attempt yield totals cannot identify training-only callback causes; no attempt is made to infer those counts from perf sample shares.",
+    "Prioritize measured DSP execution work; previous BE/BF generic dispatch experiment was rejected and should not be repeated without new evidence.",
+    "Sampled symbols are statistical hotspots, not exact guest instruction frequencies or proof of optimization benefit."
+  ]
+}

@@ -58,3 +58,14 @@ def test_repeated_out_writes_consecutive_ports():
     state, ports = run(0xAE60, 0x1234, 0xBB02, 0x0C60, 0x0200, steps=3,
                        ports=(0x200, 0x201, 0x202))
     assert ports == [0x1234, 0x1234, 0x1234]
+
+
+def test_repeated_out_keeps_arp_changes_live():
+    # OUT *,AR1 starts on AR0, then uses AR1 for the remaining repetitions.
+    code = program(0xBF08, 0x300, 0xBF09, 0x380, 0xBB02, 0x0C89, 0x200)
+    with NativeC5x.from_program(0x6000, code) as core:
+        core.set_data(0x300, 0x1111)
+        core.set_data(0x380, 0x2222)
+        core.set_pc(0x6000)
+        core.step(4)
+        assert [core.io_output(p) for p in (0x200, 0x201, 0x202)] == [0x1111, 0x2222, 0x2222]

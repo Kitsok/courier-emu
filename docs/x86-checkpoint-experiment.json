@@ -1,0 +1,859 @@
+{
+  "decision": "Reject checkpoint-elision runtime candidate; preserve existing x86 implementation.",
+  "scope": "Fixed-work prebuilt native x86 library comparison, no calls or nanovax checkout changes.",
+  "method": "Six paired repetitions reverse order on alternate pairs; five million retired guest instructions after 10000 warmup. Build/setup and final memory/register hashing outside timer. Traced case includes identical trace hashing in timed driver. A53 affinity CPU 3.",
+  "notebook": {
+    "instructions": 5000000,
+    "repeat": 6,
+    "summary": {
+      "register_branches": {
+        "reference": 0.058815195,
+        "candidate": 0.053248316500000004,
+        "cpu_reduction_percent": 9.465034503413616
+      },
+      "counter_loop": {
+        "reference": 0.07327882200000002,
+        "candidate": 0.06542826999999996,
+        "cpu_reduction_percent": 10.713261738841906
+      },
+      "mixed_memory": {
+        "reference": 0.08723880700000008,
+        "candidate": 0.08662178600000003,
+        "cpu_reduction_percent": 0.707278126808919
+      },
+      "traced_memory": {
+        "reference": 0.21388882500000017,
+        "candidate": 0.2151598899999998,
+        "cpu_reduction_percent": -0.5942643333515019
+      },
+      "memory_control": {
+        "reference": 0.09687159299999992,
+        "candidate": 0.1029114975000005,
+        "cpu_reduction_percent": -6.234959406521368
+      },
+      "prefixed_control": {
+        "reference": 0.0662669935000002,
+        "candidate": 0.0626328665,
+        "cpu_reduction_percent": 5.484068022491773
+      },
+      "386_control": {
+        "reference": 0.061809485000000386,
+        "candidate": 0.06353461100000013,
+        "cpu_reduction_percent": -2.791037653848316
+      }
+    },
+    "runs": {
+      "register_branches": {
+        "reference": [
+          {
+            "cpu_seconds": 0.058660145999999996,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.058480019999999994,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.058970244000000005,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.06162972499999997,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.05815062400000004,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.05966794100000006,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.05436577499999998,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.051676516000000006,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.05271694299999996,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.05377969000000005,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.054196568000000056,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.05218384599999992,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          }
+        ]
+      },
+      "counter_loop": {
+        "reference": [
+          {
+            "cpu_seconds": 0.072635369,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07305025899999995,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07536727500000007,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07542325500000002,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07350738500000009,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07116722600000003,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.06608500299999998,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.07823548800000002,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.06571866799999992,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.06423729200000006,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.06513787199999999,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.06398745299999997,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          }
+        ]
+      },
+      "mixed_memory": {
+        "reference": [
+          {
+            "cpu_seconds": 0.08473698799999996,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08771751700000019,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08329206500000019,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08676009699999998,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08789523700000013,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08929287499999994,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.08581876499999996,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08520088500000011,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.0874248070000001,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.08375457700000011,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.09032207899999989,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.09018677099999994,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          }
+        ]
+      },
+      "traced_memory": {
+        "reference": [
+          {
+            "cpu_seconds": 0.22505174500000003,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.2136660680000002,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.20832537900000014,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21059465999999993,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21540016899999959,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21411158200000013,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.23210511499999997,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.22093042799999996,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21048655500000013,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21413680499999987,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.2128701409999998,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.21618297499999972,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          }
+        ]
+      },
+      "memory_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.0977812449999993,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.09648918600000034,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.09666109499999997,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.09564467700000012,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.09708209099999987,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.10403408400000025,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.10192614099999986,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.10190052099999924,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.10323008100000042,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.10259291400000059,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.1071825439999996,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.1063120590000004,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          }
+        ]
+      },
+      "prefixed_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.06827268999999969,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06656674800000051,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06601134100000028,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06652264600000013,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06359753000000001,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06352016299999974,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.06451980600000073,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.0609553570000001,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.061108987999999975,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.0650165110000005,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.06285135799999964,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.062414375000000355,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          }
+        ]
+      },
+      "386_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.061573523999999935,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06224648100000074,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.061641846000000555,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06197712400000022,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06113330099999992,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06335838100000046,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.06184740600000005,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06353415299999998,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06411365799999835,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06456234000000016,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06294628899999921,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.06353506900000028,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          }
+        ]
+      }
+    }
+  },
+  "a53": {
+    "instructions": 5000000,
+    "repeat": 6,
+    "summary": {
+      "register_branches": {
+        "reference": 0.5510593945000002,
+        "candidate": 0.5432844354999997,
+        "cpu_reduction_percent": 1.410911251600211
+      },
+      "counter_loop": {
+        "reference": 0.5783195799999996,
+        "candidate": 0.5750928725,
+        "cpu_reduction_percent": 0.557945401053106
+      },
+      "mixed_memory": {
+        "reference": 0.7431287485000002,
+        "candidate": 0.8054926199999999,
+        "cpu_reduction_percent": -8.392068215081249
+      },
+      "traced_memory": {
+        "reference": 0.9397657465000009,
+        "candidate": 1.0015298075000008,
+        "cpu_reduction_percent": -6.5722826385223865
+      },
+      "memory_control": {
+        "reference": 0.8407927485000002,
+        "candidate": 0.8976477659999986,
+        "cpu_reduction_percent": -6.762072770183791
+      },
+      "prefixed_control": {
+        "reference": 0.6602206015000007,
+        "candidate": 0.6540543294999992,
+        "cpu_reduction_percent": 0.933971461355787
+      },
+      "386_control": {
+        "reference": 0.6417726859999959,
+        "candidate": 0.681310869499999,
+        "cpu_reduction_percent": -6.160776917203248
+      }
+    },
+    "runs": {
+      "register_branches": {
+        "reference": [
+          {
+            "cpu_seconds": 0.551286749,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.550250165,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.551257874,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5508609150000003,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5505438729999996,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5527695829999999,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.543346121,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.543516455,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5432221660000001,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.54325804,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5430419149999999,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          },
+          {
+            "cpu_seconds": 0.5433108309999994,
+            "sha256": "4ab334397b9378b2cfe306bd222735fbdc22faf207f3b4d59744a18d89b5b362"
+          }
+        ]
+      },
+      "counter_loop": {
+        "reference": [
+          {
+            "cpu_seconds": 0.5966476219999999,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5794168289999995,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5736217069999991,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5736429970000003,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.6042117050000009,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5772223309999998,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.5780249970000009,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5707321640000007,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5742423730000006,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5759007900000004,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5827736229999996,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          },
+          {
+            "cpu_seconds": 0.5742849549999995,
+            "sha256": "1591d0bb4fdfdf189d95fcf733fd7a3e77a5882be977371775a655358e42025e"
+          }
+        ]
+      },
+      "mixed_memory": {
+        "reference": [
+          {
+            "cpu_seconds": 0.7400907500000002,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.7342865809999992,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.7461667470000002,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.750557207,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.7395651659999984,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.7578491619999994,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.7844719140000009,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.8107849110000007,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.7974817069999993,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.8132903279999972,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.800200328999999,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          },
+          {
+            "cpu_seconds": 0.8166564550000004,
+            "sha256": "3576602c7df4f17ffad6b50acfef63924376ddb55544b94019e80a8913e30c0f"
+          }
+        ]
+      },
+      "traced_memory": {
+        "reference": [
+          {
+            "cpu_seconds": 0.9276784990000024,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9970785410000005,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9295227060000002,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9766014960000007,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9500087870000016,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9255957049999992,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 1.0462716239999992,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 1.0039420370000016,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9893292460000005,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9991175779999999,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 1.0461721599999976,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          },
+          {
+            "cpu_seconds": 0.9945827460000061,
+            "sha256": "b057d1241d43e5c1aebda0649c8f3668e7e9d24bc844cbe0fa2df357c0e96e0b"
+          }
+        ]
+      },
+      "memory_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.843736247999999,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.8378492490000014,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.8265118720000046,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.8336206609999977,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.855131078999996,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.8524836190000045,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.8953481219999944,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.9309912459999978,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.897309577999998,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.8979859539999993,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.9166508690000015,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          },
+          {
+            "cpu_seconds": 0.894178243000006,
+            "sha256": "80418b9036967d6b87db55a22f35faf3787031389fed2707364af61a1aeb062c"
+          }
+        ]
+      },
+      "prefixed_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.6595887049999973,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6623283289999975,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6623843309999984,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6464225790000029,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6569386219999984,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6608524980000041,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.67119529,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6539919129999987,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6541167459999997,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6512143740000056,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6663364119999997,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          },
+          {
+            "cpu_seconds": 0.6480276220000007,
+            "sha256": "2c40a811f05c4cab3049070f4882a8f529d37df52a78d7e743cff49e69328fd1"
+          }
+        ]
+      },
+      "386_control": {
+        "reference": [
+          {
+            "cpu_seconds": 0.6483843270000023,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6355699570000013,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6466206199999931,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6404874579999955,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.639270328000002,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6430579139999963,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_seconds": 0.6687525800000031,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6593772459999983,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6866830820000018,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.7018899970000021,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6837255800000008,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          },
+          {
+            "cpu_seconds": 0.6788961589999971,
+            "sha256": "81479f821965c7c4bc8485b7b4ea61f4ca948acecf9869e7351a4a91fd5b71a1"
+          }
+        ]
+      }
+    }
+  },
+  "candidate_diff": "diff --git a/native/x86_interpreter.cpp b/native/x86_interpreter.cpp\nindex daa7f9e..b8b7983 100644\n--- a/native/x86_interpreter.cpp\n+++ b/native/x86_interpreter.cpp\n@@ -3,10 +3,24 @@\n #include <cstdint>\n #include <cstring>\n #include <csetjmp>\n+#include <array>\n #include \"timers186.hpp\"\n namespace {\n enum { AX,CX,DX,BX,SP,BP,SI,DI,ES,CS,SS,DS,IP,F };\n constexpr uint32_t CF=1, PF=4, AF=16, ZF=64, SF=128, IF=512, DF=1024, OF=2048;\n+// Only unprefixed 80186 operations with no guarded data access or other\n+// fallback can omit the rollback copy. Prefixes and all 386 execution keep it.\n+static constexpr auto checkpoint_needed=[] {\n+    std::array<uint8_t,256> table{};\n+    for(auto &entry:table)entry=1;\n+    for(unsigned op=0x40;op<=0x4f;++op)table[op]=0; // INC/DEC register\n+    for(unsigned op=0x70;op<=0x7f;++op)table[op]=0; // short conditional branch\n+    for(unsigned op=0x90;op<=0x99;++op)table[op]=0; // register exchange, CBW/CWD\n+    for(unsigned op=0xb0;op<=0xbf;++op)table[op]=0; // immediate register move\n+    for(unsigned op: {0xe0u,0xe1u,0xe2u,0xe3u,0xe9u,0xebu,\n+                      0xf5u,0xf8u,0xf9u,0xfau,0xfbu,0xfcu,0xfdu})table[op]=0;\n+    return table;\n+}();\n struct TimerReadSlot { uint64_t origin, last_tick, count, compare_a, compare_b, control; };\n struct TimerReadState {\n     uint64_t instruction_base;\n@@ -379,8 +393,10 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {\n         } else if(opcode==0x0f&&c.is386&&(c.mem[c.phys(c.r[CS],c.r[IP]+1)]&0xf0)==0x90) {\n             // SETcc: handled by step() below.\n         } else if(opcode==0xcd||opcode==0x0f||opcode==0xf4){c.reason=7;break;}\n-        std::memcpy(c.saved,c.r,sizeof(c.r));\n-        if constexpr(Trace) c.instruction_trace_count=c.trace_count;\n+        if(c.is386 || checkpoint_needed[opcode]) {\n+            std::memcpy(c.saved,c.r,sizeof(c.r));\n+            if constexpr(Trace) c.instruction_trace_count=c.trace_count;\n+        }\n         c.step();\n         for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];\n             if(c.timer_model){\n",
+  "reference_revision": "8e56ef9",
+  "correctness": {
+    "native_differential_and_trace_cases_passed": 36,
+    "new_rollback_edge_cases_passed": 7,
+    "all_benchmark_states_and_traces_match": true
+  },
+  "limits": [
+    "Synthetic register-loop gains do not establish a firmware-training gain.",
+    "A53 memory and traced controls regress materially, so the candidate is not adopted despite correctness passes.",
+    "ARM annotate checkpoint observations came from the whole captured attempt; training-only DSO shares are documented separately."
+  ]
+}

@@ -99,7 +99,7 @@ inline __attribute__((always_inline)) void C5xCore::UPDATE_ARP(int nar)
 }
 
 // The addressing modes that are not *, *+ and *- (GET_ADDRESS has those).
-uint16_t C5xCore::indirect_address_rare(uint16_t ea, int arp, int nar)
+uint16_t C5xCore::indirect_address_rare(uint16_t ea, int arp, int nar, unsigned mode)
 {
 	{
 		auto reverse16 = [](uint16_t value) {
@@ -115,7 +115,7 @@ uint16_t C5xCore::indirect_address_rare(uint16_t ea, int arp, int nar)
 			if (arp == 0 && !m_pmst.ndx) m_arcr = m_indx = m_ar[0];
 		};
 
-		switch ((m_op >> 3) & 0xf)
+		switch (mode)
 		{
 			case 0x0:   // *            (no operation)
 			{
@@ -227,10 +227,24 @@ inline __attribute__((always_inline)) uint16_t C5xCore::GET_ADDRESS()
 	const uint16_t ea = m_ar[arp];
 	const unsigned mode = (m_op >> 3) & 0xf;
 	if (__builtin_expect(mode >= 6, 0))
-		return indirect_address_rare(ea, arp, m_op & 0x7);
+		return indirect_address_rare(ea, arp, m_op & 0x7, mode);
 	if (mode >= 2) UPDATE_AR(arp, mode < 4 ? -1 : 1);
 	if (mode & 1) UPDATE_ARP(m_op & 0x7);
 	return ea;
+}
+
+// Decode the opcode once for a hardware-repeated operation. DP and ARP
+// remain live: register transfers inside a repeat may change either one.
+inline __attribute__((always_inline)) uint16_t C5xCore::GET_REPEAT_ADDRESS(const RepeatAddress &operand)
+{
+    if (operand.mode == 16) return m_st0.dp | operand.offset;
+    const int arp = m_st0.arp;
+    const uint16_t ea = m_ar[arp];
+    if (__builtin_expect(operand.mode >= 6, 0))
+        return indirect_address_rare(ea, arp, operand.offset & 7, operand.mode);
+    if (operand.mode >= 2) UPDATE_AR(arp, operand.mode < 4 ? -1 : 1);
+    if (operand.mode & 1) UPDATE_ARP(operand.offset & 7);
+    return ea;
 }
 
 bool C5xCore::GET_ZLVC_CONDITION(int zlvc, int zlvc_mask)
@@ -301,11 +315,11 @@ int32_t C5xCore::PREG_PSCALER(int32_t preg)
 		}
 		case 1:     // Left-shifted 1 bit, LSB zero-filled
 		{
-			return preg << 1;
+			return int32_t(uint32_t(preg) << 1);
 		}
 		case 2:     // Left-shifted 4 bits, 4 LSBs zero-filled
 		{
-			return preg << 4;
+			return int32_t(uint32_t(preg) << 4);
 		}
 		case 3:     // Right-shifted 6 bits, sign-extended, 6 LSBs lost
 		{
@@ -1472,6 +1486,7 @@ void C5xCore::op_xc()
 
 void C5xCore::op_bldd_slimm()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1479,7 +1494,7 @@ void C5xCore::op_bldd_slimm()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(pfc);
 		DM_WRITE16(ea, data);
 		pfc++;
@@ -1491,6 +1506,7 @@ void C5xCore::op_bldd_slimm()
 
 void C5xCore::op_bldd_dlimm()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1498,7 +1514,7 @@ void C5xCore::op_bldd_dlimm()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		DM_WRITE16(pfc, data);
 		pfc++;
@@ -1510,6 +1526,7 @@ void C5xCore::op_bldd_dlimm()
 
 void C5xCore::op_bldd_sbmar()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1517,7 +1534,7 @@ void C5xCore::op_bldd_sbmar()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(pfc);
 		DM_WRITE16(ea, data);
 		pfc++;
@@ -1529,6 +1546,7 @@ void C5xCore::op_bldd_sbmar()
 
 void C5xCore::op_bldd_dbmar()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1536,7 +1554,7 @@ void C5xCore::op_bldd_dbmar()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		DM_WRITE16(pfc, data);
 		pfc++;
@@ -1548,6 +1566,7 @@ void C5xCore::op_bldd_dbmar()
 
 void C5xCore::op_bldp()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1555,7 +1574,7 @@ void C5xCore::op_bldp()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		PM_WRITE16(pfc, data);
 		pfc++;
@@ -1567,6 +1586,7 @@ void C5xCore::op_bldp()
 
 void C5xCore::op_blpd_bmar()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = m_bmar;
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1574,7 +1594,7 @@ void C5xCore::op_blpd_bmar()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = PM_READ16(pfc);
 		DM_WRITE16(ea, data);
 		pfc++;
@@ -1586,6 +1606,7 @@ void C5xCore::op_blpd_bmar()
 
 void C5xCore::op_blpd_imm()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1593,7 +1614,7 @@ void C5xCore::op_blpd_imm()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = PM_READ16(pfc);
 		DM_WRITE16(ea, data);
 		pfc++;
@@ -1611,8 +1632,7 @@ void C5xCore::op_dmov()
 	uint16_t value = DM_READ16(ea);
 	// SPRU056D 6-104: the delay-line copy exists only in on-chip RAM.
 	// External memory and memory-mapped registers are read, without a write.
-	const Region region = data_region(ea);
-	if (region == Region::Daram || region == Region::Saram)
+	if (internal_data(ea))
 		DM_WRITE16(uint16_t(ea + 1), value);
 	else {
 		++m_delay_move_ignored;
@@ -1624,12 +1644,13 @@ void C5xCore::op_dmov()
 
 void C5xCore::op_in()
 {
+	const auto operand = decode_repeat_address();
 	// Under RPT the port address steps by one per repetition (SPRU056D
 	// IN), so a repeated IN reads consecutive ports.
 	uint16_t port = ROPCODE();
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		DM_WRITE16(ea, IO_READ16(port));
 		port++;
 		CYCLES(3);
@@ -1639,6 +1660,7 @@ void C5xCore::op_in()
 
 void C5xCore::op_lmmr()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1646,7 +1668,7 @@ void C5xCore::op_lmmr()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(pfc);
 		DM_WRITE16(ea & 0x7f, data);
 		pfc++;
@@ -1658,11 +1680,12 @@ void C5xCore::op_lmmr()
 
 void C5xCore::op_out()
 {
+	const auto operand = decode_repeat_address();
 	// As IN: a repeated OUT writes consecutive ports.
 	uint16_t port = ROPCODE();
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		IO_WRITE16(port, DM_READ16(ea));
 		port++;
 		CYCLES(3);
@@ -1672,6 +1695,7 @@ void C5xCore::op_out()
 
 void C5xCore::op_smmr()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = ROPCODE();
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1679,7 +1703,7 @@ void C5xCore::op_smmr()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea & 0x7f);
 		DM_WRITE16(pfc, data);
 		pfc++;
@@ -1691,6 +1715,7 @@ void C5xCore::op_smmr()
 
 void C5xCore::op_tblr()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = (uint16_t)(m_acc);
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1698,7 +1723,7 @@ void C5xCore::op_tblr()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = PM_READ16(pfc);
 		DM_WRITE16(ea, data);
 		pfc++;
@@ -1710,6 +1735,7 @@ void C5xCore::op_tblr()
 
 void C5xCore::op_tblw()
 {
+	const auto operand = decode_repeat_address();
 	uint16_t pfc = (uint16_t)(m_acc);
 
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
@@ -1717,7 +1743,7 @@ void C5xCore::op_tblw()
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		PM_WRITE16(pfc, data);
 		pfc++;
@@ -1884,8 +1910,7 @@ void C5xCore::op_ltd()
 	uint16_t value = DM_READ16(ea);
 	m_treg0 = value;
 	// LTD includes DMOV's on-chip-only delay-line copy (SPRU056D 6-142).
-	const Region region = data_region(ea);
-	if (region == Region::Daram || region == Region::Saram)
+	if (internal_data(ea))
 		DM_WRITE16(uint16_t(ea + 1), value);
 	else {
 		++m_delay_move_ignored;
@@ -1932,6 +1957,138 @@ void C5xCore::op_lts()
 //
 // All four load TREG0 with the data operand.
 
+// Direct spans are borrowed only while the whole repeated operation has
+// no mapped-register, tracing, circular-address or codec-write side effects.
+bool C5xCore::mac_data_span(uint16_t first, unsigned words, MacSpan &span)
+{
+    const unsigned kind = m_dmap[first] & 0x3f;
+    const unsigned end = unsigned(first) + words;
+    if (kind == (2 | 1 << 3)) {
+        if (end > C5X_SARAM_DATA_FIRST + m_saram_words) return false;
+        span = {m_saram.data() + (first - C5X_SARAM_DATA_FIRST), &m_map.data_saram};
+        return true;
+    }
+    if (kind != 1) return false;
+    auto within = [&](unsigned start, unsigned size) {
+        return first >= start && end <= start + size;
+    };
+    if (!(within(C5X_B2_FIRST, C5X_B2_WORDS)
+          || within(C5X_B0_FIRST, C5X_B0_WORDS)
+          || within(C5X_B1_FIRST, C5X_B1_WORDS))) return false;
+    span = {m_data.data() + first, &m_map.data_daram};
+    return true;
+}
+
+bool C5xCore::mac_program_span(uint16_t first, unsigned words, MacSpan &span)
+{
+    const unsigned end = unsigned(first) + words;
+    if (end > 65536) return false;
+    switch (m_pmap[first]) {
+    case 0:
+        if (end > m_rom_words) return false;
+        span = {m_rom.data() + first, &m_map.program_rom};
+        return true;
+    case 1:
+        span = {m_data.data() + (C5X_B0_FIRST + unsigned(first) - C5X_B0_PROGRAM_FIRST),
+                &m_map.program_daram};
+        return true;
+    case 2:
+        if (end > m_saram_program_first + m_saram_words) return false;
+        span = {m_saram.data() + saram_data_address(first), &m_map.program_saram};
+        return true;
+    case 3:
+        // External endpoints alone cannot prove that a range does not cross
+        // an intervening on-chip window.
+        if (m_pmst.ram && m_saram_words && first < m_saram_program_first
+            && end > m_saram_program_first) return false;
+        if (m_st1.cnf && first < C5X_B0_PROGRAM_FIRST
+            && end > C5X_B0_PROGRAM_FIRST) return false;
+        span = {m_program.data() + first, &m_map.program_external};
+        return true;
+    default:
+        return false; // Includes absent-ROM reads and their extra counter.
+    }
+}
+
+template<unsigned PM, bool Move>
+void C5xCore::repeat_mac_kernel(MacSpan data, MacSpan program, uint16_t first,
+                               int step, unsigned arp, unsigned taps, bool load_temps)
+{
+    int32_t acc = m_acc, preg = m_preg;
+    uint16_t value = 0, address = first;
+    uint16_t *source = data.values;
+    for (unsigned index = 0; index < taps; ++index) {
+        value = *source;
+        uint32_t scaled;
+        if constexpr(PM == 0) scaled = uint32_t(preg);
+        else if constexpr(PM == 1) scaled = uint32_t(preg) << 1;
+        else if constexpr(PM == 2) scaled = uint32_t(preg) << 4;
+        else scaled = uint32_t(preg >> 6);
+        acc = ADD(uint32_t(acc), scaled, false);
+        // Keep coefficient loads live: the data move may alias a later one.
+        preg = int32_t(int16_t(value)) * int32_t(int16_t(program.values[index]));
+        if constexpr(Move) {
+            ++m_data_write_counts[uint16_t(address+1)];
+            source[1] = value;
+            address = uint16_t(address+step);
+        }
+        if (index+1 < taps) source += step;
+    }
+    m_acc = acc; m_preg = preg; m_treg0 = value;
+    if (load_temps) m_treg1 = m_treg2 = value;
+    *data.reads += taps; *program.reads += taps;
+    if (step) {
+        m_ar[arp] = uint16_t(int(first)+step*int(taps));
+        if (arp == 0 && !m_pmst.ndx) m_arcr = m_indx = m_ar[0];
+    }
+}
+
+bool C5xCore::try_repeat_mac(uint16_t pma, bool move, bool c2x,
+                            unsigned &count, uint16_t &dma)
+{
+    if (m_rptc <= 0 || m_maps_dirty || m_trace_data_writes || !(m_op & 0x80))
+        return false;
+    const unsigned mode = (m_op >> 3) & 15, arp = m_st0.arp;
+    if (mode != 0 && mode != 2 && mode != 4) return false;
+    if (((m_cbcr & 8) && arp == (m_cbcr & 7))
+        || ((m_cbcr & 0x80) && arp == ((m_cbcr >> 4) & 7))) return false;
+    const int step = mode == 2 ? -1 : mode == 4 ? 1 : 0;
+    const uint16_t ea = m_ar[arp];
+    const unsigned taps = unsigned(m_rptc) + 1;
+    const int last = int(ea) + step * int(taps - 1);
+    const int low = std::min(int(ea), last), high = std::max(int(ea), last) + int(move);
+    if (low < 0 || high >= 65536) return false;
+    if (move && m_call_tdm_active && m_line_dac_slot >= low + 1
+        && m_line_dac_slot <= high) return false;
+    MacSpan data, program;
+    if (!mac_data_span(uint16_t(low), unsigned(high-low+1), data)
+        || !mac_program_span(pma, taps, program)) return false;
+    data.values += int(ea)-low;
+    dma = ea; count = taps;
+    const bool load_temps = c2x && !m_pmst.trm;
+    // Select stable flags once, rather than checking them for every tap.
+    switch (m_st1.pm & 3) {
+    case 0:
+        if (move) repeat_mac_kernel<0,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<0,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 1:
+        if (move) repeat_mac_kernel<1,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<1,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 2:
+        if (move) repeat_mac_kernel<2,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<2,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    case 3:
+        if (move) repeat_mac_kernel<3,true>(data,program,ea,step,arp,taps,load_temps);
+        else repeat_mac_kernel<3,false>(data,program,ea,step,arp,taps,load_temps);
+        break;
+    }
+    m_rptc = 0;
+    return true;
+}
+
 void C5xCore::op_mac()
 {
 	uint16_t pfc = ROPCODE();
@@ -1942,10 +2099,15 @@ void C5xCore::op_mac()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, false, true, count, dma)) {
+        CYCLES(mac_cycles(pma, dma, count, false));
+        return;
+    }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
-		if (count == 0) dma = ea;
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
@@ -1971,10 +2133,15 @@ void C5xCore::op_macd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, true, true, count, dma)) {
+        CYCLES(mac_cycles(pma, dma, count, true));
+        return;
+    }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
-		if (count == 0) dma = ea;
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
@@ -1982,8 +2149,7 @@ void C5xCore::op_macd()
 		m_preg = int32_t(int16_t(PM_READ16(pfc))) * int32_t(int16_t(data));
 		// The delay-line move is available only in on-chip data RAM.
 		// External data and registers behave as MAC (SPRU056D 6-154).
-		const Region region = data_region(ea);
-		if (region == Region::Daram || region == Region::Saram)
+		if (internal_data(ea))
 			DM_WRITE16(uint16_t(ea + 1), data);
 		pfc++;
 		++count;
@@ -2003,16 +2169,20 @@ void C5xCore::op_madd()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, true, false, count, dma)) {
+        CYCLES(bmar_mac_cycles(pma, dma, count, true));
+        return;
+    }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
-		if (count == 0) dma = ea;
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;
 		m_preg = int32_t(int16_t(data)) * int32_t(int16_t(PM_READ16(pfc)));
-		const Region region = data_region(ea);
-		if (region == Region::Daram || region == Region::Saram)
+		if (internal_data(ea))
 			DM_WRITE16(uint16_t(ea + 1), data);
 		pfc++;
 		++count;
@@ -2032,10 +2202,15 @@ void C5xCore::op_mads()
 	// RPTC reads 0 when no RPT is in force, so an unrepeated
 	// instruction runs once and a repeated one RPTC+1 times, both
 	// leaving RPTC at 0. See the note on m_rptc in c5x_core.h.
+	if (try_repeat_mac(pma, false, false, count, dma)) {
+        CYCLES(bmar_mac_cycles(pma, dma, count, false));
+        return;
+    }
+    const auto operand = decode_repeat_address();
+    dma = repeat_address_start(operand);
 	do
 	{
-		uint16_t ea = GET_ADDRESS();
-		if (count == 0) dma = ea;
+		uint16_t ea = GET_REPEAT_ADDRESS(operand);
 		uint16_t data = DM_READ16(ea);
 		m_acc = ADD(uint32_t(m_acc), uint32_t(PREG_PSCALER(m_preg)), false);
 		m_treg0 = data;

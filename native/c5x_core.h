@@ -800,6 +800,8 @@ private:
     uint64_t advance_timer(uint64_t elapsed);
     Region program_region(uint16_t address) const;
     Region data_region(uint16_t address) const;
+    struct MacTiming { bool external_pair, program_saram, data_saram; };
+    MacTiming mac_timing(uint16_t pma, uint16_t dma) const;
     unsigned mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
                         bool data_move) const;
     unsigned bmar_mac_cycles(uint16_t pma, uint16_t dma, unsigned count,
@@ -823,8 +825,34 @@ private:
     int32_t SUB(uint32_t a, uint32_t b, bool shift16);
     int32_t ADD(uint32_t a, uint32_t b, bool shift16);
     void UPDATE_AR(int ar, int step);
-    uint16_t indirect_address_rare(uint16_t ea, int arp, int nar);
+    uint16_t indirect_address_rare(uint16_t ea, int arp, int nar, unsigned mode);
     void UPDATE_ARP(int nar);
+    // The data access before a delay-line copy has usually validated this
+    // table already. Dirty maps retain the original architectural classifier.
+    bool internal_data(uint16_t address) const {
+        if (!m_maps_dirty) {
+            const unsigned kind = m_dmap[address] & 7;
+            return kind == 1 || kind == 2;
+        }
+        const Region region = data_region(address);
+        return region == Region::Daram || region == Region::Saram;
+    }
+    struct RepeatAddress { unsigned mode, offset; };
+    RepeatAddress decode_repeat_address() const {
+        return {m_op & 0x80 ? (m_op >> 3) & 15u : 16u, m_op & 0x7fu};
+    }
+    uint16_t repeat_address_start(const RepeatAddress &operand) const {
+        return operand.mode == 16 ? m_st0.dp | operand.offset : m_ar[m_st0.arp];
+    }
+    uint16_t GET_REPEAT_ADDRESS(const RepeatAddress &operand);
+    struct MacSpan { uint16_t *values; uint64_t *reads; };
+    bool mac_data_span(uint16_t first, unsigned words, MacSpan &span);
+    bool mac_program_span(uint16_t first, unsigned words, MacSpan &span);
+    template<unsigned PM, bool Move>
+    void repeat_mac_kernel(MacSpan data, MacSpan program, uint16_t first,
+                           int step, unsigned arp, unsigned taps, bool load_temps);
+    bool try_repeat_mac(uint16_t pma, bool move, bool c2x,
+                        unsigned &count, uint16_t &dma);
     uint16_t GET_ADDRESS();
     uint16_t &data_cell(uint8_t kind, uint16_t address);
     bool GET_ZLVC_CONDITION(int zlvc, int zlvc_mask);
