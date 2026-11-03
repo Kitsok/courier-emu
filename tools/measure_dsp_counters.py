@@ -24,8 +24,9 @@ def worker(args):
         code = [0x7801, 0x7c01, 0x8b80] * 128 + [0x7980, 0x6000]
     if args.case == 'training':
         code = [0xbf08,0x320,0xbf0a,0x330,0xbc06,0xbf00,0xbe42,0xbf8f,0x7fff]
-    if args.case == 'complex':
-        code = [0xbc06,0xbf00,0xbe42,0x8b89]
+    complex_case=args.case in ('complex','complex-mixed')
+    if complex_case:
+        code = [0xbc07 if args.case=='complex-mixed' else 0xbc06,0xbf00,0xbe42,0x8b89]
     if args.case in ('madd-circular', 'mads-circular'):
         opcode = 0xab90 if args.case == 'madd-circular' else 0xaa90
         code = [0xbf0f,0x330,0x8b8f,0xbb04,opcode,0x7980,0x6000]
@@ -33,15 +34,23 @@ def worker(args):
         for address in range(0x2f0, 0x310):
             core.set_data(address, address ^ 0x55aa)
         core.set_pc(0x6000)
-        if args.case == 'complex':
+        if complex_case:
             core.host_write(7,0x30);core.host_write(0x26,0x10)
             core.host_write(0x1e,args.cbcr)
-            core.host_write(0x1a,0x3e0);core.host_write(0x1b,0x3b0)
-            core.host_write(0x1c,0x3f0);core.host_write(0x1d,0x3a0)
-            for a in range(0x300,0x500):core.set_data(a,((a*137)^0xaaaa)&65535)
+            pointers=[0x340+ar*0x10 for ar in range(8)]
+            if args.case=='complex-mixed':
+                pointers=[0xbcc,0x9f8,0xdb6c,0xa22,0xdb96,0x2bf,0x2e9,0xbca]
+                core.host_write(0x1a,0xbc0);core.host_write(0x1b,0xbdf)
+                core.host_write(0x1c,0x58);core.host_write(0x1d,0x5d)
+            else:
+                core.host_write(0x1a,0x3e0);core.host_write(0x1b,0x3b0)
+                core.host_write(0x1c,0x3f0);core.host_write(0x1d,0x3a0)
+            complex_addresses=sorted(set(range(0x300,0x500)) |
+                {a for p in pointers for a in range(max(0x60,p-48),min(65536,p+48))})
+            for a in complex_addresses:core.set_data(a,((a*137)^0xaaaa)&65535)
             core.step(4)
             block=[]
-            for ar in range(8):block += [0xbf08|ar,0x340+ar*0x10]
+            for ar,address in enumerate(pointers):block += [0xbf08|ar,address]
             block += [0xb929,0x8809,0xbec6,0xb95d,
                       0x6a8a,0x628e,0x747e,0x548d,0x5199,0x98aa,0x90ab,
                       0x6a8c,0x628e,0x747d,0x549d,0x508b,0x98ac,0x90a9,
@@ -86,14 +95,14 @@ def worker(args):
                 elapsed = time.process_time() - start
             finally:
                 command('disable')
-        addresses=(range(0x300,0x500) if args.case=='complex' else
+        addresses=(complex_addresses if complex_case else
                    range(0x300,0x380) if args.case=='training' else
                    range(0x300,0x340) if args.case in ('madd-circular','mads-circular')
                    else range(0x2f0,0x310))
         state = [core.state(), core.serial_state(), core.memory_map(),
                  [core.data(a) for a in addresses],
                  [core.data_write_count(a) for a in addresses]]
-        if args.case=='complex':state.append([core.register(a) for a in range(9,0x20)])
+        if complex_case:state.append([core.register(a) for a in range(9,0x20)])
         (args.folder / 'kernel.json').write_text(json.dumps(dict(
             cpu_seconds=elapsed, block_hits=hits()-before_hits,
             complex_block_hits=complex_hits()-before_complex_hits,
@@ -104,7 +113,7 @@ def worker(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex',
+    parser.add_argument('--case', choices=['dmov', 'address', 'training', 'complex', 'complex-mixed',
                                          'madd-circular', 'mads-circular'], default='dmov')
     parser.add_argument('--cycles', type=int, default=1000000)
     parser.add_argument('--cbcr', type=lambda v:int(v,0), default=0,

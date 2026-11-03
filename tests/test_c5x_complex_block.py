@@ -13,14 +13,20 @@ def words(values):
 
 def run(monkeypatch, enabled, budget, pm=0, ovm=False, trm=False,
         repeat=True, alias=False, cbcr=0, trace=False, changed=False,
-        near_event=False, short_repeat=False, arp=0):
+        near_event=False, short_repeat=False, arp=0, layout='daram', global_memory=False):
     monkeypatch.setenv('COURIER_C5X_TRAINING_BLOCK', str(enabled))
     setup=[0xbf00|pm,0xbe43 if ovm else 0xbe42,0xbc06,0x7360,0x5461,0x8b88|arp]
-    with NativeC5x.from_program(0x6000, words(setup)) as core:
+    with NativeC5x.from_program(0x6000, words(setup),separate_global_memory=global_memory) as core:
         core.host_write(7,0x30 | (2 if trm else 0))
+        if global_memory:core.host_write(5,0x80)
         if not near_event: core.host_write(0x26,0x10)
         for a in range(0x300,0x500): core.set_data(a,((a*137)^0xaaaa)&65535)
-        for ar in range(8): core.host_write(0x10+ar,0x37d if alias else 0x340+ar*0x10)
+        pointers=[0x37d if alias else 0x340+ar*0x10 for ar in range(8)]
+        if layout=='mixed':pointers=[0xbcc,0x9f8,0xdb6c,0xa22,0xdb96,0x2bf,0x2e9,0xbca]
+        if layout=='code-alias':pointers[2]=0xb950
+        extra=sorted({a for p in pointers for a in range(max(0x60,p-8),min(65536,p+48))})
+        for a in extra:core.set_data(a,((a*157)^0x5555)&65535)
+        for ar,address in enumerate(pointers):core.host_write(0x10+ar,address)
         core.host_write(0x1a,0x3e0); core.host_write(0x1b,core.register(0x10+(cbcr&7)))
         core.host_write(0x1c,0x3f0); core.host_write(0x1d,core.register(0x10+((cbcr>>4)&7)))
         core.host_write(0x1e,cbcr)
@@ -41,7 +47,9 @@ def run(monkeypatch, enabled, budget, pm=0, ovm=False, trm=False,
         result=(core.state(),core.serial_state(),core.memory_map(),
                 [core.register(a) for a in [4,6,7,*range(9,0x20)]],
                 [core.data(a) for a in range(0x300,0x500)],
-                [core.data_write_count(a) for a in range(0x300,0x500)])
+                [core.data_write_count(a) for a in range(0x300,0x500)],
+                [(core.data(a),core.data_write_count(a)) for a in extra],
+                [core.program(a) for a in range(0xb950,0xb95e)])
         return result,hits
 
 
@@ -77,3 +85,20 @@ def test_straight_line_block_without_repeat(monkeypatch):
     actual,hits=run(monkeypatch,1,15,repeat=False)
     assert actual==expected
     assert hits==1
+
+
+@pytest.mark.parametrize('pm',range(4))
+@pytest.mark.parametrize('global_memory',[False,True])
+def test_mixed_memory_preserves_storage_and_counters(monkeypatch,pm,global_memory):
+    expected,_=run(monkeypatch,0,45,pm=pm,layout='mixed',global_memory=global_memory)
+    actual,hits=run(monkeypatch,1,45,pm=pm,layout='mixed',global_memory=global_memory)
+    assert actual==expected
+    assert hits>0
+
+
+@pytest.mark.parametrize('global_memory,expected_hits',[(False,0),(True,1)])
+def test_code_alias_guard_follows_physical_storage(monkeypatch,global_memory,expected_hits):
+    expected,_=run(monkeypatch,0,17,layout='code-alias',global_memory=global_memory)
+    actual,hits=run(monkeypatch,1,17,layout='code-alias',global_memory=global_memory)
+    assert actual==expected
+    assert hits==expected_hits

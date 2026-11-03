@@ -43,3 +43,40 @@ repeat edges and ordinary straight-line use. The counter tool includes
 a 42-body complex workload with architectural repeat-register hashing.
 A53 cost and real-training hit coverage remain unmeasured at this stage.
 No new physical call was made for this change.
+
+## Admit the observed mixed-memory layout
+
+The first hit-sampled exact-profile check ends with NO CARRIER and zero
+complex-block hits. Existing arithmetic hits occur, but the complex
+DARAM-only guard never admits the real workload. A subsequent bounded
+operand capture at b950 records AR1=09f8, AR2=db6c, AR3=0a22, AR4=db96,
+AR5=02bf and AR6=02e9, with DP=7 and CBCR=ef. This combines SARAM,
+shared external storage and DARAM. These are entry snapshots, unlike the
+unrelated final-state registers at the end of a batch. Raw captures are
+in `dsp-v32-loop-operands.json.gz`. The diagnostic run also fails carrier;
+it is not a clean speed or reliability comparison.
+
+Extend preflight to ordinary non-register mapped cells. Resolve each
+cell's backing storage and read-counter class once per body, retaining
+live values across the ordered reads/writes. Register/IO/timer cells still
+reject the path. Shared-RAM destinations overlapping b950–b95d reject
+before any mutation, since they would change instructions still being
+executed or used by later iterations. The same numeric address in a
+separate global bank is safe and remains admitted. Recheck every body's
+addresses so advancing pointers cannot cross into unsafe destinations.
+
+A small counter-workload smoke check uses local FIFO acknowledgements
+without perf hardware events. Enabled/disabled state digests match for
+DARAM, observed mixed memory and the original arithmetic block. The two
+complex kernels record 68601 admitted bodies per million modeled cycles;
+the original arithmetic kernel records 62500. This checks reproducibility
+and entry, not target speed. Raw smoke results are retained in
+`dsp-native-block-counter-smoke.json`. The tool now supplies both complex
+layouts and hashes their touched storage and repeat registers.
+
+The rebuilt mapped-cell source passes 204 focused complex-loop, arithmetic
+block and XC checks in 1.45 seconds. New cases compare mixed storage,
+separate global memory and code-alias rejection against ordinary stepping,
+including matching memory/fetch counters. Full initial failure and hit
+samples are in `dsp-v32-loop-guard-evidence.json`. Real-workload admission
+and A53 performance of the refined path remain outstanding.

@@ -1592,7 +1592,7 @@ bool C5xCore::try_training_block(uint64_t target)
     return true;
 }
 
-// Observed V.32 complex arithmetic loop. Only ordinary DARAM is admitted,
+// Observed V.32 complex arithmetic loop. Only ordinary memory is admitted,
 // so no intermediate read/write can change mappings, code or device state.
 bool C5xCore::try_complex_block(uint64_t target)
 {
@@ -1606,7 +1606,6 @@ bool C5xCore::try_complex_block(uint64_t target)
         || m_pmap[first_pc] != 3
         || !std::equal(std::begin(code),std::end(code),m_program.data()+first_pc))
         return false;
-    auto daram = [&](uint16_t address) { return (m_dmap[address] & 0x3f) == 1; };
     auto next_ar = [&](unsigned ar, int step) -> uint16_t {
         if ((m_cbcr & 8) && ar == (m_cbcr & 7) && m_ar[ar] == m_cber1)
             return m_cbsr1;
@@ -1621,30 +1620,42 @@ bool C5xCore::try_complex_block(uint64_t target)
         const uint16_t initial = m_ar[m_st0.arp], a1=m_ar[1], a2=m_ar[2],
             a3=m_ar[3], a4=m_ar[4], a5=m_ar[5], a6=m_ar[6],
             next5=next_ar(5,-1), high=m_st0.dp|0x7d, low=m_st0.dp|0x7e;
-        if (!daram(initial) || !daram(a1) || !daram(a2) || !daram(a3)
-            || !daram(a4) || !daram(a5) || !daram(a6) || !daram(next5)
-            || !daram(high) || !daram(low)
-            || (m_call_tdm_active && (m_line_dac_slot == a1 || m_line_dac_slot == a2
-                || m_line_dac_slot == a3 || m_line_dac_slot == a4))) break;
-        auto store = [&](uint16_t address, uint16_t value) {
-            ++m_data_write_counts[address]; m_data[address] = value;
+        const uint16_t addresses[]={initial,a1,a2,a3,a4,a5,a6,next5,high,low};
+        struct Cell { uint16_t *value; uint64_t *reads; } cells[10];
+        bool safe=true;
+        for (unsigned i=0; i<10; ++i) {
+            const uint16_t address=addresses[i];
+            const uint8_t kind=m_dmap[address];
+            // Registers may have IO/timer side effects. Shared storage is
+            // otherwise ordinary RAM, except writes to this live code span.
+            if (!(kind & 7) || (i>=1 && i<=4
+                && ((((kind>>3)&3)==3 && address>=first_pc && address<end_pc)
+                    || (m_call_tdm_active && address==m_line_dac_slot)))) {
+                safe=false; break;
+            }
+            cells[i]={&data_cell(kind,address),&(&m_map.data_registers)[kind&7]};
+        }
+        if (!safe) break;
+        auto load = [&](unsigned cell) { ++*cells[cell].reads; return *cells[cell].value; };
+        auto store = [&](unsigned cell, uint16_t value) {
+            ++m_data_write_counts[addresses[cell]]; *cells[cell].value = value;
         };
-        int32_t acc = int32_t(uint32_t(m_data[initial]) << 16), preg=m_preg;
-        acc=ADD(uint32_t(acc),m_data[a2],false);
-        uint16_t temp=m_data[low];
+        int32_t acc = int32_t(uint32_t(load(0)) << 16), preg=m_preg;
+        acc=ADD(uint32_t(acc),load(2),false);
+        uint16_t temp=load(9);
         acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
-        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a6]));
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(load(6)));
         acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
-        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a5]));
-        store(a1,uint16_t(uint32_t(acc)>>16)); store(a2,uint16_t(acc));
-        acc=int32_t(uint32_t(m_data[a3])<<16);
-        acc=ADD(uint32_t(acc),m_data[a4],false);
-        temp=m_data[high];
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(load(5)));
+        store(1,uint16_t(uint32_t(acc)>>16)); store(2,uint16_t(acc));
+        acc=int32_t(uint32_t(load(3))<<16);
+        acc=ADD(uint32_t(acc),load(4),false);
+        temp=load(8);
         acc=SUB(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
-        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[a6]));
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(load(6)));
         acc=ADD(uint32_t(acc),uint32_t(PREG_PSCALER(preg)),false);
-        preg=int32_t(int16_t(temp))*int32_t(int16_t(m_data[next5]));
-        store(a3,uint16_t(uint32_t(acc)>>16)); store(a4,uint16_t(acc));
+        preg=int32_t(int16_t(temp))*int32_t(int16_t(load(7)));
+        store(3,uint16_t(uint32_t(acc)>>16)); store(4,uint16_t(acc));
         // No updated AR is read again except AR5, represented by next5.
         for (unsigned ar=1; ar<=4; ++ar) m_ar[ar]=next_ar(ar,1);
         m_ar[5]=next5; m_ar[6]=next_ar(6,-1);
@@ -1653,7 +1664,7 @@ bool C5xCore::try_complex_block(uint64_t target)
         if (!m_pmst.trm) m_treg1=m_treg2=temp;
         m_condition_start=m_xc_condition=condition_state();
         m_pc=end_pc; m_previous_pc=end_pc-1; m_op=code[13];
-        m_map.program_external+=14; m_map.data_daram+=10;
+        m_map.program_external+=14;
         m_cycles+=14; m_instructions+=14; m_tail_cycle=m_cycles;
         ++m_complex_block_hits; executed=true;
         // Apply a repeat edge only when another complete body can execute.
