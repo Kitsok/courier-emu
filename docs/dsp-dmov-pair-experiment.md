@@ -31,3 +31,32 @@ code generation to verify the direct successor path is distinct. Reject
 or revise the prototype if it offers no useful tradeoff. No physical call
 or whole-training gain is claimed from this stage. The larger execution
 backend and physical ARQ connection remain unfinished.
+
+## Reject after A53 comparison
+
+Nanovax rebuilt the prototype and compared three alternating orders of
+reference, disabled and enabled libraries, on CPU 3. Each case used
+500000 modeled cycles after 100000 warmup cycles. All CPU/serial/map/data/
+write-count digests match. Median CPU seconds:
+
+| Kernel | Reference | Disabled | Enabled |
+| --- | ---: | ---: | ---: |
+| Observed pair | 0.066002 | 0.070953 | 0.067953 |
+| Single DMOV control | 0.062123 | 0.068567 | 0.063315 |
+| Register control | 0.090231 | 0.101879 | 0.089977 |
+
+The enabled pair is about 2.96% slower than reference; disabled is about
+7.50% slower. Controls also vary substantially, including the unrelated
+register case, so these short timings do not precisely isolate causes.
+They establish no useful target improvement and do not justify keeping
+extra dispatch eligibility work. Remove the runtime prototype, environment
+flag and tests specific to the removed path. Preserve the recorded training
+sequences and target results for future executor work.
+
+ARM code generation produces a 204-instruction DMOV wrapper with a
+separate call to the opcode body and a generic indirect dispatch tail.
+The experiment did not integrate instruction bodies or amortize their
+architectural setup. Merely selecting a known successor is insufficient
+evidence for a faster block executor. Raw disassembly remains on nanovax
+at `/tmp/courier-dmov-pair-disassembly.txt`; raw measurements are in
+`dsp-dmov-pair-arm-results.json`. No physical call was made.

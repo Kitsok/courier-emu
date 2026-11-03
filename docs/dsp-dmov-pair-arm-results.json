@@ -1,0 +1,154 @@
+{
+  "scope": "500000 modeled cycles after 100000 warmup; three alternating variant orders on CPU 3; kernel evidence only",
+  "medians": {
+    "pair": {
+      "reference": 0.06600183400000004,
+      "disabled": 0.07095258299999996,
+      "enabled": 0.06795279100000007
+    },
+    "single": {
+      "reference": 0.062122958000000006,
+      "disabled": 0.068567041,
+      "enabled": 0.06331499900000004
+    },
+    "register": {
+      "reference": 0.09023116600000003,
+      "disabled": 0.10187945900000006,
+      "enabled": 0.08997741700000006
+    }
+  },
+  "runs": {
+    "pair": {
+      "reference": [
+        {
+          "cpu_seconds": 0.06600183400000004,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.06782854099999991,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.06063050000000003,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        }
+      ],
+      "disabled": [
+        {
+          "cpu_seconds": 0.07112087500000008,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.06975849999999995,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.07095258299999996,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        }
+      ],
+      "enabled": [
+        {
+          "cpu_seconds": 0.06988829099999994,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.06795279100000007,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        },
+        {
+          "cpu_seconds": 0.06617537400000006,
+          "sha256": "97b65c65d6207a9ba50d6d3fc283e9c0547055e70e5819225fd28846175116e4"
+        }
+      ]
+    },
+    "single": {
+      "reference": [
+        {
+          "cpu_seconds": 0.062122958000000006,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.06114208200000004,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.06908270800000005,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        }
+      ],
+      "disabled": [
+        {
+          "cpu_seconds": 0.08013891699999998,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.06160466499999995,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.068567041,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        }
+      ],
+      "enabled": [
+        {
+          "cpu_seconds": 0.06695849899999995,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.06035574899999996,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        },
+        {
+          "cpu_seconds": 0.06331499900000004,
+          "sha256": "6b63d34875c8d2aafa0b25f02d16fead7a109d23d70db7e71b76294fdfea9918"
+        }
+      ]
+    },
+    "register": {
+      "reference": [
+        {
+          "cpu_seconds": 0.09279287599999997,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.09023116600000003,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.08397637499999999,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        }
+      ],
+      "disabled": [
+        {
+          "cpu_seconds": 0.10187945900000006,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.09015358500000004,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.10712158299999996,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        }
+      ],
+      "enabled": [
+        {
+          "cpu_seconds": 0.10288891599999994,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.08997741700000006,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        },
+        {
+          "cpu_seconds": 0.08209454099999991,
+          "sha256": "ee9c81778cce1e3fbf8bda2e3160d5745abecd3ad1399d2bbadd342626e7a245"
+        }
+      ]
+    }
+  }
+}
