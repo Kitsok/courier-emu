@@ -99,3 +99,26 @@ and a codec-sink destination retain instruction stepping and zero native
 hits. IO event contents, PCs and instruction timestamps match the
 reference. All 101 complex-loop checks pass in 0.94 seconds. These extend
 boundary coverage without changing runtime code or the target build.
+
+## First combined A53 counters
+
+The isolated GCC build compares against the preceding condition-reuse
+library, whose existing arithmetic-block opt-in is enabled. Three
+alternating reference/new-disabled/new-enabled orders per case run on
+CPU 3 with acknowledged user-cycle/instruction counter control. All
+architectural digests match and counters run without multiplexing.
+
+The complex DARAM kernel drops from 152699056 to 40929720 median host
+cycles (73.20%); the observed mixed layout drops from 158520080 to
+39976173 (74.78%). Host instructions fall by 69.85% and 71.42%.
+The original arithmetic kernel drops from its already-fast 69088152 to
+28468585 cycles (58.79%), with 59.17% fewer host instructions.
+
+DMOV cycles improve 5.92%, despite 1.15% more host instructions. The
+address control regresses 4.67%, with 1.37% more host instructions, in
+both disabled and enabled new variants. The common threaded wrapper
+currently checks both native entry PCs after every instruction. Move
+these checks into the matching first-opcode wrappers before retaining
+this common-path cost. This follow-up remains unmeasured; do not claim
+the kernel gains as an application speedup or physical connection.
+Raw runs and build manifest are in `dsp-v32-native-arm.json`.
