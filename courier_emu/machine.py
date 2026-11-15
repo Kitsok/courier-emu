@@ -4010,12 +4010,21 @@ class CourierMachine:
             flagged = (command_port, LANE_RX_ACK_PORT, *lane_ports, 0x1C, 0x1E)
             applied: list[Any] = [None]
             applied_boot: list[Any] = [None]
+            coalesced_pending = ((boot_native or overlay_native)
+                                 and os.environ.get('COURIER_NATIVE_LANE_PENDING', '1') != '0')
 
             def refresh_native_lanes() -> None:
                 # What the native strobes did is replayed before anything here
                 # reads the state they changed.
-                bridge._drain_native_boot()
-                bridge._drain_native_overlay()
+                if coalesced_pending:
+                    pending = lane_io.pending()
+                    if pending & 1:
+                        bridge._drain_native_boot(known_pending=True)
+                    if pending & 2:
+                        bridge._drain_native_overlay(known_pending=True)
+                else:
+                    bridge._drain_native_boot()
+                    bridge._drain_native_overlay()
                 served = (
                     not watched
                     and not bridge._completion_probe

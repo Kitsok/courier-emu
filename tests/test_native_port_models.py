@@ -64,6 +64,41 @@ def test_analog_lanes_read_the_dsp_cells_and_commit_window_bytes():
         dsp.close()
 
 
+def test_combined_lane_pending_preserves_boot_overlay_events_and_errors():
+    dsp, model = core(), LaneHostIo()
+    window = bytearray(range(1, 9))
+    try:
+        model.configure(dsp.handle, False, command_port=0x18, ack_port=0x1a,
+                        lane_first=0x40, banks=6, dsp_first=0x58, dsp_status=0x56)
+        model.set_overlay_window(window, first=1, start=4, strobes=(1, 2))
+        model.set_overlay_strobes(True)
+        model.configure_mailbox(runtime=False, pending=False, inbound=False,
+                                overlay=True, overlay_status=7, zero_ok=True, status_cell=0x57)
+        assert model.pending() == 0
+        assert access(model, 2, 0x1e, 1)[0] == 1
+        assert model.pending() == 2
+        model.configure_boot({1: window}, [], first=1, checksum=None)
+        model.set_boot_state(strobes=True, stores=False, remaining=32)
+        # This controlled core has no loader, so its missing ACK must remain
+        # visible together with the already queued overlay half-block.
+        dsp.set_pc(0x638)
+        assert access(model, 2, 0x18, 1)[0] == 1
+        assert model.pending() == 3
+        events, error = model.take_boot()
+        assert events and events[0][1] and error
+        assert model.pending() == 2
+        events, _, error = model.take_overlay()
+        assert events[0][0] == 1 and not error
+        assert model.pending() == 0
+        assert access(model, 2, 0x1e, 2)[0] == 1
+        assert model.pending() == 2
+        _, _, error = model.take_overlay()
+        assert error and model.pending() == 0
+    finally:
+        model.close()
+        dsp.close()
+
+
 def test_imodem_model_shares_state_and_holds_back_for_python():
     shared = ImodemShared()
     dsp = core()

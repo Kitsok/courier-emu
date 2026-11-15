@@ -991,6 +991,12 @@ std::size_t courier_laneio_boot_pending(void *context)
     auto *io = static_cast<LaneHostIo *>(context);
     return io->boot_events.size() + (io->boot_error.empty() ? 0 : 1);
 }
+unsigned courier_laneio_pending(void *context)
+{
+    const auto *io = static_cast<LaneHostIo *>(context);
+    return unsigned(!io->boot_events.empty() || !io->boot_error.empty())
+        | (unsigned(!io->ov_events.empty() || !io->ov_error.empty()) << 1);
+}
 // The logged strobes, 10 bytes each: strobe, failed, window[8]. Returns the
 // count; a loader failure's message goes to `error`.
 std::size_t courier_laneio_take_boot(void *context, uint8_t *out, std::size_t capacity,

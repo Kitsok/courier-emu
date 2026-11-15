@@ -2271,7 +2271,7 @@ class CourierDspBridge:
         self._overlay_groups = []
         self._overlay_target = None
 
-    def _drain_native_boot(self) -> None:
+    def _drain_native_boot(self, *, known_pending: bool = False) -> None:
         """Replay the boot strobes the native port model served.
 
         Each is the command-port branch of `write` for a window strobe while
@@ -2281,7 +2281,7 @@ class CourierDspBridge:
         activates the program.
         """
         native = self._native_boot
-        if native is None or not native.boot_pending():
+        if native is None or not (known_pending or native.boot_pending()):
             return
         events, error = native.take_boot()
         for strobe, failed, window in events:
@@ -2293,7 +2293,7 @@ class CourierDspBridge:
         if error:
             raise RuntimeError(error)
 
-    def _drain_native_overlay(self) -> None:
+    def _drain_native_overlay(self, *, known_pending: bool = False) -> None:
         """Replay the half-block strobes the native port model served.
 
         Each is what the DSP_COMMAND_PORT branch of `write` would have done
@@ -2304,7 +2304,7 @@ class CourierDspBridge:
         the same order, before anything else looks at it.
         """
         native = self._native_overlay
-        if native is None or not native.overlay_pending():
+        if native is None or not (known_pending or native.overlay_pending()):
             return
         events, status, error = native.take_overlay()
         self._overlay_status = status

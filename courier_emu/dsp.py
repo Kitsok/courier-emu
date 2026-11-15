@@ -1334,6 +1334,8 @@ class LaneHostIo:
             ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int64]
         lib.courier_laneio_boot_pending.restype = ctypes.c_size_t
         lib.courier_laneio_boot_pending.argtypes = [ctypes.c_void_p]
+        lib.courier_laneio_pending.argtypes = [ctypes.c_void_p]
+        lib.courier_laneio_pending.restype = ctypes.c_uint
         lib.courier_laneio_take_boot.restype = ctypes.c_size_t
         lib.courier_laneio_take_boot.argtypes = [
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
@@ -1441,6 +1443,10 @@ class LaneHostIo:
 
     def boot_pending(self) -> int:
         return self.library.courier_laneio_boot_pending(self.context)
+
+    def pending(self) -> int:
+        """Pending events or errors: bit 0 boot, bit 1 overlay."""
+        return self.library.courier_laneio_pending(self.context)
 
     def take_boot(self) -> tuple[list[tuple[int, bool, bytes]], str]:
         """The boot strobes served natively, as (strobe, failed, window)."""
