@@ -100,6 +100,25 @@ def service(bridge, native, cores):
     compare(bridge, native, cores)
 
 
+def test_native_dsp_clock_preserves_thresholds_and_fractional_debt(pair):
+    import random
+    bridge, native, _ = pair
+    bridge._x86_ticks = native.state.x86_ticks = 0
+    bridge._dsp_cycle_debt = native.state.debt = -0.25
+    bridge.dsp_cycles_per_x86 = native.state.cycles_per_x86 = 5.93
+    rng = random.Random(403)
+    for count in [0, 63, 1, 64, 129] + [rng.randrange(200) for _ in range(2000)]:
+        assert native.advance_dsp_clock(count) == bridge._advance_dsp_clock(count)
+        assert native.state.x86_ticks == bridge._x86_ticks
+        assert native.state.debt == bridge._dsp_cycle_debt
+        # A DSP service spends cycles and can retune the CPU/DSP clock ratio.
+        if rng.randrange(4) == 0:
+            spent = rng.randrange(500)
+            bridge._dsp_cycle_debt -= spent
+            native.state.debt -= spent
+            bridge.dsp_cycles_per_x86 = native.state.cycles_per_x86 = rng.random() * 10
+
+
 def test_direct_pipeline_matches_reference_across_codec_clock_edges(pair):
     bridge, native, cores = pair
     for count, mclk, value in [(360, 2880000, 0x1200), (400, 2880000, 0x2400),

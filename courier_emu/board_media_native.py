@@ -38,6 +38,7 @@ def library():
         'destroy': ([c.c_void_p], None),
         'state': ([c.c_void_p], c.POINTER(BoardMediaState)),
         'layout': ([], c.c_size_t),
+        'advance_dsp_clock': ([c.c_void_p, c.c_int64], c.c_int),
         'begin': ([c.c_void_p, c.c_void_p, c.c_int64], c.c_int),
         'resume': ([c.c_void_p, c.c_void_p], c.c_int),
         'reset': ([c.c_void_p, c.c_void_p, c.c_int], c.c_int),
@@ -97,6 +98,9 @@ class NativeBoardMedia:
         if self._lib.courier_board_media_begin(self.handle, core.handle, instructions):
             raise RuntimeError('native codec service could not begin')
         self.resume(core)
+
+    def advance_dsp_clock(self, count):
+        return bool(self._lib.courier_board_media_advance_dsp_clock(self.handle, count))
 
     def resume(self, core):
         while True:

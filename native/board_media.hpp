@@ -41,6 +41,15 @@ struct BoardMedia {
         port.retain();
     }
     ~BoardMedia(){if(codec)codec->release();port.release_reference();}
+    bool advance_dsp_clock(int64_t count) {
+        s.x86_ticks += count;
+        if (s.x86_ticks < int64_t(batch)) return false;
+        // Keep multiplication and addition separate, as in Python's clock.
+        const volatile double earned = double(s.x86_ticks) * s.cycles_per_x86;
+        s.debt += earned;
+        s.x86_ticks = 0;
+        return true;
+    }
     void attach_codec(CodecBringUp *master) {
         if(master)master->retain();if(codec)codec->release();codec=master;
     }

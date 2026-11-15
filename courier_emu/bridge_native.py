@@ -116,6 +116,9 @@ class NativeCourierDspBridge(CourierDspBridge):
     def _service_exchange(self):
         self._native_media_owner.service(self.core, self._instructions)
 
+    def _advance_dsp_clock(self, count):
+        return self._native_media_owner.advance_dsp_clock(count)
+
     def _take_line_audio(self):
         self._native_media_owner.collect(self.core)
 

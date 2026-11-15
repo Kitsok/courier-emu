@@ -3085,8 +3085,7 @@ class CourierDspBridge:
                 self._runtime_ready_delay -= count
             else:
                 self._runtime_ready = True
-        self._x86_ticks += count
-        if self._x86_ticks < self.batch:
+        if not self._advance_dsp_clock(count):
             return
         # The Courier identifies its split as 20 MHz 80186 / 25 MHz C52, and
         # scaling by that alone - `* 5 // 4` - was wrong by nearly six, because
@@ -3104,8 +3103,6 @@ class CourierDspBridge:
         #
         # The remainder is carried rather than truncated, so the average ratio
         # stays exact instead of losing a fraction of a step per batch.
-        self._dsp_cycle_debt += self._x86_ticks * self.dsp_cycles_per_x86
-        self._x86_ticks = 0
         try:
             if self.sip is not None and self._sip_line is None:
                 self.sip.poll()
@@ -3241,6 +3238,15 @@ class CourierDspBridge:
                     self.sip.send_audio(self._sip_tx_rate.convert(samples))
         except RuntimeError as exc:
             self.error = str(exc)
+
+    def _advance_dsp_clock(self, count: int) -> bool:
+        """Accumulate CPU instructions and grant one owed DSP batch."""
+        self._x86_ticks += count
+        if self._x86_ticks < self.batch:
+            return False
+        self._dsp_cycle_debt += self._x86_ticks * self.dsp_cycles_per_x86
+        self._x86_ticks = 0
+        return True
 
     def clock_x86_fast(self, count: int) -> bool:
         """`clock_x86` for the service in which nothing moves but the DSP.
