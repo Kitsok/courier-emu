@@ -2615,7 +2615,9 @@ void worker_apply_eois(WorkerPollState &s, const PollCpu &cpu)
             if (completed == WORKER_INT0) irq_int0_in_service = 0;
             s.dirty = 1;
         }
-        event[7] = 1;
+        // Other native devices use this byte too. Mark only EOIs, leaving
+        // the committed-timer marker intact for Python diagnostics replay.
+        if (address == 0xFF02) event[7] |= 1;
     }
     s.mmio_cursor = cpu.mmio_count;
 }

@@ -140,8 +140,11 @@ services can remain inside the C++ batch. Empty plain-terminal readiness
 polls and SIP pacing checks that require no wait can also stay native;
 input, terminal work and positive media lead return to Python. The counters, mask bits and timer
 request queue use one permanent native-layout buffer with live Python views;
-there is no per-batch timer snapshot or counter publication step. Register
-programming and calibrated-delay grants retain Python logic on those fields.
+there is no per-batch timer snapshot or counter publication step. Timer and
+legacy interrupt-controller programming use native state operations. Eligible
+Timer 2 count writes commit inside the x86 batch; other register writes still
+cross the Python device boundary. Board timebase selection and calibrated-delay
+grants retain Python logic.
 UART work, complete media frames and other device transitions still require
 Python. Other CPU/DSP/line attributes still cross snapshot boundaries, so
 moving an individual callback to C++ does not eliminate all arming cost.

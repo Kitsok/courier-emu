@@ -1,0 +1,23 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_worker_eoi_replay_preserves_applied_timer_write_marker __________
+
+    def test_worker_eoi_replay_preserves_applied_timer_write_marker():
+        from test_worker_deadlines import scheduled
+        poll, run = scheduled()
+        events = (ctypes.c_uint8 * 16)(
+            0x40, 0xff, 0, 0, 0x34, 0x12, 2, 2,
+            0x02, 0xff, 0, 0, 0, 0x80, 2, 0)
+        poll.cpu.mmio_events = ctypes.addressof(events)
+        poll.cpu.mmio_count = 2
+        assert run(1024) == 1
+>       assert (events[7], events[15]) == (2, 1)
+E       assert (1, 1) == (2, 1)
+E
+E         At index 0 diff: 1 != 2
+E         Use -v to get more diff
+
+tests/test_native_timer_writes.py:73: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_native_timer_writes.py::test_worker_eoi_replay_preserves_applied_timer_write_marker
+1 failed, 2 deselected in 0.08s

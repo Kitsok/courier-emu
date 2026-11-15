@@ -1760,6 +1760,7 @@ class CourierMachine:
         from .timers_native import NativeTimerBlock
         from .service_native import fold_native_eois
         self._native_eoi_writes = 0
+        self._native_timer_writes = 0
         native_eoi_bookkeeping = (
             hasattr(self, '_native_service_state') and type(self.timers) is NativeTimerBlock
             and self.quad_board is None and self.hardware_map.dsp_reset_port != 0xff02
@@ -1774,6 +1775,13 @@ class CourierMachine:
             # What the engine retired without leaving: replayed in order, ahead
             # of anything else that looks at the state they change.
             for offset in range(0, count * 8, 8):
+                if events[offset + 7] == 2:
+                    # T2 count programming was committed with its native
+                    # instruction. Replay diagnostics without writing twice.
+                    sync_device_time()
+                    self.mmio_counts[('write', 0xff40, events[offset + 6])] += 1
+                    self._native_timer_writes += 1
+                    continue
                 eoi_applied[0] = bool(events[offset + 7])
                 on_mmio_write(
                     uc, 0, int.from_bytes(events[offset:offset + 4], "little"),
@@ -2272,6 +2280,9 @@ class CourierMachine:
                         and os.environ.get("COURIER_NATIVE_TIMERS", "1") != "0"):
                     from .native_timers import NativeTimerReads
                     _uc.native_timer_reads = NativeTimerReads(self.timers, self.mmio_counts)
+                    if (native_eoi_bookkeeping
+                            and os.environ.get('COURIER_NATIVE_TIMER_WRITES', '1') != '0'):
+                        _uc.native_mmio_batch += ((0xff40, 0xff41),)
             if self.quad_c50 is not None:
                 self.quad_c50.service(elapsed)
             if self.quad_terminal is not None:
@@ -4325,7 +4336,8 @@ class CourierMachine:
                       "native_media_services": worker_poll.state.native_media_services,
                       "native_media_yields": worker_poll.state.native_media_yields,
                       "native_codec_services": worker_poll.state.native_codec_services,
-                      "native_eoi_writes": self._native_eoi_writes}
+                      "native_eoi_writes": self._native_eoi_writes,
+                      "native_timer_writes": self._native_timer_writes}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,

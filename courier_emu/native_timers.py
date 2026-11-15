@@ -1,7 +1,8 @@
 """Batch-local timer read view for the native 80186 engine.
 
-Writes, control reads (which may accelerate a delay), and reads crossing a
-max count stay in Python. Ordinary count/compare reads update the same lazy
+Most writes, control reads (which may accelerate a delay), and reads crossing
+a max count stay in Python. With shared timers, explicitly batched T2 count
+writes commit in the native CPU. Ordinary count/compare reads update the same lazy
 timer view and diagnostics before any Python handler sees the next access.
 """
 import ctypes as c

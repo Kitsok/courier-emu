@@ -398,9 +398,17 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
         }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
             if(c.mmio_events&&(c.guard[w.address]&64)){
+                // T2 count writes have no board callback. Apply only after
+                // the entire instruction passed its guards, at the same
+                // pre-retirement timestamp used by the Python memory hook.
+                const bool timer_applied = c.timer_model && w.address == 0xff40
+                    && (w.size == 1 || w.size == 2);
+                if (timer_applied) c.timer_model->write(w.address, w.size, w.value,
+                    c.timer_model->instruction_base + c.done);
                 uint8_t *event=c.mmio_events+8*c.mmio_count++;
                 event[0]=w.address;event[1]=w.address>>8;event[2]=w.address>>16;event[3]=w.address>>24;
-                event[4]=w.value;event[5]=w.value>>8;event[6]=uint8_t(w.size);event[7]=0;
+                event[4]=w.value;event[5]=w.value>>8;event[6]=uint8_t(w.size);
+                event[7]=timer_applied ? 2 : 0;
             }}
     }
     return c.done;

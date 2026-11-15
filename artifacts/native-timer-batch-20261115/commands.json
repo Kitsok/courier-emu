@@ -1,0 +1,125 @@
+[
+  {
+    "name": "idle",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  },
+  {
+    "name": "dial",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5",
+      "--dial"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  },
+  {
+    "name": "steady",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5",
+      "--warmup-instructions",
+      "30000000"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  },
+  {
+    "name": "profile",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--warmup-instructions",
+      "30000000",
+      "--profile-out",
+      "artifacts/native-timer-batch-20261115/courier.prof"
+    ],
+    "timer_writes": "1",
+    "profile": "1"
+  },
+  {
+    "name": "alternating-0-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "0",
+    "profile": "0"
+  },
+  {
+    "name": "alternating-1-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  },
+  {
+    "name": "alternating-2-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  },
+  {
+    "name": "alternating-3-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "0",
+    "profile": "0"
+  },
+  {
+    "name": "alternating-4-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "0",
+    "profile": "0"
+  },
+  {
+    "name": "alternating-5-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--dial",
+      "--repeat",
+      "1"
+    ],
+    "timer_writes": "1",
+    "profile": "0"
+  }
+]
