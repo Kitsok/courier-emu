@@ -1,0 +1,135 @@
+[
+  {
+    "name": "idle",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  },
+  {
+    "name": "dial",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  },
+  {
+    "name": "steady",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "5",
+      "--warmup-instructions",
+      "30000000"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  },
+  {
+    "name": "profile",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--warmup-instructions",
+      "30000000",
+      "--profile-out",
+      "artifacts/worker-config-20261115/courier.prof"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": true
+  },
+  {
+    "name": "alternating-0-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "0",
+    "profile": false
+  },
+  {
+    "name": "alternating-1-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  },
+  {
+    "name": "alternating-2-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  },
+  {
+    "name": "alternating-3-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "0",
+    "profile": false
+  },
+  {
+    "name": "alternating-4-0",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "0",
+    "profile": false
+  },
+  {
+    "name": "alternating-5-1",
+    "argv": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--repeat",
+      "1",
+      "--dial"
+    ],
+    "flag": "COURIER_WORKER_CONFIG",
+    "enabled": "1",
+    "profile": false
+  }
+]

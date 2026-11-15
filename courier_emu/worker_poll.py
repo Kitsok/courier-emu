@@ -146,6 +146,9 @@ class WorkerPoll:
         self.diagnostic_resumes = 0
         import os
         self.profile_enabled = os.environ.get('COURIER_WORKER_YIELDS', '0') == '1'
+        self.persistent_configuration = os.environ.get('COURIER_WORKER_CONFIG', '1') != '0'
+        self._configuration = None
+        self.configuration_refreshes = 0
         self.arm_counts = {}
         library = load_library()
         layout = (ctypes.c_uint64 * 4)()
@@ -173,9 +176,33 @@ class WorkerPoll:
                       dsp_active, tick_period, timer_period, line_period):
         """Publish adjacent clock fields without a ctypes assignment per field."""
         s = self.state
+        shared = s.service_model
+        if self.persistent_configuration and shared and scheduled == 3:
+            # Native polls never modify these fields. Check every input so
+            # reset, device replacement, mask and cadence changes invalidate
+            # the persistent configuration without caching their predicates.
+            key = (shared, core, base, timer_period, machine.frame_instructions,
+                   machine._rom_tick, bridge.codec is not None, line_period,
+                   bridge.batch, dsp_active, bridge.exchange is not None,
+                   machine.console is not None, tick_period,
+                   machine.hardware_map.tick_vector,
+                   machine.timers.controller.enabled('int1'))
+            if key != self._configuration:
+                s.core, s.instruction_base = core, base
+                s.timer_poll_period, s.frame_instructions = timer_period, key[4]
+                s.int0_ok, s.codec_present = key[5], key[6]
+                s.line_frame_instructions, s.batch = line_period, bridge.batch
+                _SCHEDULE_PACK(s, _SCHEDULE_OFFSET, 3, dsp_active, key[10], 0, key[11], 0)
+                _TICK_PACK(s, _TICK_OFFSET, tick_period, 0, key[13], 0, key[14], 0, 0)
+                s.pending_native = 1
+                self._configuration = key
+                self.configuration_refreshes += 1
+            s.elide_until, s.last_service = deadline, machine._last_service
+            return
+        self._configuration = None
         stack = machine._interrupt_stack
         s.core = core
-        if s.service_model:
+        if shared:
             s.instruction_base, s.elide_until, s.last_service = base, deadline, machine._last_service
             s.timer_poll_period, s.frame_instructions = timer_period, machine.frame_instructions
             s.int0_ok = machine._rom_tick

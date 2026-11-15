@@ -3529,6 +3529,7 @@ class CourierMachine:
                                        self.tick_period_instructions if tick_native else 0,
                                        TIMER_POLL_INSTRUCTIONS, LINE_FRAME_INSTRUCTIONS)
                 else:
+                    poll._configuration = None
                     state.core = core.handle
                     state.scheduled = scheduled
                     state.dsp_active = dsp_active
@@ -4337,7 +4338,8 @@ class CourierMachine:
                       "native_media_yields": worker_poll.state.native_media_yields,
                       "native_codec_services": worker_poll.state.native_codec_services,
                       "native_eoi_writes": self._native_eoi_writes,
-                      "native_timer_writes": self._native_timer_writes}
+                      "native_timer_writes": self._native_timer_writes,
+                      "native_configuration_refreshes": worker_poll.configuration_refreshes}
                      if worker_poll is not None else None)
         return RunResult(
             status=status,
