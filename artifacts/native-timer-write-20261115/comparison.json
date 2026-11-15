@@ -1,0 +1,71 @@
+{
+  "idle": {
+    "baseline_cpu_median": 4.1676393900000015,
+    "candidate_cpu_median": 4.009811586,
+    "cpu_percent": -3.7869832111362633,
+    "baseline_wall_median": 4.174346530999173,
+    "candidate_wall_median": 4.005537000994082,
+    "wall_percent": -4.043974997080213,
+    "cpu_range": [
+      3.9417813049999992,
+      4.492425071000003
+    ],
+    "first_cpu": 4.053603116000001,
+    "later_cpu_median": 3.9794443695,
+    "state_matches": {
+      "memory_sha256": true,
+      "registers": true,
+      "dsp_state": true,
+      "dsp_serial": true,
+      "serial_text": true,
+      "timers": true,
+      "interrupt_state": true
+    }
+  },
+  "dial": {
+    "baseline_cpu_median": 5.933851046999999,
+    "candidate_cpu_median": 6.071594609,
+    "cpu_percent": 2.321318160988217,
+    "baseline_wall_median": 5.928025606997835,
+    "candidate_wall_median": 6.1093532200029586,
+    "wall_percent": 3.0588196648656973,
+    "cpu_range": [
+      5.757565866,
+      6.404442094
+    ],
+    "first_cpu": 5.822761315999999,
+    "later_cpu_median": 6.201258910000001,
+    "state_matches": {
+      "memory_sha256": true,
+      "registers": true,
+      "dsp_state": true,
+      "dsp_serial": true,
+      "serial_text": true,
+      "timers": true,
+      "interrupt_state": true
+    }
+  },
+  "steady": {
+    "baseline_cpu_median": 5.780526030000004,
+    "candidate_cpu_median": 5.911372945,
+    "cpu_percent": 2.2635814512541153,
+    "baseline_wall_median": 8.821475128999737,
+    "candidate_wall_median": 8.821796883996285,
+    "wall_percent": 0.0036474058118685093,
+    "cpu_range": [
+      5.699996053,
+      5.954902382
+    ],
+    "first_cpu": 5.917681807000001,
+    "later_cpu_median": 5.864486519999998,
+    "state_matches": {
+      "memory_sha256": true,
+      "registers": true,
+      "dsp_state": true,
+      "dsp_serial": true,
+      "serial_text": true,
+      "timers": true,
+      "interrupt_state": true
+    }
+  }
+}

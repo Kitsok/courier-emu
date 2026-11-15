@@ -1,0 +1,65 @@
+{
+  "iterations": 50000,
+  "runs": [
+    {
+      "implementation": "python",
+      "seconds": 0.10572742400000001,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.077853,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.07673633899999999,
+      "writes": 50000
+    },
+    {
+      "implementation": "python",
+      "seconds": 0.10394585099999998,
+      "writes": 50000
+    },
+    {
+      "implementation": "python",
+      "seconds": 0.10189996600000001,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.07521047699999994,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.07550101399999998,
+      "writes": 50000
+    },
+    {
+      "implementation": "python",
+      "seconds": 0.1038492849999999,
+      "writes": 50000
+    },
+    {
+      "implementation": "python",
+      "seconds": 0.10375542700000007,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.07428910099999997,
+      "writes": 50000
+    },
+    {
+      "implementation": "native",
+      "seconds": 0.07375526499999996,
+      "writes": 50000
+    },
+    {
+      "implementation": "python",
+      "seconds": 0.1006619489999998,
+      "writes": 50000
+    }
+  ]
+}

@@ -38,6 +38,36 @@ struct Timers186 {
     uint64_t read_counts[11][2], read_mask, last_read_tick[3];
 
     int64_t tick_at(uint64_t instructions) const { return int64_t(double(instructions) * ratio); }
+    // 0: unrelated address, 1: handled, 2: T0 compare A needs the Python
+    // board-selection callback before its final origin is published.
+    unsigned write(uint32_t address, unsigned size, uint64_t value, uint64_t instructions) {
+        if (address == 0xff08) {
+            ++controller_writes; controller_mask = value & 0x7f; return 1;
+        }
+        if (address >= 0xff12 && address <= 0xff1e && !(address & 1)) {
+            ++controller_writes;
+            const uint64_t bit = uint64_t(1) << ((address - 0xff12) / 2);
+            controller_mask = (value & 8) ? controller_mask | bit : controller_mask & ~bit;
+            return 1;
+        }
+        if (address < 0xff30 || address > 0xff46 || (address & 1) || address == 0xff44) return 0;
+        const unsigned offset = (address - 0xff30) / 2;
+        auto &timer = slots[offset / 4];
+        const unsigned field = offset % 4;
+        ++revision; ++writes;
+        timer.advance(tick_at(instructions));
+        uint64_t &dest = field == 0 ? timer.count : field == 1 ? timer.compare_a :
+            field == 2 ? timer.compare_b : timer.control;
+        if (size == 1) value = (dest & 0xff00) | (value & 0xff);
+        if (field == 3) {
+            uint64_t control = timer.control;
+            if (value & 0x4000) control = (control & ~uint64_t(0x8000)) | (value & 0x8000);
+            timer.control = (control & ~uint64_t(0x303f)) | (value & 0x303f);
+        } else dest = value & 0xffff;
+        if (address == 0xff32) return 2;
+        timer.origin = tick_at(instructions);
+        return 1;
+    }
     static unsigned vector(unsigned index) { return index == 0 ? 8 : index == 1 ? 18 : 19; }
     void tick(uint64_t instructions) {
         ++revision;

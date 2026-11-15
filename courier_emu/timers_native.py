@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import fields
 
 from .dsp import load_library
-from .timers import Timer, TimerBlock, InterruptController, IMASK_ORDER
+from .timers import Timer, TimerBlock, InterruptController, IMASK_ORDER, TIMER_REGISTERS, SOURCE_CONTROL, IMASK
 
 
 class NativeTimer(c.Structure):
@@ -146,6 +146,9 @@ class NativeTimerBlock(TimerBlock):
             c.cast(library.courier_timer186_tick, c.c_void_p).value)
         self._native_deadline = c.PYFUNCTYPE(c.c_uint64, c.c_void_p)(
             c.cast(library.courier_timer186_deadline, c.c_void_p).value)
+        self._native_write = c.PYFUNCTYPE(c.c_uint, c.c_void_p, c.c_uint32,
+                                         c.c_uint, c.c_uint64, c.c_uint64)(
+            c.cast(library.courier_timer186_write, c.c_void_p).value)
         self.timers = list(self.native_state.slots)
         for dest, source in zip(self.timers, reference.timers):
             for name, _ in NativeTimer._fields_:
@@ -169,6 +172,15 @@ class NativeTimerBlock(TimerBlock):
 
     def tick(self, instructions):
         self._native_tick(self.address, instructions)
+
+    def write(self, address, size, value, instructions):
+        if address not in TIMER_REGISTERS and address not in SOURCE_CONTROL and address != IMASK:
+            return False
+        result = self._native_write(self.address, address, size, value, instructions)
+        if result == 2:
+            self._identify_board(0, 'compare_a', self.timers[0].compare_a)
+            self.timers[0].origin = self._tick(instructions)
+        return bool(result)
 
     def next_deadline(self):
         value = self._native_deadline(self.address)
