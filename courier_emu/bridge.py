@@ -3539,10 +3539,14 @@ class CourierDspBridge:
             # indicates the local line connection, never carrier detection.
             self.daa.line_state = "quiet" if self.line.connected else "disconnected"
 
-    # Trans-hybrid return, in 1/256ths. AT&T1 loopback has no line on the
-    # other side of the hybrid to lose signal into, so the transmit sample
-    # feeds the receive input directly - 256 is unity, with no delay line.
-    HYBRID_RETURN_ON_HOOK = 256
+    # Trans-hybrid return, in 1/256ths. This is a synthetic board path,
+    # not a measured hybrid transfer function. Leave headroom for the AC01
+    # input gain: its normal register 4 value, 0x09, doubles the returned
+    # sample. Unity return therefore clips the ADC and breaks AT&T1 receive.
+    # A quarter-scale return keeps even full-scale DAC samples below half
+    # ADC scale after that gain. Higher-rate loopback fidelity still needs
+    # separate validation; carrier acquisition alone does not establish it.
+    HYBRID_RETURN_ON_HOOK = 64
     # Off hook the hybrid is terminated by a line and returns only part of the
     # transmit. 26 (-20 dB) is a STAND-IN for the DAA's trans-hybrid loss,
     # which has not been measured. Unity is measured to be wrong: the
@@ -3991,6 +3995,7 @@ class CourierDspBridge:
                 "connected_event_queued": self._connected_event_queued,
                 "carrier_source": self._carrier_source,
                 "legacy_carrier_fallback": self.legacy_carrier_fallback,
+                "hybrid_return_on_hook": self.HYBRID_RETURN_ON_HOOK,
                 "hybrid_return_off_hook": self.HYBRID_RETURN_OFF_HOOK,
                 "carrier_probe_frames": self._carrier_probe_frames,
                 "carrier_best_score": round(self._carrier_best_score),
