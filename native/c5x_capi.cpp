@@ -2741,6 +2741,21 @@ void worker_commit_frame(WorkerPollState &s, C5xCore *core, const int16_t *wire,
 
 } // namespace
 
+// Publish a prepared snapshot in one call. Configuration stays in the worker
+// across batches; only batch-local counters and the live DSP PC need refreshing.
+extern "C" void courier_worker_arm(void *context)
+{
+    auto &s = *static_cast<WorkerPollState *>(context);
+    const auto *core = static_cast<C5xCore *>(s.core);
+    const auto pc = core->program_counter();
+    s.loader_in_loop = pc >= s.loader_first && pc < s.loader_end;
+    s.io_cursor = s.mmio_cursor = s.dirty = 0;
+    s.line_calls = s.tx_consumed = s.resampled = 0;
+    // The paired-line path may have prepared a frame snapshot already.
+    if (s.scheduled) s.frame_ok = 0;
+    s.armed = 1;
+}
+
 extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, void *lent)
 {
 

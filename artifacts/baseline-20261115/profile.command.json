@@ -1,0 +1,15 @@
+{
+  "argv": [
+    ".venv/bin/python",
+    "tools/benchmark_standalone.py",
+    "--warmup-instructions",
+    "30000000",
+    "--instructions",
+    "30000000",
+    "--repeat",
+    "1",
+    "--profile-out",
+    "artifacts/baseline-20261115/courier.prof"
+  ],
+  "profiling": true
+}

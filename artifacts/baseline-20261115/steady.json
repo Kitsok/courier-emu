@@ -1,0 +1,1582 @@
+{
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "workload": "idle",
+  "runs": [
+    {
+      "wall_seconds": 17.186559239999042,
+      "cpu_seconds": 14.659303117,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 4092964.0052547664,
+      "realtime_cpu_multiple": 1.203932273656173,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 41750,
+        "native_dsp_batches": 10853,
+        "native_board_ticks": 1610,
+        "native_pending_irqs": 3652,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 41750,
+        "native_timer_irqs": 1052,
+        "native_console_polls": 0,
+        "native_pacer_checks": 4535,
+        "native_media_services": 5974,
+        "native_media_yields": 0,
+        "native_codec_services": 98,
+        "native_eoi_writes": 40086
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904655,
+        "batches": 118424,
+        "zero_batches": 25714,
+        "instructions_per_batch": 505.84894109302166,
+        "exits": []
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 16809,
+        "retired": 29982340,
+        "zero_batches": 1487,
+        "polls": 20214,
+        "dsp_batches": 5757,
+        "native_board_ticks": 726,
+        "native_pending_irqs": 1958,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 20214,
+        "native_timer_irqs": 563,
+        "cpu_seconds": 4.887822290000001,
+        "wall_seconds": 6.82840961599868,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": []
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    },
+    {
+      "wall_seconds": 20.182968012995843,
+      "cpu_seconds": 16.994185891,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 3530619.259130005,
+      "realtime_cpu_multiple": 1.0385203648508705,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 41192,
+        "native_dsp_batches": 10669,
+        "native_board_ticks": 1598,
+        "native_pending_irqs": 3594,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 41192,
+        "native_timer_irqs": 1032,
+        "native_console_polls": 0,
+        "native_pacer_checks": 3977,
+        "native_media_services": 5963,
+        "native_media_yields": 0,
+        "native_codec_services": 95,
+        "native_eoi_writes": 40023
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904577,
+        "batches": 118982,
+        "zero_batches": 25778,
+        "instructions_per_batch": 503.47596275066815,
+        "exits": []
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 16620,
+        "retired": 29982366,
+        "zero_batches": 1481,
+        "polls": 20403,
+        "dsp_batches": 5806,
+        "native_board_ticks": 742,
+        "native_pending_irqs": 1973,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 20403,
+        "native_timer_irqs": 566,
+        "cpu_seconds": 9.835829739999998,
+        "wall_seconds": 11.698126964998664,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": []
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    },
+    {
+      "wall_seconds": 17.460605523003323,
+      "cpu_seconds": 15.41633723,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 3891975.0589809846,
+      "realtime_cpu_multiple": 1.1448120178326453,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 42131,
+        "native_dsp_batches": 10918,
+        "native_board_ticks": 1632,
+        "native_pending_irqs": 3670,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 42131,
+        "native_timer_irqs": 1059,
+        "native_console_polls": 0,
+        "native_pacer_checks": 4916,
+        "native_media_services": 6008,
+        "native_media_yields": 0,
+        "native_codec_services": 99,
+        "native_eoi_writes": 40128
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904730,
+        "batches": 118043,
+        "zero_batches": 25698,
+        "instructions_per_batch": 507.48227340884256,
+        "exits": []
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 16600,
+        "retired": 29982383,
+        "zero_batches": 1471,
+        "polls": 20423,
+        "dsp_batches": 5822,
+        "native_board_ticks": 739,
+        "native_pending_irqs": 1976,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 20423,
+        "native_timer_irqs": 570,
+        "cpu_seconds": 5.274548715000002,
+        "wall_seconds": 7.020120055996813,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": []
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    },
+    {
+      "wall_seconds": 17.242803692999587,
+      "cpu_seconds": 13.163641618,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 4558009.230360377,
+      "realtime_cpu_multiple": 1.3407238394983199,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 40405,
+        "native_dsp_batches": 10437,
+        "native_board_ticks": 1565,
+        "native_pending_irqs": 3525,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 40405,
+        "native_timer_irqs": 1014,
+        "native_console_polls": 0,
+        "native_pacer_checks": 3190,
+        "native_media_services": 5896,
+        "native_media_yields": 0,
+        "native_codec_services": 93,
+        "native_eoi_writes": 39953
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904467,
+        "batches": 119769,
+        "zero_batches": 25834,
+        "instructions_per_batch": 500.1667125883993,
+        "exits": []
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 17584,
+        "retired": 29982233,
+        "zero_batches": 1560,
+        "polls": 19439,
+        "dsp_batches": 5522,
+        "native_board_ticks": 701,
+        "native_pending_irqs": 1879,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 19439,
+        "native_timer_irqs": 542,
+        "cpu_seconds": 5.918913386,
+        "wall_seconds": 8.821475128999737,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": []
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    },
+    {
+      "wall_seconds": 17.259987840996473,
+      "cpu_seconds": 12.787535562000002,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 4692069.062806645,
+      "realtime_cpu_multiple": 1.3801571105155557,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 40180,
+        "native_dsp_batches": 10367,
+        "native_board_ticks": 1558,
+        "native_pending_irqs": 3502,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 40180,
+        "native_timer_irqs": 1006,
+        "native_console_polls": 0,
+        "native_pacer_checks": 2965,
+        "native_media_services": 5868,
+        "native_media_yields": 0,
+        "native_codec_services": 92,
+        "native_eoi_writes": 39928
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904431,
+        "batches": 119994,
+        "zero_batches": 25856,
+        "instructions_per_batch": 499.2285530943214,
+        "exits": []
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 17611,
+        "retired": 29982229,
+        "zero_batches": 1557,
+        "polls": 19412,
+        "dsp_batches": 5512,
+        "native_board_ticks": 699,
+        "native_pending_irqs": 1886,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 19412,
+        "native_timer_irqs": 539,
+        "cpu_seconds": 5.780526030000004,
+        "wall_seconds": 8.875546397001017,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": []
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    }
+  ]
+}

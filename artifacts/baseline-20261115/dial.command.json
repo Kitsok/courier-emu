@@ -1,0 +1,10 @@
+{
+  "argv": [
+    ".venv/bin/python",
+    "tools/benchmark_standalone.py",
+    "--dial",
+    "--repeat",
+    "5"
+  ],
+  "profiling": false
+}

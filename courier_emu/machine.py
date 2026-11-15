@@ -3383,6 +3383,11 @@ class CourierMachine:
 
             poll = self._worker_poll = WorkerPoll()
             state = poll.state
+            # Fixed worker configuration survives every snapshot refresh.
+            state.host_port = HOST_WORD_CELL
+            state.loader_first, state.loader_end = C51_ROM_LOADER_LOOP.start, C51_ROM_LOADER_LOOP.stop
+            state.line_min_samples, state.line_max_skip = LINE_SERVICE_MIN_SAMPLES, LINE_SERVICE_MAX_SKIP
+            state.line_rate, state.line_frame_samples = float(LINE_RATE), LINE_FRAME_SAMPLES
             state.service_model = getattr(self, '_native_service_address', None)
             line_buffer_address = ctypes.addressof(state.line_buffer)
             timers = self.timers
@@ -3560,14 +3565,11 @@ class CourierMachine:
                     state.batch = bridge.batch
                 latch = self.panel.latches.get(0x14)
                 state.panel_latch = NO_LATCH if latch is None else latch
-                state.io_cursor = state.mmio_cursor = 0
-                state.dirty = 0
                 seen[0] = state.polls
                 if scheduled:
                     # Clock-only services use no line state. Exchange DSP
                     # services carry their own resampler and buffer, without
                     # borrowing the paired socket frame's size limit.
-                    state.line_calls = state.frame_ok = 0
                     if scheduled == 2:
                         buffer = bridge._exchange_line_buffer
                         if len(buffer) > len(state.line_buffer):
@@ -3577,12 +3579,9 @@ class CourierMachine:
                             seed = array("h", buffer)
                             ctypes.memmove(line_buffer_address, seed.buffer_info()[0], 2 * len(seed))
                         state.timed = timed.handle
-                        state.line_rate = float(LINE_RATE)
-                        state.line_frame_samples = LINE_FRAME_SAMPLES
                         state.tx_index = bridge._exchange_tx_index
                         state.peak_codec = bridge._line_service["tx_peak_codec"]
                         state.peak_line = bridge._line_service["tx_peak_line"]
-                        state.tx_consumed = state.resampled = 0
                         state.exchange_codec_last = bridge._exchange_codec_last
                         state.exchange_idle = bridge._exchange_idle
                     if scheduled in (2, 3):
@@ -3592,31 +3591,20 @@ class CourierMachine:
                         state.boot_rom = 1
                         state.mailbox_writes = bridge._dsp_mailbox_writes
                         state.overlay_active = bridge._call_overlay_active
-                        state.host_port = HOST_WORD_CELL
-                        state.loader_in_loop = core.pc() in C51_ROM_LOADER_LOOP
-                        state.loader_first, state.loader_end = C51_ROM_LOADER_LOOP.start, C51_ROM_LOADER_LOOP.stop
-                    state.armed = 1
+                    poll.arm(poll.context)
                     return
                 state.debt = bridge._dsp_cycle_debt
                 state.cpi = bridge._dsp_cpi
                 state.cycles_per_x86 = bridge.dsp_cycles_per_x86
                 state.line_codec_last = bridge._line_codec_last
                 state.line_skipped = bridge._line_service_skipped
-                state.line_min_samples = LINE_SERVICE_MIN_SAMPLES
-                state.line_max_skip = LINE_SERVICE_MAX_SKIP
                 state.boot_rom = bool(bridge.boot_rom_enabled)
                 state.mailbox_writes = bridge._dsp_mailbox_writes
                 state.overlay_active = bool(bridge._call_overlay_active)
-                state.host_port = HOST_WORD_CELL
-                state.loader_in_loop = core.pc() in C51_ROM_LOADER_LOOP
-                state.loader_first = C51_ROM_LOADER_LOOP.start
-                state.loader_end = C51_ROM_LOADER_LOOP.stop
                 # The line service: the resampler's native state once it has
                 # retuned, and where the exchange buffer and its counts stand.
                 timed = getattr(bridge._codec_to_line, "_timed", None)
                 state.timed = timed.handle if timed is not None else None
-                state.line_rate = float(LINE_RATE)
-                state.line_frame_samples = LINE_FRAME_SAMPLES
                 buffer = bridge._exchange_line_buffer
                 if len(buffer) > len(state.line_buffer):
                     return
@@ -3627,13 +3615,12 @@ class CourierMachine:
                 state.tx_index = bridge._exchange_tx_index
                 state.peak_codec = bridge._line_service["tx_peak_codec"]
                 state.peak_line = bridge._line_service["tx_peak_line"]
-                state.line_calls = state.tx_consumed = state.resampled = 0
                 state.frame_ok = 0
                 # Arming the frame exchange costs more than the frame saves
                 # unless one is near: within about three line services.
                 if native_frames and len(buffer) >= LINE_FRAME_SAMPLES - FRAME_ARM_MARGIN:
                     arm_frames(bridge)
-                state.armed = 1
+                poll.arm(poll.context)
 
             def scheduled_static() -> bool:
                 # No Python state machine may move between these deadlines.

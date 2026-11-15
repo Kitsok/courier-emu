@@ -1,0 +1,9 @@
+{
+  "argv": [
+    ".venv/bin/python",
+    "tools/benchmark_standalone.py",
+    "--repeat",
+    "5"
+  ],
+  "profiling": false
+}

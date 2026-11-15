@@ -1,0 +1,724 @@
+{
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "workload": "idle",
+  "runs": [
+    {
+      "wall_seconds": 17.283810385000834,
+      "cpu_seconds": 16.031811492,
+      "instructions": 60000000,
+      "instructions_per_cpu_second": 3742558.9759423304,
+      "realtime_cpu_multiple": 1.1008617548099122,
+      "status": "instruction-limit",
+      "scheduler": {
+        "native_polls": 42602,
+        "native_dsp_batches": 11094,
+        "native_board_ticks": 1644,
+        "native_pending_irqs": 3740,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 42602,
+        "native_timer_irqs": 1078,
+        "native_console_polls": 0,
+        "native_pacer_checks": 5387,
+        "native_media_services": 6048,
+        "native_media_yields": 0,
+        "native_codec_services": 99,
+        "native_eoi_writes": 40168
+      },
+      "memory_sha256": "7961478133e8d6cd4fdbe629d60ea15043ff5387d968749858e1ab247009b1ac",
+      "registers": [
+        0,
+        0,
+        1442,
+        0,
+        292,
+        0,
+        1933,
+        32760,
+        0,
+        32768,
+        0,
+        0,
+        37575,
+        582
+      ],
+      "dsp_state": {
+        "pc": 33019,
+        "op": 48674,
+        "acc": 0,
+        "accb": 0,
+        "preg": 0,
+        "dp": 7,
+        "arp": 7,
+        "flags": 30,
+        "idle": true,
+        "instructions": 630476730,
+        "cycles": 644735767,
+        "io_events": 8192,
+        "ar0": 3008,
+        "ar1": 87,
+        "ar2": 0,
+        "ar3": 0,
+        "ar4": 0,
+        "ar5": 975,
+        "ar6": 88,
+        "ar7": 3008,
+        "arcr": 3008,
+        "indx": 3008
+      },
+      "dsp_serial": {
+        "drr": 0,
+        "dxr": 0,
+        "spc": 16584,
+        "drr_reads": 115129,
+        "dxr_writes": 115147,
+        "spc_writes": 4,
+        "rx_consumed": 0,
+        "rx_queued": 0,
+        "codec_rx_consumed": 114411,
+        "codec_rx_queued": 114513,
+        "last_drr_pc": 33154,
+        "last_dxr_pc": 33167,
+        "last_spc_pc": 32916,
+        "trcv": 0,
+        "tdxr": 0,
+        "tspc": 248,
+        "trcv_reads": 0,
+        "tdxr_writes": 115117,
+        "tspc_writes": 4,
+        "last_trcv_pc": 0,
+        "last_tdxr_pc": 33208,
+        "last_tspc_pc": 32908,
+        "line_tx_writes": 115133,
+        "line_tx_nonzero": 0,
+        "line_frame_interrupts": 114869,
+        "serial_frame_suppressed": 0,
+        "shadow_dp": 7,
+        "last_dp_pc": 33011,
+        "last_dp_value": 7,
+        "last_dp_source": 1,
+        "stray_cala_pc": 0,
+        "stray_cala_target": 0,
+        "stray_cala_dp": 0,
+        "line_dac_writes": 0,
+        "line_dac_frames": 0,
+        "line_tx_last": 0,
+        "line_tx_last_pc": 33167,
+        "imr": 42,
+        "v8_rx_state": 0,
+        "v8_rx_peak": 0,
+        "codec_rx_peak": 0,
+        "negotiation_loop_entries": 0,
+        "negotiation_loop_pc": 0,
+        "negotiation_source": 0,
+        "negotiation_pair": 0,
+        "negotiation_source_value": 0,
+        "negotiation_pair_value": 0,
+        "negotiation_acc": 0,
+        "v8_dispatches": 0,
+        "v8_record": 0,
+        "v8_handler": 0,
+        "v8_countdown": 0,
+        "v8_flags": 0,
+        "v8_dispatch_pc": 0,
+        "v8_dispatch_dp": 0,
+        "negotiation_d76": 0,
+        "negotiation_d77": 0,
+        "negotiation_d78": 0,
+        "negotiation_d79": 0,
+        "negotiation_d26": 0,
+        "negotiation_indx": 0,
+        "negotiation_arp": 0,
+        "negotiation_pm": 0,
+        "hybrid_frames": 115738,
+        "hybrid_peak": 0,
+        "delay_move_ignored": 0,
+        "delay_move_last_pc": 0,
+        "delay_move_last_address": 0
+      },
+      "serial_text": "",
+      "timers": {
+        "fast": true,
+        "modelled": true,
+        "interrupts": 1474,
+        "reads": 7093,
+        "writes": 14502,
+        "accelerated_waits": 1,
+        "granted_ticks": 65535,
+        "controller": {
+          "writes": 1491,
+          "masked": {
+            "timer": false,
+            "dma0": false,
+            "dma1": false,
+            "int0": true,
+            "int1": false,
+            "int2": true,
+            "int3": true
+          }
+        },
+        "timers": [
+          {
+            "control": "0x8021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 25200,
+            "compare_b": 0,
+            "count": 18029,
+            "max_counts": 3529
+          },
+          {
+            "control": "0xa021",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 54166,
+            "compare_b": 0,
+            "count": 49862,
+            "max_counts": 1474
+          },
+          {
+            "control": "0xa001",
+            "enabled": true,
+            "continuous": true,
+            "compare_a": 65535,
+            "compare_b": 0,
+            "count": 12146,
+            "max_counts": 3
+          }
+        ]
+      },
+      "interrupt_state": {
+        "ticks": 3267,
+        "last_tick": 59986944,
+        "last_frame": 59998469,
+        "timer_interrupts": 1474,
+        "stack": [],
+        "int0_in_service": false,
+        "int0_pending": null,
+        "int1_pending": null,
+        "timer_pending": null,
+        "external_pending": null
+      },
+      "native": {
+        "native_retired": 59904761,
+        "batches": 117572,
+        "zero_batches": 25633,
+        "instructions_per_batch": 509.51553941414625,
+        "exits": [
+          [
+            [
+              "read-watch",
+              "0x81493",
+              "0x83"
+            ],
+            8336
+          ],
+          [
+            [
+              "read-watch",
+              "0x81498",
+              "0xa1"
+            ],
+            8336
+          ],
+          [
+            [
+              "read-watch",
+              "0x8148e",
+              "0x83"
+            ],
+            8335
+          ],
+          [
+            [
+              "read-watch",
+              "0x81470",
+              "0x83"
+            ],
+            6252
+          ],
+          [
+            [
+              "write-watch",
+              "0x8146c",
+              "0xa3"
+            ],
+            6251
+          ],
+          [
+            [
+              "read-watch",
+              "0x81475",
+              "0x83"
+            ],
+            6251
+          ],
+          [
+            [
+              "read-watch",
+              "0x81463",
+              "0xa1"
+            ],
+            6246
+          ],
+          [
+            [
+              "read-watch",
+              "0x81451",
+              "0xa1"
+            ],
+            6242
+          ],
+          [
+            [
+              "write-watch",
+              "0x8145d",
+              "0xa3"
+            ],
+            6241
+          ],
+          [
+            [
+              "read-watch",
+              "0x8e4e9",
+              "0xf7"
+            ],
+            3538
+          ],
+          [
+            [
+              "write-watch",
+              "0x8e53c",
+              "0xc7"
+            ],
+            3538
+          ],
+          [
+            [
+              "io",
+              "0x8e4f3",
+              "0xa8"
+            ],
+            3537
+          ],
+          [
+            [
+              "write-watch",
+              "0x8e4f7",
+              "0xc7"
+            ],
+            3537
+          ],
+          [
+            [
+              "read-watch",
+              "0x8e529",
+              "0xf7"
+            ],
+            3537
+          ],
+          [
+            [
+              "io",
+              "0x8e536",
+              "0x84"
+            ],
+            3537
+          ],
+          [
+            [
+              "read-watch",
+              "0x82ba1",
+              "0xf7"
+            ],
+            3187
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ec30",
+              "0xc7"
+            ],
+            2949
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea74",
+              "0xc7"
+            ],
+            1474
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea7a",
+              "0xc7"
+            ],
+            1474
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea86",
+              "0xc7"
+            ],
+            1474
+          ]
+        ]
+      },
+      "window": {
+        "instructions": 29990912,
+        "batches": 15884,
+        "retired": 29982458,
+        "zero_batches": 1398,
+        "polls": 21139,
+        "dsp_batches": 6020,
+        "native_board_ticks": 763,
+        "native_pending_irqs": 2053,
+        "native_diagnostic_resumes": 0,
+        "native_timer_polls": 21139,
+        "native_timer_irqs": 592,
+        "cpu_seconds": 8.158881234000003,
+        "wall_seconds": 8.821722244996636,
+        "start_instruction": 30007296,
+        "mmio": [
+          [
+            [
+              "write",
+              65282,
+              2
+            ],
+            25272
+          ],
+          [
+            [
+              "write",
+              65344,
+              2
+            ],
+            2463
+          ],
+          [
+            [
+              "read",
+              65382,
+              2
+            ],
+            1764
+          ],
+          [
+            [
+              "write",
+              65350,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65346,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "read",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65380,
+              2
+            ],
+            821
+          ],
+          [
+            [
+              "write",
+              65306,
+              2
+            ],
+            821
+          ]
+        ],
+        "io": [
+          [
+            [
+              "in",
+              18,
+              1
+            ],
+            164
+          ],
+          [
+            [
+              "out",
+              0,
+              1
+            ],
+            40
+          ],
+          [
+            [
+              "in",
+              0,
+              1
+            ],
+            20
+          ]
+        ],
+        "exits": [
+          [
+            [
+              "read-watch",
+              "0x82ba1",
+              "0xf7"
+            ],
+            1764
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ec30",
+              "0xc7"
+            ],
+            1642
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea74",
+              "0xc7"
+            ],
+            821
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea7a",
+              "0xc7"
+            ],
+            821
+          ],
+          [
+            [
+              "write-watch",
+              "0x9ea86",
+              "0xc7"
+            ],
+            821
+          ],
+          [
+            [
+              "read-watch",
+              "0x9ea98",
+              "0x81"
+            ],
+            821
+          ],
+          [
+            [
+              "write-watch",
+              "0x9eaa4",
+              "0xc7"
+            ],
+            821
+          ],
+          [
+            [
+              "poll",
+              "0x893b0",
+              "0x32"
+            ],
+            201
+          ],
+          [
+            [
+              "poll",
+              "0x8b3f6",
+              "0xc3"
+            ],
+            197
+          ],
+          [
+            [
+              "poll",
+              "0x892d2",
+              "0xe8"
+            ],
+            194
+          ],
+          [
+            [
+              "poll",
+              "0x893b3",
+              "0xd1"
+            ],
+            192
+          ],
+          [
+            [
+              "poll",
+              "0x8b4cf",
+              "0xc3"
+            ],
+            191
+          ],
+          [
+            [
+              "poll",
+              "0x893d3",
+              "0xf8"
+            ],
+            191
+          ],
+          [
+            [
+              "poll",
+              "0x8b3f5",
+              "0xf8"
+            ],
+            189
+          ],
+          [
+            [
+              "poll",
+              "0x8b49a",
+              "0x74"
+            ],
+            188
+          ],
+          [
+            [
+              "poll",
+              "0x893b2",
+              "0x93"
+            ],
+            188
+          ],
+          [
+            [
+              "poll",
+              "0x892c7",
+              "0xe8"
+            ],
+            187
+          ],
+          [
+            [
+              "poll",
+              "0x8b439",
+              "0x74"
+            ],
+            185
+          ],
+          [
+            [
+              "poll",
+              "0x8b432",
+              "0x75"
+            ],
+            185
+          ],
+          [
+            [
+              "poll",
+              "0x892ea",
+              "0x73"
+            ],
+            184
+          ],
+          [
+            [
+              "poll",
+              "0x89716",
+              "0x83"
+            ],
+            184
+          ],
+          [
+            [
+              "poll",
+              "0x8b459",
+              "0xc3"
+            ],
+            184
+          ],
+          [
+            [
+              "poll",
+              "0x8b495",
+              "0xf6"
+            ],
+            183
+          ],
+          [
+            [
+              "poll",
+              "0x8b458",
+              "0xf8"
+            ],
+            183
+          ],
+          [
+            [
+              "poll",
+              "0x893d2",
+              "0x93"
+            ],
+            181
+          ],
+          [
+            [
+              "poll",
+              "0x892d5",
+              "0x80"
+            ],
+            180
+          ],
+          [
+            [
+              "poll",
+              "0x8970d",
+              "0xb3"
+            ],
+            180
+          ],
+          [
+            [
+              "poll",
+              "0x892cd",
+              "0x72"
+            ],
+            179
+          ],
+          [
+            [
+              "poll",
+              "0x892da",
+              "0x74"
+            ],
+            179
+          ],
+          [
+            [
+              "poll",
+              "0x8b4b4",
+              "0xc3"
+            ],
+            178
+          ]
+        ]
+      },
+      "exchange_state": "idle",
+      "daa_operation": "idle"
+    }
+  ]
+}

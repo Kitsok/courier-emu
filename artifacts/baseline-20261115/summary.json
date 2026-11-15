@@ -1,0 +1,131 @@
+{
+  "idle": {
+    "cpu_seconds": {
+      "median": 4.1676393900000015,
+      "min": 3.9057601030000004,
+      "max": 5.255023215000001,
+      "samples": [
+        3.9663095459999997,
+        3.9057601030000004,
+        4.2615139079999995,
+        5.255023215000001,
+        4.1676393900000015
+      ]
+    },
+    "wall_seconds": {
+      "median": 4.174346530999173,
+      "min": 3.900148241998977,
+      "max": 5.686745776998578,
+      "samples": [
+        3.966344765998656,
+        3.900148241998977,
+        4.262275255001441,
+        5.686745776998578,
+        4.174346530999173
+      ]
+    },
+    "instructions": 30000000,
+    "status": [
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit"
+    ],
+    "state_unique_counts": {
+      "memory_sha256": 1,
+      "registers": 1,
+      "dsp_state": 1,
+      "dsp_serial": 1,
+      "serial_text": 1,
+      "timers": 1,
+      "interrupt_state": 1
+    }
+  },
+  "dial": {
+    "cpu_seconds": {
+      "median": 5.933851046999999,
+      "min": 5.650258384,
+      "max": 6.27484948,
+      "samples": [
+        6.27484948,
+        5.650258384,
+        5.933851046999999,
+        5.799182406,
+        5.969002720000002
+      ]
+    },
+    "wall_seconds": {
+      "median": 5.928025606997835,
+      "min": 5.6442689769974095,
+      "max": 6.385972243995639,
+      "samples": [
+        6.385972243995639,
+        5.6442689769974095,
+        5.928025606997835,
+        5.794009725002979,
+        5.9629368009991595
+      ]
+    },
+    "instructions": 30000000,
+    "status": [
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit"
+    ],
+    "state_unique_counts": {
+      "memory_sha256": 1,
+      "registers": 1,
+      "dsp_state": 1,
+      "dsp_serial": 1,
+      "serial_text": 1,
+      "timers": 1,
+      "interrupt_state": 1
+    }
+  },
+  "steady": {
+    "cpu_seconds": {
+      "median": 5.780526030000004,
+      "min": 4.887822290000001,
+      "max": 9.835829739999998,
+      "samples": [
+        4.887822290000001,
+        9.835829739999998,
+        5.274548715000002,
+        5.918913386,
+        5.780526030000004
+      ]
+    },
+    "wall_seconds": {
+      "median": 8.821475128999737,
+      "min": 6.82840961599868,
+      "max": 11.698126964998664,
+      "samples": [
+        6.82840961599868,
+        11.698126964998664,
+        7.020120055996813,
+        8.821475128999737,
+        8.875546397001017
+      ]
+    },
+    "instructions": 29990912,
+    "status": [
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit",
+      "instruction-limit"
+    ],
+    "state_unique_counts": {
+      "memory_sha256": 1,
+      "registers": 1,
+      "dsp_state": 1,
+      "dsp_serial": 1,
+      "serial_text": 1,
+      "timers": 1,
+      "interrupt_state": 1
+    }
+  }
+}

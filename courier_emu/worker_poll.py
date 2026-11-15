@@ -160,6 +160,9 @@ class WorkerPoll:
             self.state.yield_counts = ctypes.addressof(self._yield_counts)
         self.function = ctypes.cast(library.courier_worker_poll, ctypes.c_void_p).value
         self.context = ctypes.addressof(self.state)
+        self.arm = library.courier_worker_arm
+        self.arm.argtypes = [ctypes.c_void_p]
+        self.arm.restype = None
 
     def yield_profile(self):
         return {'native': {YIELD_REASONS.get(k, str(k)): int(v) for k, v in enumerate(self._yield_counts) if v},

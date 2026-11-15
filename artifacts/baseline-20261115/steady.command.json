@@ -1,0 +1,13 @@
+{
+  "argv": [
+    ".venv/bin/python",
+    "tools/benchmark_standalone.py",
+    "--warmup-instructions",
+    "30000000",
+    "--instructions",
+    "30000000",
+    "--repeat",
+    "5"
+  ],
+  "profiling": false
+}

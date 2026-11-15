@@ -1,0 +1,8 @@
+{
+  "load": " 18:45:25 up 22:34,  1 user,  load average: 1.27, 1.14, 1.19\n",
+  "thermal": {
+    "/sys/class/thermal/thermal_zone2/temp": "76000",
+    "/sys/class/thermal/thermal_zone0/temp": "70500",
+    "/sys/class/thermal/thermal_zone1/temp": "26500"
+  }
+}
