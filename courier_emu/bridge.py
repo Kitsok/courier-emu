@@ -3539,13 +3539,12 @@ class CourierDspBridge:
             # indicates the local line connection, never carrier detection.
             self.daa.line_state = "quiet" if self.line.connected else "disconnected"
 
-    # Trans-hybrid return, in 1/256ths. This is a synthetic board path,
-    # not a measured hybrid transfer function. Leave headroom for the AC01
-    # input gain: its normal register 4 value, 0x09, doubles the returned
-    # sample. Unity return therefore clips the ADC and breaks AT&T1 receive.
-    # A quarter-scale return keeps even full-scale DAC samples below half
-    # ADC scale after that gain. Higher-rate loopback fidelity still needs
-    # separate validation; carrier acquisition alone does not establish it.
+    # Synthetic trans-hybrid return, in 1/256ths, not a measured transfer
+    # function. Quarter scale leaves receiver headroom at the normal AC01
+    # +6 dB input gain. Correcting the captured S39=0 transmit level is also
+    # necessary: attenuation here cannot undo overflow before the DAC.
+    # Unity return remains unreliable in repeated 2400-bps echo trials even
+    # at factory S39=8, so retain this empirical approximation for now.
     HYBRID_RETURN_ON_HOOK = 64
     # Off hook the hybrid is terminated by a line and returns only part of the
     # transmit. 26 (-20 dB) is a STAND-IN for the DAA's trans-hybrid loss,

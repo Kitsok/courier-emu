@@ -58,8 +58,9 @@ def test_nvram_seeding_and_backup_migration_preserve_other_settings(tmp_path):
     backup = seed_nvram(path)
     assert backup.parent == path.parent and backup.read_bytes() == original
     actual = path.read_bytes()
-    assert {i for i, (a, b) in enumerate(zip(original, actual)) if a != b} == {5, 511}
+    assert {i for i, (a, b) in enumerate(zip(original, actual)) if a != b} == {5, 0x34, 511}
     assert actual[5] == 5 and actual[-1] == settings_checksum(actual)
+    assert actual[0x34] == 8
     assert path.stat().st_mode & 0o777 == 0o640
     assert seed_nvram(path) is None
     assert list(path.parent.glob('*.bak')) == [backup]
@@ -114,13 +115,43 @@ def test_new_profile_preserves_capture_except_verified_operational_settings(tmp_
     path = tmp_path / "settings.nvram"
     seed_nvram(path)
     actual = path.read_bytes()
-    # ATS27=0S54=96&M5 followed by AT&W in the original 403 firmware produces
+    # ATS27=0S54=96&M5S39=8 followed by AT&W in the original firmware produces
     # these EEPROM bytes, including the firmware's stored checksum.
     differences = {i: (old, new) for i, (old, new)
                    in enumerate(zip(IDSDL403_NVRAM, actual)) if old != new}
-    assert differences == {0x05: (4, 5), 0x29: (48, 0), 0x3C: (64, 96), 0x1FF: (0xBD, 0xAE)}
+    assert differences == {0x05: (4, 5), 0x29: (48, 0), 0x34: (0, 8),
+                           0x3C: (64, 96), 0x1FF: (0xBD, 0xB6)}
     assert actual[-1] == settings_checksum(actual)
     assert bytes(CourierNvram.idsl403_fixture().data) == IDSDL403_NVRAM
+
+
+@pytest.mark.parametrize('level', [1, 4, 8, 11, 29])
+def test_migration_preserves_custom_transmit_levels(tmp_path, level):
+    path = tmp_path / 'settings.nvram'
+    original = bytearray(IDSDL403_NVRAM)
+    original[0x34] = level
+    original[-1] = settings_checksum(original)
+    path.write_bytes(original)
+    backup = seed_nvram(path)
+    assert backup.read_bytes() == original
+    actual = path.read_bytes()
+    assert actual[0x34] == level
+    assert {i for i, (a, b) in enumerate(zip(original, actual)) if a != b} == {5, 511}
+    assert seed_nvram(path) is None
+
+
+def test_migration_repairs_zero_level_when_arq_is_already_required(tmp_path):
+    path = tmp_path / 'settings.nvram'
+    original = bytearray(CourierNvram.idsl403_lapm_fixture().data)
+    original[0x34] = 0
+    original[-1] = settings_checksum(original)
+    path.write_bytes(original)
+    backup = seed_nvram(path)
+    assert backup.read_bytes() == original
+    actual = path.read_bytes()
+    assert {i for i, (a, b) in enumerate(zip(original, actual)) if a != b} == {0x34, 511}
+    assert actual[0x34] == 8 and actual[-1] == settings_checksum(actual)
+    assert seed_nvram(path) is None
 
 
 def test_stable_terminal_cannot_be_stolen_and_reopens_with_new_target(tmp_path):

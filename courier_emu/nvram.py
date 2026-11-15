@@ -128,6 +128,10 @@ IDSDL403_EXTENDED = bytes.fromhex(
 # fixture without it renders every setting at its erased value.
 CHECKSUM_BYTE = NVRAM_BYTES - 1
 CHECKSUM_SPAN = NVRAM_BYTES - 2
+# Original 403 firmware AT&F1 selects -8 dBm. ATS39=8&W changes only
+# byte 0x34 and the checksum. The captured zero setting overdrives QAM TX.
+IDSDL403_S39_BYTE = 0x34
+IDSDL403_DEFAULT_S39 = 8
 
 
 def settings_checksum(data: bytes | bytearray) -> int:
@@ -224,19 +228,22 @@ class CourierNvram:
 
     @classmethod
     def idsl403_lapm_fixture(cls) -> CourierNvram:
-        """Captured 403 provisioning with required ARQ and lower symbol rates.
+        """Captured 403 provisioning with verified operational defaults.
 
         Firmware-written EEPROM differences locate S27 at byte 0x29 and
         S54 at 0x3c. Clear S27's captured negotiation override and set S54
         bit 32 to disable 3429 baud while preserving its other settings.
         Firmware AT&M5&W changes byte 0x05 from 4 to 5: require error
         correction rather than allowing &M4's non-ARQ fallback. Keep the raw
-        capture available for historical diagnostic runs.
+        capture available for historical diagnostic runs. Restore S39's
+        factory -8 dBm transmit level: the capture's zero setting makes
+        outer QAM points wrap in the DSP's transmit mixer, before the DAC.
         """
         device = cls.idsl403_fixture()
         device.data[0x05] = 5
         device.data[0x29] = 0
         device.data[0x3C] |= 0x20
+        device.data[IDSDL403_S39_BYTE] = IDSDL403_DEFAULT_S39
         device.data[CHECKSUM_BYTE] = settings_checksum(device.data)
         return device
 

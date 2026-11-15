@@ -25,11 +25,29 @@ disabling 3429 baud while retaining lower symbol rates. Running
 checksum of 0xad at 0x1ff. On 2026-11-02, error correction became required
 for normal use: the current fixture additionally selects &M5. Original
 firmware `AT&M5&W` changes byte 0x05 from 4 to 5 and the checksum from 0xad
-to 0xae. The current fixture matches those firmware-written bytes exactly.
-The launcher now backs up and migrates only the ARQ mode and checksum of
-valid existing EEPROMs; all other settings are preserved. These later
+to 0xae. The November 2 fixture matched those firmware-written bytes exactly.
+That launcher backed up and migrated only the ARQ mode and checksum of
+valid existing EEPROMs; all other settings were preserved. These later
 defaults do not retroactively change the settings of the calls below. The raw `idsdl403` fixture remains available for historical diagnostic
 runs.
+
+On 2026-11-16, the operational fixture also restored the firmware's factory
+`S39=8` transmit level. The raw capture contains `S39=0`: outer 2400-bps QAM
+points overflow the transmit mixer's output range before reaching the codec.
+Original firmware `AT&F1S39?` reports `008`; `ATS39=8&W` changes only EEPROM
+byte `0x34` from zero to eight and its checksum. The operational fixture's
+checksum becomes `0xb6`. Startup backs up existing profiles before replacing
+a zero transmit level with eight; it preserves nonzero transmit levels.
+The raw capture remains unchanged.
+
+Use `ATE0&M0&N3S14.0=0&T1` for the manual's fixed 2400-bps local analog
+loopback test. Error control must be disabled for this diagnostic. The
+corrected profile passed a sustained raw echo trial with unity return, but
+repeated trials still corrupted data without ADC saturation or transmit mixer
+overflow. The empirical quarter-scale synthetic return therefore remains;
+its physical transfer function has not been measured. These results do not
+establish V.34 local loopback reliability: that mode still stalls or corrupts data in isolated
+tests and remains under investigation.
 
 ## Physical data tests
 

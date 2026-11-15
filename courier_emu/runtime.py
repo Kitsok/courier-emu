@@ -11,7 +11,8 @@ import sys
 import tempfile
 
 from . import cli, dsp, x86_native
-from .nvram import CHECKSUM_BYTE, CourierNvram, settings_checksum
+from .nvram import (CHECKSUM_BYTE, IDSDL403_DEFAULT_S39, IDSDL403_S39_BYTE,
+                    CourierNvram, settings_checksum)
 
 
 KEYS = {
@@ -120,7 +121,7 @@ def sync_directory(path: Path) -> None:
 
 
 def seed_nvram(path: Path) -> Path | None:
-    """Seed new profiles or back up and migrate only the saved ARQ mode."""
+    """Seed defaults or back up and repair ARQ and captured zero TX level."""
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with path.open("xb") as output:
@@ -128,17 +129,19 @@ def seed_nvram(path: Path) -> Path | None:
     except FileExistsError:
         path = path.resolve(strict=True)  # Preserve a configured symlink.
         device = validated_nvram(path)
-        if device.data[0x05] == 5:
+        if device.data[0x05] == 5 and device.data[IDSDL403_S39_BYTE] != 0:
             return None
         original = bytes(device.data)
         device.data[0x05] = 5
+        if device.data[IDSDL403_S39_BYTE] == 0:
+            device.data[IDSDL403_S39_BYTE] = IDSDL403_DEFAULT_S39
         device.data[CHECKSUM_BYTE] = settings_checksum(device.data)
         # Exclusive creation retains every pre-migration version, even if
-        # firmware later saves a different non-ARQ profile at the same path.
+        # firmware later saves another profile requiring repair at this path.
         backup = None
         try:
             with tempfile.NamedTemporaryFile(
-                    dir=path.parent, prefix=path.name + '.pre-arq-',
+                    dir=path.parent, prefix=path.name + '.pre-profile-',
                     suffix='.bak', delete=False) as output:
                 backup = Path(output.name)
                 output.write(original)
@@ -193,13 +196,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.check_config:
             if nvram.exists():
                 device = validated_nvram(nvram)
-                if device.data[0x05] != 5:
-                    print("Existing EEPROM will migrate to required ARQ with a backup on launch")
+                if device.data[0x05] != 5 or device.data[IDSDL403_S39_BYTE] == 0:
+                    print("Existing EEPROM settings will migrate with a backup on launch")
             print("Analog Courier configuration and native build: OK")
             return 0
         backup = seed_nvram(nvram)
         if backup is not None:
-            print(f"courier-emu: required ARQ (&M5); original EEPROM backed up to {backup}",
+            print(f"courier-emu: migrated operational settings; original EEPROM backed up to {backup}",
                   file=sys.stderr)
         return cli.main(arguments)
     except (OSError, ValueError, RuntimeError, ImportError, configparser.Error) as exc:
