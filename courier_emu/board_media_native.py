@@ -39,6 +39,7 @@ def library():
         'state': ([c.c_void_p], c.POINTER(BoardMediaState)),
         'layout': ([], c.c_size_t),
         'advance_dsp_clock': ([c.c_void_p, c.c_int64], c.c_int),
+        'clock': ([c.c_void_p, c.c_void_p, c.c_int64, c.c_uint], c.c_int),
         'begin': ([c.c_void_p, c.c_void_p, c.c_int64], c.c_int),
         'resume': ([c.c_void_p, c.c_void_p], c.c_int),
         'reset': ([c.c_void_p, c.c_void_p, c.c_int], c.c_int),
@@ -83,6 +84,7 @@ class NativeBoardMedia:
             self, self._destroy, self._lib, self._handle,
             self._device_storage)
         self.state = self._lib.courier_board_media_state(self._handle).contents
+        self._clock_codec = None
 
     @staticmethod
     def _destroy(lib, handle, daa_buffer):
@@ -101,6 +103,21 @@ class NativeBoardMedia:
 
     def advance_dsp_clock(self, count):
         return bool(self._lib.courier_board_media_advance_dsp_clock(self.handle, count))
+
+    def clock_line(self, core, count, *, exchange, codec):
+        flags = 4 | int(exchange) | (int(codec) << 1)
+        while True:
+            event = self._lib.courier_board_media_clock(self.handle, core.handle, count, flags)
+            flags, count = 0, 0
+            if not event:
+                return
+            if event < 0:
+                raise RuntimeError('native line clock failed')
+            if event == 8:
+                self.monitor_callback(self.frame(0), self.frame(1))
+                self._lib.courier_board_media_monitor_ack(self.handle)
+            else:
+                self.line.control_event(event)
 
     def resume(self, core):
         while True:
@@ -153,6 +170,7 @@ class NativeBoardMedia:
         self._device_storage.append(master.codec._native_buffer)
         self._lib.courier_board_media_codec(self.handle, master.native_handle)
         self._native_codec_attached = True
+        self._clock_codec = master
 
     def service_codec(self):self._lib.courier_board_media_service_codec(self.handle)
 

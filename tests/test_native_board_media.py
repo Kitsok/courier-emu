@@ -119,6 +119,52 @@ def test_native_dsp_clock_preserves_thresholds_and_fractional_debt(pair):
             bridge.dsp_cycles_per_x86 = native.state.cycles_per_x86 = rng.random() * 10
 
 
+def test_native_line_clocks_match_reference_across_service_boundaries(pair):
+    from courier_emu.codec import CodecBringUp, SiliconDaa
+    from courier_emu.codec_native import NativeCodecBringUp
+    from courier_emu.line import LINE_FRAME_INSTRUCTIONS
+    bridge, native, cores = pair
+    bridge.codec = CodecBringUp(SiliconDaa())
+    master = NativeCodecBringUp.adopt(CodecBringUp(SiliconDaa()))
+    native.attach_codec(master)
+    bridge.is3453 = False
+    bridge._exchange_instructions = bridge._codec_instructions = 0
+    for count in [0, 63, 1, 64, 129, LINE_FRAME_INSTRUCTIONS, 3 * LINE_FRAME_INSTRUCTIONS]:
+        bridge._instructions += count
+        native.state.board_instructions += count
+        bridge._advance_line_clocks(count)
+        native.clock_line(cores[1], count, exchange=True, codec=True)
+        assert bridge._exchange_instructions == native.state.exchange_ticks
+        assert bridge._codec_instructions == native.state.codec_instructions
+        assert master.status() == bridge.codec.status()
+        compare(bridge, native, cores)
+
+
+def test_native_line_clock_resumes_signalling_before_advancing_codec(pair, monkeypatch):
+    import socket
+    from courier_emu.codec import CodecBringUp, SiliconDaa
+    from courier_emu.codec_native import NativeCodecBringUp
+    from courier_emu.line import LINE_FRAME_INSTRUCTIONS
+    _, native, cores = pair
+    native.attach_codec(NativeCodecBringUp.adopt(CodecBringUp(SiliconDaa())))
+    advance(cores[1], 760, 2880000, 0x1200)
+    observed = []
+    session = native.line.sip
+
+    def consume():
+        session.socket.recvfrom(256)
+        observed.append(native.state.codec_instructions)
+
+    monkeypatch.setattr(session, 'poll', consume)
+    native.state.board_instructions = LINE_FRAME_INSTRUCTIONS
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+        peer.sendto(b'ready', session.socket.getsockname())
+        native.clock_line(cores[1], LINE_FRAME_INSTRUCTIONS, exchange=True, codec=True)
+    assert observed == [0]
+    assert native.state.codec_instructions == 0
+    assert native.state.exchange_ticks == LINE_FRAME_INSTRUCTIONS % 64
+
+
 def test_direct_pipeline_matches_reference_across_codec_clock_edges(pair):
     bridge, native, cores = pair
     for count, mclk, value in [(360, 2880000, 0x1200), (400, 2880000, 0x2400),

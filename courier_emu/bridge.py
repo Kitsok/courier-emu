@@ -3062,22 +3062,7 @@ class CourierDspBridge:
                     (self.core.state()["instructions"], self._instructions, self.core.state()["cycles"]))
             except Exception:
                 pass
-        if self.exchange is not None:
-            # The loop and the exchange behind it exist from board reset, the
-            # same as the codec and before any DSP program is downloaded. A
-            # line that only rings once the C50 is up is not a line.
-            self._exchange_instructions += count
-            while self._exchange_instructions >= self.batch:
-                self._exchange_instructions -= self.batch
-                self._service_exchange()
-        if self.codec is not None:
-            # The codec is on the ASIC's own serial bus, not the DSP's, so its
-            # bring-up runs from board reset rather than from the download that
-            # starts the C50.
-            self._codec_instructions += count
-            while self._codec_instructions >= LINE_FRAME_INSTRUCTIONS:
-                self._codec_instructions -= LINE_FRAME_INSTRUCTIONS
-                self._service_codec()
+        self._advance_line_clocks(count)
         if not self.active or self.error or (self.boot_rom_enabled and not self.launched):
             return
         if self._runtime_mode and not self._runtime_ready:
@@ -3238,6 +3223,25 @@ class CourierDspBridge:
                     self.sip.send_audio(self._sip_tx_rate.convert(samples))
         except RuntimeError as exc:
             self.error = str(exc)
+
+    def _advance_line_clocks(self, count: int) -> None:
+        """Service the exchange before advancing the independent codec clock."""
+        if self.exchange is not None:
+            # The loop and the exchange behind it exist from board reset, the
+            # same as the codec and before any DSP program is downloaded. A
+            # line that only rings once the C50 is up is not a line.
+            self._exchange_instructions += count
+            while self._exchange_instructions >= self.batch:
+                self._exchange_instructions -= self.batch
+                self._service_exchange()
+        if self.codec is not None:
+            # The codec is on the ASIC's own serial bus, not the DSP's, so its
+            # bring-up runs from board reset rather than from the download that
+            # starts the C50.
+            self._codec_instructions += count
+            while self._codec_instructions >= LINE_FRAME_INSTRUCTIONS:
+                self._codec_instructions -= LINE_FRAME_INSTRUCTIONS
+                self._service_codec()
 
     def _advance_dsp_clock(self, count: int) -> bool:
         """Accumulate CPU instructions and grant one owed DSP batch."""

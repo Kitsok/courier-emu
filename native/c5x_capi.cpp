@@ -3521,6 +3521,13 @@ size_t courier_board_media_layout() {return sizeof(courier::analog::BoardMediaSt
 int courier_board_media_advance_dsp_clock(void *handle, int64_t count) {
     return static_cast<courier::analog::BoardMedia *>(handle)->advance_dsp_clock(count);
 }
+int courier_board_media_clock(void *handle, void *core, int64_t count, unsigned flags) {
+    try {
+        auto &board=*static_cast<courier::analog::BoardMedia *>(handle);
+        if(flags&4)board.begin_clock(count,bool(flags&1),bool(flags&2));
+        return board.resume_clock(*static_cast<C5xCore *>(core));
+    } catch (...) {return -1;}
+}
 int courier_board_media_begin(void *handle,void *core,int64_t instructions) {
     try {static_cast<courier::analog::BoardMedia *>(handle)->begin(*static_cast<C5xCore *>(core),instructions);return 0;}
     catch (...) {return -1;}

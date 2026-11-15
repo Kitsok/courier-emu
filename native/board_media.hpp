@@ -32,6 +32,8 @@ struct BoardMedia {
     std::string dial_digits;
     int64_t instructions=0;
     bool active=false,in_frame=false,fallback=false;
+    bool clocking=false,clock_exchange=false,clock_codec=false;
+    int64_t clock_count=0;
     bool monitor=false,monitor_done=false;
     BoardMedia(SipPort &subscriber,Daa *device,size_t samples,uint64_t period,uint64_t quantum,
                bool precise,bool compensated):port(subscriber),daa(device),
@@ -156,6 +158,30 @@ struct BoardMedia {
             ++s.frames;in_frame=false;monitor_done=false;
             active=!fallback && line_buffer.size()>=frame_samples;
         }
+        return 0;
+    }
+    void begin_clock(int64_t count, bool exchange, bool master) {
+        if (clocking || active) throw std::logic_error("native line clock already in progress");
+        clocking=true;clock_count=count;clock_exchange=exchange;clock_codec=master;
+        if (exchange) s.exchange_ticks+=count;
+    }
+    int resume_clock(C5xCore &core) {
+        if (!clocking) throw std::logic_error("native line clock not started");
+        // Signalling/monitor events return before the codec clock advances.
+        // Resumption completes the same frame without earning time twice.
+        while (clock_exchange) {
+            if (active) {const int event=resume(core);if(event)return event;}
+            if (s.exchange_ticks<int64_t(batch)) break;
+            s.exchange_ticks-=int64_t(batch);
+            begin(core,s.board_instructions);
+        }
+        if (clock_codec) {
+            s.codec_instructions+=clock_count;
+            while (s.codec_instructions>=int64_t(frame_instructions)) {
+                s.codec_instructions-=int64_t(frame_instructions);service_codec();
+            }
+        }
+        clocking=false;
         return 0;
     }
     // The bridge calls these at actual reset/rebuild edges, never on a batch

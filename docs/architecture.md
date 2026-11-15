@@ -145,6 +145,9 @@ legacy interrupt-controller programming use native state operations. Eligible
 Timer 2 register writes commit inside the x86 batch; other register writes still
 cross the Python device boundary. Board timebase selection and calibrated-delay
 grants retain Python logic.
+On the standard native media path, exchange and codec clock loops also stay
+in C++; signalling and monitor events return to Python before codec time is
+advanced. Custom codec masters retain the Python scheduling path.
 UART work, complete media frames and other device transitions still require
 Python. Other CPU/DSP/line attributes still cross snapshot boundaries, so
 moving an individual callback to C++ does not eliminate all arming cost.

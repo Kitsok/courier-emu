@@ -1,5 +1,6 @@
 """Authoritative native media views on the standalone Courier bridge."""
 from collections.abc import MutableMapping
+import os
 
 from .board_media_native import NativeBoardMedia, NativePcmQueue, NativeStreamView
 from .bridge import CourierDspBridge
@@ -81,6 +82,7 @@ class NativeCourierDspBridge(CourierDspBridge):
         # Install the shared state before switching class, so descriptors can
         # never observe a partially adopted bridge.
         bridge._native_media_owner = owner
+        bridge._native_line_clock_enabled = os.environ.get('COURIER_NATIVE_LINE_CLOCK', '1') != '0'
         bridge._sip_line = line
         bridge._line_service = NativeServiceStats(owner, stats)
         bridge._exchange_line_buffer = NativePcmQueue(owner, 0)
@@ -118,6 +120,15 @@ class NativeCourierDspBridge(CourierDspBridge):
 
     def _advance_dsp_clock(self, count):
         return self._native_media_owner.advance_dsp_clock(count)
+
+    def _advance_line_clocks(self, count):
+        owner = self._native_media_owner
+        if (self._native_line_clock_enabled
+                and (self.codec is None or self.codec is owner._clock_codec)):
+            owner.clock_line(self.core, count, exchange=self.exchange is not None,
+                             codec=self.codec is not None)
+        else:
+            super()._advance_line_clocks(count)
 
     def _take_line_audio(self):
         self._native_media_owner.collect(self.core)
