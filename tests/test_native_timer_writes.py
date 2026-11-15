@@ -11,7 +11,8 @@ from courier_emu.timers_native import NativeTimerBlock
 
 
 @pytest.mark.parametrize('guard_source', [False, True])
-def test_batched_timer_writes_match_synchronous_reference(guard_source):
+@pytest.mark.parametrize('address', [0xff40, 0xff42, 0xff46])
+def test_batched_timer_writes_match_synchronous_reference(guard_source, address):
     states, batches = [], []
     for native in (False, True):
         timers = NativeTimerBlock(TimerBlock(fast=False))
@@ -30,15 +31,15 @@ def test_batched_timer_writes_match_synchronous_reference(guard_source):
             counts['writes'] += 1
             timers.write(address, size, value, cpu.retired)
 
-        cpu.hook_add(x86.UC_HOOK_MEM_READ, read, None, 0xff40, 0xff41)
-        cpu.hook_add(x86.UC_HOOK_MEM_WRITE, write, None, 0xff40, 0xff41)
+        cpu.hook_add(x86.UC_HOOK_MEM_READ, read, None, address, address + 1)
+        cpu.hook_add(x86.UC_HOOK_MEM_WRITE, write, None, address, address + 1)
         if guard_source:
             cpu.hook_add(x86.UC_HOOK_MEM_READ, lambda *args: None, None, 0x2000, 0x2001)
         if native:
             # Preserve normal native timer read diagnostics separately.
             read_counts = Counter()
             cpu.native_timer_reads = NativeTimerReads(timers, read_counts)
-            cpu.native_mmio_batch = ((0xff40, 0xff41),)
+            cpu.native_mmio_batch = ((address, address + 1),)
 
             def replay(events, count):
                 for offset in range(0, count * 8, 8):
@@ -48,17 +49,18 @@ def test_batched_timer_writes_match_synchronous_reference(guard_source):
             cpu.native_mmio_callback = replay
         # Word write; byte merge; native read/modify/write; MOVSW with an
         # optional watched source; read immediately after committed writes.
-        cpu.mem_write(0x1000, bytes.fromhex('c7 06 40 ff 34 12 c6 06 40 ff 56 ff 06 40 ff a5 a1 40 ff'))
+        code = bytes.fromhex('c7 06 40 ff 34 12 c6 06 40 ff 56 ff 06 40 ff a5 a1 40 ff')
+        cpu.mem_write(0x1000, code.replace(b'\x40\xff', address.to_bytes(2, 'little')))
         cpu.mem_write(0x2000, b'\x78\x56')
         cpu.reg_write(x86.UC_X86_REG_SI, 0x2000)
-        cpu.reg_write(x86.UC_X86_REG_DI, 0xff40)
+        cpu.reg_write(x86.UC_X86_REG_DI, address)
         cpu.emu_start(0x1000, 0, count=5)
         if native:
-            counts['reads'] += read_counts[('read', 0xff40, 2)]
+            counts['reads'] += read_counts[('read', address, 2)]
             batches.append(cpu._native.batches)
         states.append((list(cpu.regs), bytes(cpu.memory), timers.reference(), counts))
     assert states[0] == states[1]
-    assert batches[0] == (2 if guard_source else 1)
+    assert batches[0] == (2 if guard_source else 1) + (address == 0xff46)
 
 
 def test_worker_eoi_replay_preserves_applied_timer_write_marker():

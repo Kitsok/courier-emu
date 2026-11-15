@@ -398,10 +398,11 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
         }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
             if(c.mmio_events&&(c.guard[w.address]&64)){
-                // T2 count writes have no board callback. Apply only after
+                // T2 register writes have no board callback. Apply only after
                 // the entire instruction passed its guards, at the same
                 // pre-retirement timestamp used by the Python memory hook.
-                const bool timer_applied = c.timer_model && w.address == 0xff40
+                const bool timer_applied = c.timer_model
+                    && (w.address == 0xff40 || w.address == 0xff42 || w.address == 0xff46)
                     && (w.size == 1 || w.size == 2);
                 if (timer_applied) c.timer_model->write(w.address, w.size, w.value,
                     c.timer_model->instruction_base + c.done);

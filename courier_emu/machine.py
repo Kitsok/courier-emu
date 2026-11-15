@@ -1776,10 +1776,11 @@ class CourierMachine:
             # of anything else that looks at the state they change.
             for offset in range(0, count * 8, 8):
                 if events[offset + 7] == 2:
-                    # T2 count programming was committed with its native
+                    # T2 programming was committed with its native
                     # instruction. Replay diagnostics without writing twice.
                     sync_device_time()
-                    self.mmio_counts[('write', 0xff40, events[offset + 6])] += 1
+                    address = int.from_bytes(events[offset:offset + 4], 'little')
+                    self.mmio_counts[('write', address, events[offset + 6])] += 1
                     self._native_timer_writes += 1
                     continue
                 eoi_applied[0] = bool(events[offset + 7])
@@ -2283,6 +2284,8 @@ class CourierMachine:
                     if (native_eoi_bookkeeping
                             and os.environ.get('COURIER_NATIVE_TIMER_WRITES', '1') != '0'):
                         _uc.native_mmio_batch += ((0xff40, 0xff41),)
+                        if os.environ.get('COURIER_NATIVE_TIMER2_PROGRAMMING', '1') != '0':
+                            _uc.native_mmio_batch += ((0xff42, 0xff43), (0xff46, 0xff47))
             if self.quad_c50 is not None:
                 self.quad_c50.service(elapsed)
             if self.quad_terminal is not None:

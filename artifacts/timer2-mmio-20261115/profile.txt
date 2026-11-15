@@ -1,0 +1,43 @@
+Sun Nov 15 20:02:02 2026    artifacts/timer2-mmio-20261115/courier.prof
+
+         2288009 function calls (2259459 primitive calls) in 5.047 seconds
+
+   Ordered by: cumulative time
+   List reduced from 205 to 35 due to restriction <35>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     5902    0.103    0.000    4.891    0.001 x86_interpreter.py:845(emu_start)
+    10470    0.193    0.000    2.408    0.000 x86_native.py:103(execute)
+     6840    0.014    0.000    2.244    0.000 machine.py:3326(interpreter_service)
+     6840    0.013    0.000    2.220    0.000 machine.py:1838(service_chunk)
+     6840    0.064    0.000    2.115    0.000 machine.py:2259(service_chunk_body)
+    10470    1.172    0.000    1.172    0.000 {built-in method _x86_native.run}
+     1558    0.007    0.000    0.861    0.001 pacing.py:50(service)
+      783    0.009    0.000    0.850    0.001 machine.py:1825(sip_idle_wait)
+      783    0.002    0.000    0.737    0.001 benchmark_standalone.py:65(wait)
+      783    0.735    0.001    0.735    0.001 {built-in method time.sleep}
+    10470    0.013    0.000    0.614    0.000 machine.py:3757(before_run)
+     6840    0.240    0.000    0.600    0.000 machine.py:3427(arm)
+     6840    0.076    0.000    0.532    0.000 bridge.py:3048(clock_x86)
+     6840    0.052    0.000    0.384    0.000 machine.py:2167(service_tail)
+     9141    0.071    0.000    0.279    0.000 machine.py:1769(replay_mmio_writes)
+     6840    0.075    0.000    0.216    0.000 machine.py:1845(service_after_tick)
+     4109    0.006    0.000    0.167    0.000 bridge_native.py:116(_service_exchange)
+     4109    0.100    0.000    0.159    0.000 board_media_native.py:97(service)
+    15222    0.067    0.000    0.145    0.000 machine.py:3074(on_mmio_write)
+     7064    0.054    0.000    0.139    0.000 machine.py:4014(refresh_native_lanes)
+   144489    0.084    0.000    0.123    0.000 service_native.py:23(__get__)
+331716/318493    0.108    0.000    0.113    0.000 {built-in method builtins.getattr}
+     5902    0.016    0.000    0.113    0.000 machine.py:2962(dispatch_interrupt)
+    27393    0.023    0.000    0.105    0.000 <frozen _collections_abc>:792(get)
+      783    0.006    0.000    0.102    0.000 media_native.py:341(poll)
+    27535    0.070    0.000    0.099    0.000 bridge_native.py:101(__setattr__)
+     7064    0.010    0.000    0.096    0.000 machine.py:4082(refresh_fixed_inputs)
+6831/4246    0.010    0.000    0.085    0.000 x86_interpreter.py:472(_memory_hooks)
+     7064    0.023    0.000    0.084    0.000 machine.py:960(_native_panel_input_14)
+     6840    0.040    0.000    0.082    0.000 bridge.py:3307(fast_clock_static)
+     3661    0.013    0.000    0.082    0.000 machine.py:1801(poll_console)
+     2786    0.003    0.000    0.075    0.000 x86_interpreter.py:631(<lambda>)
+      913    0.008    0.000    0.074    0.000 bridge.py:2801(_run_dsp_cycles)
+     2945    0.006    0.000    0.072    0.000 x86_interpreter.py:357(_load)
+      783    0.009    0.000    0.071    0.000 sip.py:1090(poll)

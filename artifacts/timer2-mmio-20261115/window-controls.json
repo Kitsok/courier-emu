@@ -1,0 +1,92 @@
+[
+  {
+    "enabled": "0",
+    "file": "window-control-0-0.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.540967049,
+    "wall": 8.821469182999863,
+    "batches": 14142
+  },
+  {
+    "enabled": "1",
+    "file": "window-control-1-1.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.466227310999999,
+    "wall": 8.824507584002276,
+    "batches": 12562
+  },
+  {
+    "enabled": "1",
+    "file": "window-control-2-1.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.623040603000001,
+    "wall": 8.821630149999692,
+    "batches": 12471
+  },
+  {
+    "enabled": "0",
+    "file": "window-control-3-0.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.4809127449999995,
+    "wall": 8.82064287999674,
+    "batches": 14144
+  },
+  {
+    "enabled": "0",
+    "file": "window-control-4-0.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.574920984999999,
+    "wall": 8.821560274001968,
+    "batches": 14142
+  },
+  {
+    "enabled": "1",
+    "file": "window-control-5-1.json",
+    "command": [
+      ".venv/bin/python",
+      "tools/benchmark_standalone.py",
+      "--warmup-instructions",
+      "30000000",
+      "--repeat",
+      "1"
+    ],
+    "cpu": 5.481599095,
+    "wall": 8.821567134000361,
+    "batches": 12544
+  }
+]

@@ -142,7 +142,7 @@ input, terminal work and positive media lead return to Python. The counters, mas
 request queue use one permanent native-layout buffer with live Python views;
 there is no per-batch timer snapshot or counter publication step. Timer and
 legacy interrupt-controller programming use native state operations. Eligible
-Timer 2 count writes commit inside the x86 batch; other register writes still
+Timer 2 register writes commit inside the x86 batch; other register writes still
 cross the Python device boundary. Board timebase selection and calibrated-delay
 grants retain Python logic.
 UART work, complete media frames and other device transitions still require
