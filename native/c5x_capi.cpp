@@ -13,6 +13,7 @@
 #include "serial186.hpp"
 #include "dte186.hpp"
 #include "terminal_io.hpp"
+#include "microwire93c66.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -48,6 +49,17 @@ extern "C" unsigned courier_timer186_write(void *state, uint32_t address, unsign
 }
 extern "C" uint64_t courier_timer186_deadline(void *state) {
     return static_cast<courier::Timers186 *>(state)->deadline();
+}
+
+extern "C" void courier_microwire_layout(uint64_t *out) {
+    out[0]=sizeof(courier::Microwire93c66);
+    out[1]=offsetof(courier::Microwire93c66,traces);
+}
+extern "C" void courier_microwire_write(void *state,unsigned value) {
+    static_cast<courier::Microwire93c66*>(state)->write_latch(value);
+}
+extern "C" unsigned courier_microwire_read(void *state) {
+    return static_cast<courier::Microwire93c66*>(state)->read_latch();
 }
 
 extern "C" std::size_t courier_terminal_layout() {return sizeof(courier::TerminalState);}

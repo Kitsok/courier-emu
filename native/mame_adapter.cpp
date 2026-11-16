@@ -7,6 +7,8 @@
 #include "interrupts186.hpp"
 #include "serial186.hpp"
 #include "timers186.hpp"
+#include "microwire93c66.hpp"
+#include "dte186.hpp"
 
 namespace {
 struct Stop {};
@@ -31,6 +33,8 @@ public:
     courier::MachineServiceState *irqs=nullptr;
     courier::Serial186 *uart=nullptr;
     courier::Timers186 *timers=nullptr;
+    courier::Microwire93c66 *eeprom=nullptr;
+    courier::DteWire186 *wire=nullptr;
     const uint8_t *device_access=nullptr,*host_ports=nullptr;
     uint8_t *mmio_events=nullptr;
     uint32_t mmio_count=0,mmio_capacity=0;
@@ -77,6 +81,33 @@ public:
         timers->read_mask|=uint64_t(1)<<(2*entry+n-1);
         timers->last_read_tick[index]=uint64_t(tick);
         return true;
+    }
+    bool pio_access(uint32_t a,unsigned n,bool write) const {
+        return eeprom&&device_access&&mmio_events&&a>=0xff50&&a<=0xff5e
+            &&!(a&1)&&(n==1||n==2)&&(device_access[a&255]&(write?2:1));
+    }
+    bool pio_read(uint32_t a,unsigned n,uint32_t &value) {
+        if(!pio_access(a,n,false)||(a==0xff5a&&!wire))return false;
+        value=memory[a];if(n==2)value|=uint32_t(memory[a+1])<<8;
+        if(a==0xff5a) {
+            value=(value&~0xa0u)|(eeprom->data_out?0x80:0)
+                |(wire->level(int64_t(host_base+done))>0?0x20:0);
+        }
+        const unsigned index=(a-0xff50)/2;
+        ++eeprom->pio_reads[index][n-1];
+        eeprom->pio_read_mask|=uint64_t(1)<<(2*index+n-1);
+        return true;
+    }
+    bool pio_write(uint32_t a,unsigned n,uint32_t value) {
+        if(!pio_access(a,n,true))return false;
+        if(a==0xff56) {
+            // External DSP reset/INT1/NMI transitions retain the board's
+            // handler. Repeated writes while reset is held also sample the
+            // download address there, so those cannot be coalesced.
+            if(!(value&2)||((memory[a]^value)&0x8a))return false;
+            eeprom->port1(value);
+        } else if(a==0xff5e)eeprom->pio_data_in=bool(value&0x80);
+        queue_write(a,n,value,8);return true;
     }
     void queue_write(uint32_t a,unsigned n,uint32_t value,unsigned applied) {
         if(mmio_count==mmio_capacity) {
@@ -145,7 +176,7 @@ public:
             return value;
         }
         uint32_t timer_value;
-        if(timer_read(a,n,timer_value)) {
+        if(timer_read(a,n,timer_value)||pio_read(a,n,timer_value)) {
             memory[a]=uint8_t(timer_value);if(n==2)memory[a+1]=uint8_t(timer_value>>8);
             return timer_value;
         }
@@ -160,6 +191,8 @@ public:
             ++uart->native_writes;
             if(uart->write(a,value,*irqs)>=0)stop_after=true;
             queue_write(a,n,value,4);
+        } else if(pio_write(a,n,value)) {
+            // Device state and accounting are already committed.
         } else if(a!=0xff32&&timer_access(a,n,true)) {
             timers->write(a,n,value,timers->instruction_base+done);
             queue_write(a,n,value,2);
@@ -256,10 +289,10 @@ PyObject *run(PyObject *,PyObject *args) {
         PyErr_SetString(PyExc_ValueError,"invalid MAME CPU registers or callback");return nullptr;
     }
     auto &cpu=instance->cpu;cpu.registers=registers;cpu.callback=callback;
-    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
+    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.eeprom=nullptr;cpu.wire=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=9) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=11) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -281,6 +314,8 @@ PyObject *run(PyObject *,PyObject *args) {
         }
         cpu.host_base=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(bindings,7));
         cpu.timers=reinterpret_cast<courier::Timers186*>(buffer(8,sizeof(courier::Timers186)));
+        cpu.eeprom=reinterpret_cast<courier::Microwire93c66*>(buffer(9,sizeof(courier::Microwire93c66)));
+        cpu.wire=reinterpret_cast<courier::DteWire186*>(buffer(10,sizeof(courier::DteWire186)));
         if(PyErr_Occurred())return nullptr;
         if(cpu.host_io&&!cpu.host_ports) {
             PyErr_SetString(PyExc_ValueError,"missing MAME native port table");return nullptr;

@@ -1213,6 +1213,12 @@ class CourierMachine:
                 and os.environ.get('COURIER_NATIVE_DTE', '1') != '0'):
             from .dte_native import NativeDteTransmitLine
             self.dte_line = NativeDteTransmitLine(self.dte_line)
+        if self.cpu_engine == 'interpreter' and cpu_backend == 'mame':
+            from .nvram_native import NativeCourierNvram
+            if self.nvram is not None:
+                self.nvram = NativeCourierNvram.adopt(self.nvram)
+            uc._mame_nvram = self.nvram if isinstance(self.nvram, NativeCourierNvram) else None
+            uc._mame_dte_line = self.dte_line if hasattr(self.dte_line, 'buffer') else None
         self._native_irq_controller = (
             native_device_engine
             and hasattr(self, '_native_service_state')
@@ -1826,6 +1832,10 @@ class CourierMachine:
                     self.mmio_counts[('write', address, events[offset + 6])] += 1
                     if address == 0xff6a:
                         self._capture_serial(events[offset + 4])
+                    continue
+                if events[offset + 7] & 8:
+                    address = int.from_bytes(events[offset:offset + 4], 'little')
+                    self.mmio_counts[('write', address, events[offset + 6])] += 1
                     continue
                 if events[offset + 7] == 2:
                     # T2 programming was committed with its native
@@ -3185,13 +3195,16 @@ class CourierMachine:
                 # those into the latch encoding the 93C66 model already speaks.
                 if address == 0xFF5E:
                     self._eeprom_data_in = bool(value & 0x80)
+                    if hasattr(self.nvram, 'native_state'):
+                        self.nvram.pio_data_in = self._eeprom_data_in
                 elif address == 0xFF56:
                     latch = 0
                     if value & 0x20:
                         latch |= BIT_CHIP_SELECT
                     if value & 0x04:
                         latch |= BIT_CLOCK
-                    if self._eeprom_data_in:
+                    if (self.nvram.pio_data_in if hasattr(self.nvram, 'native_state')
+                            else self._eeprom_data_in):
                         latch |= BIT_DATA
                     self.nvram.write_latch(latch)
             if len(self.mmio_events) < self.max_io_events:

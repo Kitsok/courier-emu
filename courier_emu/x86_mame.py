@@ -27,7 +27,8 @@ def build_library():
     sources = [ROOT / 'native/mame_adapter.cpp', VENDOR / 'cpu/i86.cpp',
                VENDOR / 'cpu/i186.cpp', VENDOR / 'shim/emu.cpp']
     dependencies = sources + list(VENDOR.rglob('*.h')) + [
-        ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp', ROOT / 'native/timers186.hpp']
+        ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp', ROOT / 'native/timers186.hpp',
+        ROOT / 'native/microwire93c66.hpp', ROOT / 'native/dte186.hpp']
     if not LIBRARY.exists() or any(p.stat().st_mtime_ns > LIBRARY.stat().st_mtime_ns
                                    for p in dependencies):
         require_build_allowed(LIBRARY)
@@ -73,10 +74,11 @@ class MameUc(x86.Uc):
         self.mame_retired = 0
         self._mame_device_access = bytearray(256)
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
+        self._mame_nvram = self._mame_dte_line = None
 
     def _prepare_guard(self):
         signature = (len(self.mapped), len(self.hooks), self.native_mmio_batch,
-                     id(self.native_uart), id(self.native_timer_reads))
+                     id(self.native_uart), id(self.native_timer_reads), id(self._mame_nvram))
         if signature == self._mame_signature:
             return
         guard = self._mame_guard
@@ -93,11 +95,12 @@ class MameUc(x86.Uc):
             for address in range(first, last + 1):
                 guard[address] |= 64
         self._mame_device_access[:] = bytes(256)
-        if self.native_uart is not None or self.native_timer_reads is not None:
+        if self.native_uart is not None or self.native_timer_reads is not None or self._mame_nvram is not None:
             for bit, hooks, own_hook in ((1, self._read_hooks, self.native_uart_hooks[0]),
                                          (2, self._write_hooks, self.native_uart_hooks[1])):
                 for address in (0xff08, *range(0xff12, 0xff20, 2),
-                                *range(0xff30, 0xff48, 2), *range(0xff60, 0xff6c, 2)):
+                                *range(0xff30, 0xff48, 2), *range(0xff50, 0xff60, 2),
+                                *range(0xff60, 0xff6c, 2)):
                     if not any(callback is not own_hook
                                and (end == 0 or begin <= address + 1 and end >= address)
                                for callback, _, begin, end in hooks):
@@ -163,7 +166,9 @@ class MameUc(x86.Uc):
                         self._mame_mmio_events if self.native_mmio_callback is not None else None,
                         host_function, host_context, host_ports,
                         self.native_host_base + self._mame_base,
-                        timer_reads.model_buffer if timer_reads is not None else None)
+                        timer_reads.model_buffer if timer_reads is not None else None,
+                        self._mame_nvram._native_buffer if self._mame_nvram is not None else None,
+                        self._mame_dte_line.buffer if self._mame_dte_line is not None else None)
             try:
                 done, halted, irq_fallback, mmio_count = self._mame_run(
                     self._mame_handle, self.regs, budget, self._mame_event, bindings)
@@ -174,6 +179,8 @@ class MameUc(x86.Uc):
             retired += done
             if timer_reads is not None:
                 timer_reads.finish()
+            if self._mame_nvram is not None:
+                self._mame_nvram.finish_reads(self.native_uart_counts)
             if self.native_uart is not None:
                 self.native_uart.finish_reads(self.native_uart_counts)
             if mmio_count:

@@ -252,6 +252,10 @@ Additional device memory observers retain synchronous callbacks. Timer delay gra
 the timer-0 board-clock selection callback retain their existing slow paths.
 Python still handles remaining board accesses and the service clock; the
 custom CPU's native worker batching ABI is disabled for this backend.
+EEPROM Microwire commands and ordinary parallel-register traffic also execute
+in C++. The native bus samples the EEPROM output and DTE wire directly.
+DSP pin transitions and writes while DSP reset is held retain the existing
+board handler; EEPROM image loading/saving remains host orchestration.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console

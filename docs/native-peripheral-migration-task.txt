@@ -149,3 +149,16 @@ accounting and bounded output with a stalled reader. Fresh-NVRAM AT/OK and
 matching DSP download passed. Empty polling was approximately unchanged in
 a small comparison; no transport speedup is claimed. The native transport
 is reusable by a future native machine owner without Python byte-I/O code.
+
+Milestone 8 complete: native EEPROM protocol and parallel-port hot path.
+The existing Microwire command/read/write/erase state machine now runs in
+C++, with in-place Python inspection/persistence views. MAME handles ordinary
+parallel register accesses, EEPROM clocks and serial/EEPROM input pin samples
+natively when the external DSP pins do not change. DSP reset/INT1/NMI edges
+and writes while reset is held retain the existing board handler, preserving
+its reset/download side effects. Existing access accounting is retained.
+
+Two focused checks matched the reference EEPROM protocol and verified that
+native clock traffic bypasses Python while a DSP reset edge still reaches
+the board. Fresh temporary-NVRAM boot, AT commands, DSP download and AT&W
+save passed. No additional firmware tracing/debug interfaces were added.
