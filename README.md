@@ -285,6 +285,10 @@ bootstrap bytes and transfer counts without Python replay. Lifecycle edges
 yield to refresh existing host/lane state; watched accesses and pending
 overlay host actions keep their synchronous boundary. EEPROM image
 loading/saving remains host orchestration.
+The native C51 runtime also owns mailbox byte latches, status reads, reply
+queues, DSP deliveries and acknowledgement accounting. A completed host
+message yields after its commit instruction for existing host control
+actions; ordinary byte reads and writes remain inside the native batch.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console
@@ -1636,8 +1640,9 @@ The migration preserves immediate transmitter readiness and the CTS stand-in;
 it does not add framing or overrun errors, RI status reporting, or a timed
 transmit shift register. DTE wire state, start-edge consumption, bit sampling
 and 8N1 frame completion now execute in C++ behind a live Python view.
-`COURIER_NATIVE_DTE=0` retains the Python wire for comparison. Byte admission
-and the firmware autobaud adapter remain in Python.
+`COURIER_NATIVE_DTE=0` retains the Python wire for comparison. Recognized
+analog layouts use the native receive admission and firmware attention
+adapter described above; alternate/probe paths retain their host handling.
 
 Set `COURIER_DTE_PROBE=/tmp/courier-dte.jsonl` before launching a diagnostic
 session to record receive-path snapshots at most ten times per second and

@@ -2,6 +2,8 @@
 #pragma once
 #include "board_media.hpp"
 #include <array>
+#include <deque>
+#include <map>
 #include <algorithm>
 #include <cstring>
 #include <stdexcept>
@@ -16,6 +18,9 @@ struct DspLifecycleState {
     uint64_t match=2,last_bytes=0,last_match=2,bootstraps=0,transfers=0,checksums=0;
     uint64_t bootstrap_size=0,boot_strobes_native=0;
     uint64_t pins_seen=0,pin_sync=0;
+    uint64_t runtime_header=0,runtime_data=0,pending_header=0,pending_data=0,pending_valid=0;
+    uint64_t inbound_seen=0,inbound_count=0,host_delivered=0,messages_taken=0,stream_acks=0;
+    uint64_t host_event=0,event_header=0,event_data=0,event_ack=0;
     char error[512]{};
 };
 struct DspLifecycle {
@@ -26,6 +31,9 @@ struct DspLifecycle {
     std::vector<uint8_t> bootstrap,expected;
     struct ResetRecord {int64_t frame,instructions,tx_written;};
     std::vector<ResetRecord> resets;
+    std::deque<std::pair<uint16_t,uint16_t>> inbound;
+    std::map<uint32_t,uint64_t> delivered;
+    unsigned tag_cell=0x5e,word_cell=0x58,status_cell=0x57,stream_cell=0x59;
     uint64_t target=0;
     unsigned first=1,dispatch_cell=0x6a,nmi_entry=0x610,frame_irq=5;
     DspLifecycle(DspLifecycleState &state,analog::BoardMedia &board,C5xCore &dsp):
@@ -34,6 +42,66 @@ struct DspLifecycle {
         if(operation==2){expected.assign(data,data+size);return;}
         if(!operation)bootstrap.clear();
         bootstrap.insert(bootstrap.end(),data,data+size);s.bootstrap_size=bootstrap.size();
+    }
+    void queue(uint16_t header,uint16_t data) {
+        inbound.emplace_back(header,data);s.inbound_count=inbound.size();
+    }
+    uint64_t message(size_t index,bool consume=false) {
+        if(index>=inbound.size())return uint64_t(1)<<32;
+        const auto value=inbound[index];
+        if(consume){inbound.pop_front();s.inbound_count=inbound.size();}
+        return uint64_t(value.first)<<16|value.second;
+    }
+    bool deliver(uint16_t header,uint16_t data) {
+        if(!s.active)return false;
+        core->set_io(uint16_t(tag_cell),header);core->set_io(uint16_t(word_cell),data);
+        core->set_io(uint16_t(status_cell),uint16_t(core->io(uint16_t(status_cell))|1));
+        ++s.host_delivered;return true;
+    }
+    void acknowledge(uint16_t value) {
+        if(value&2) {
+            if(!inbound.empty()&&s.inbound_seen) {
+                ++delivered[uint32_t(message(0,true))];s.inbound_seen=0;
+            } else if((core->io(uint16_t(status_cell))^6)&2)++s.messages_taken;
+        }
+        if(value&4)++s.stream_acks;
+        core->set_io(uint16_t(status_cell),uint16_t(core->io(uint16_t(status_cell))|(value&6)));
+    }
+    int mailbox(unsigned direction,uint16_t port,uint16_t value,uint16_t &answer) {
+        if(!s.active)return 0;
+        if(direction==2&&port>=0x58&&port<=0x5e&&!(port&1)) {
+            s.runtime_mode=1;
+            auto &word=port<0x5c?s.runtime_header:s.runtime_data;
+            if(port==0x58||port==0x5c)word=(word&0xff00)|(value&255);
+            else word=(word&255)|((value&255)<<8);
+            if(port==0x5e){s.pending_header=s.runtime_header;s.pending_data=s.runtime_data;s.pending_valid=1;}
+            return 1;
+        }
+        if(!s.runtime_mode)return 0;
+        if(port==0x1c) {
+            if(direction==1) {
+                const auto status=core->io(uint16_t(status_cell));
+                answer=((status&1)||s.pending_valid)?0:1;
+                if(!inbound.empty()||((status^6)&2))answer|=2;
+                if((status^6)&4)answer|=4;
+                return 1;
+            }
+            if((value&1)&&s.pending_valid) {
+                s.host_event=1;s.event_header=s.runtime_header;s.event_data=s.runtime_data;s.event_ack=value;
+                return 2;
+            }
+            acknowledge(value);return 1;
+        }
+        if(direction==1&&port>=0x58&&port<=0x62&&!(port&1)) {
+            uint16_t word;
+            if(port<0x60&&!inbound.empty()) {
+                word=port<0x5c?inbound.front().first:inbound.front().second;
+                if(port<0x5c)s.inbound_seen=1;
+            } else word=core->io_output(uint16_t(port<0x5c?tag_cell:port<0x60?word_cell:stream_cell));
+            answer=(word>>((port==0x5a||port==0x5e||port==0x62)?8:0))&255;
+            return 1;
+        }
+        return 0;
     }
     void float_bus() {s.runtime_mode=s.runtime_ready=0;s.runtime_delay=0;}
     void reset(bool asserted) {

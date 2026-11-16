@@ -1,6 +1,7 @@
 """Live views of the native analog DSP loader and lifecycle owner."""
 import ctypes as c
 import weakref
+from collections.abc import MutableMapping
 from .dsp import load_library
 from .bridge_native import NativeCourierDspBridge
 
@@ -17,9 +18,12 @@ FIELDS = {
     '_last_bootstrap_match': 'last_match', 'bootstraps': 'bootstraps',
     'transfer_commands': 'transfers', 'checksum_submits': 'checksums',
     'boot_strobes_native': 'boot_strobes_native',
+    '_runtime_header': 'runtime_header', '_runtime_data': 'runtime_data',
+    '_runtime_inbound_seen': 'inbound_seen', 'host_messages_delivered': 'host_delivered',
+    'dsp_messages_taken': 'messages_taken', 'dsp_stream_acks': 'stream_acks',
 }
 BOOLEAN = {'reset_asserted', 'cpu_int1', 'restarted', 'loader_started', 'nmi_seen',
-           'active', 'launched', 'runtime_mode', 'runtime_ready'}
+           'active', 'launched', 'runtime_mode', 'runtime_ready', 'inbound_seen'}
 
 
 class LifecycleState(c.Structure):
@@ -31,6 +35,10 @@ class LifecycleState(c.Structure):
                     'sip_tx_index', 'audio_frames', 'audio_samples_due', 'match', 'last_bytes',
                     'last_match', 'bootstraps', 'transfers', 'checksums', 'bootstrap_size',
                     'boot_strobes_native', 'pins_seen', 'pin_sync')]
+    _fields_ += [(name, c.c_uint64) for name in ('runtime_header', 'runtime_data',
+        'pending_header', 'pending_data', 'pending_valid', 'inbound_seen', 'inbound_count',
+        'host_delivered', 'messages_taken', 'stream_acks', 'host_event', 'event_header',
+        'event_data', 'event_ack')]
     _fields_ += [('error', c.c_char * 512)]
 
 
@@ -46,7 +54,8 @@ class NativeBootstrap:
 
 class NativeLifecycle:
     def __init__(self, bridge):
-        from .bridge import C51_NMI_DISPATCH_CELL, C51_ROM_NMI_ENTRY, C50_ROM_FRAME_IRQ
+        from .bridge import (C51_NMI_DISPATCH_CELL, C51_ROM_NMI_ENTRY, C50_ROM_FRAME_IRQ,
+                             HOST_TAG_CELL, HOST_WORD_CELL, HOST_STATUS_CELL, DSP_STREAM_PORT)
         lib = load_library()
         lib.courier_lifecycle_layout.restype = c.c_size_t
         if lib.courier_lifecycle_layout() != c.sizeof(LifecycleState):
@@ -67,8 +76,9 @@ class NativeLifecycle:
         self._anchors = []
         self._finalizer = weakref.finalize(self, destroy, self.handle)
         self._configure = bind('configure', None, c.c_void_p, c.c_void_p, c.c_void_p)
-        self._config = (c.c_uint64 * 5)(bridge.transfer.first_strobe, bridge.bootstrap_target_size,
-            C51_NMI_DISPATCH_CELL, C51_ROM_NMI_ENTRY, C50_ROM_FRAME_IRQ)
+        self._config = (c.c_uint64 * 9)(bridge.transfer.first_strobe, bridge.bootstrap_target_size,
+            C51_NMI_DISPATCH_CELL, C51_ROM_NMI_ENTRY, C50_ROM_FRAME_IRQ,
+            HOST_TAG_CELL, HOST_WORD_CELL, HOST_STATUS_CELL, DSP_STREAM_PORT)
         self._configure(self.handle, self.core.handle, self._config)
         window = bind('window', None, c.c_void_p, c.c_uint, c.c_void_p)
         for strobe, data in bridge._windows.items():
@@ -80,6 +90,17 @@ class NativeLifecycle:
         self._apply = bind('apply', c.c_int, c.c_void_p, c.c_uint, c.c_uint)
         self._accept = bind('accept', c.c_int, c.c_void_p, c.c_char_p, c.c_uint)
         self._resets = bind('resets', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
+        self._message = bind('message', c.c_uint64, c.c_void_p, c.c_uint, c.c_uint64, c.c_uint64)
+        self._message_keys = bind('message_keys', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
+        self.inbound = NativeMessages(self)
+        self.delivered = NativeDeliveries(self)
+        for pair in bridge._runtime_inbound: self.inbound.append(pair)
+        for key, count in bridge._runtime_inbound_delivered.items(): self.delivered[key] = count
+        pending = bridge._runtime_pending
+        if pending is not None:
+            self.state.pending_header, self.state.pending_data = pending
+            self.state.pending_valid = 1
+        self._final_inbound, self._final_delivered = (), {}
         self.bootstrap = NativeBootstrap(self)
         self.write_bytes(bridge.bootstrap, 0)
         self.write_bytes(bridge.expected_bootstrap, 2)
@@ -122,19 +143,35 @@ class NativeLifecycle:
     def finish(self, machine):
         if self.state.error:
             raise RuntimeError(self.state.error.decode('utf-8', 'replace'))
-        if not self.state.pin_sync:
+        if not self.state.pin_sync and not self.state.host_event:
             return False
         self.state.pin_sync = 0
+        if self.state.host_event:
+            from .x86_interpreter import UC_X86_REG_CS, UC_X86_REG_IP
+            self.state.host_event = 0
+            words = self.state.event_header, self.state.event_data
+            cpu = machine.uc
+            pc = ((cpu.reg_read(UC_X86_REG_CS) << 4) + cpu.reg_read(UC_X86_REG_IP)) & 0xfffff
+            bridge = machine.dsp_bridge
+            bridge._record_runtime_message(words, pc)
+            bridge._deliver_host_message(*words)
+            bridge._answer_runtime_request(*words)
+            self.message(6)
         machine._dsp_in_reset = bool(self.state.reset_asserted)
         machine._dsp_nmi_low = bool(self.state.nmi_low)
         if machine.uc.native_after_io is not None:
             machine.uc.native_after_io()
         return True
 
+    def message(self, operation, value=0, argument=0):
+        return self._message(self.handle, operation, value, argument)
+
     def close(self):
         if self._finalizer.alive:
             self._final_bootstrap = self.bytes()
             self._final_resets = self.resets()
+            self._final_inbound = tuple(self.inbound)
+            self._final_delivered = dict(self.delivered)
             self._finalizer()
 
 
@@ -164,6 +201,22 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
 
     bootstrap = property(lambda self: self._native_lifecycle.bootstrap,
                          lambda self, values: self._native_lifecycle.write_bytes(values, 0))
+    _runtime_inbound = property(lambda self: self._native_lifecycle.inbound)
+    _runtime_inbound_delivered = property(lambda self: self._native_lifecycle.delivered)
+
+    @property
+    def _runtime_pending(self):
+        s = self._native_lifecycle.state
+        return (s.pending_header, s.pending_data) if s.pending_valid else None
+
+    @_runtime_pending.setter
+    def _runtime_pending(self, value):
+        s = self._native_lifecycle.state
+        s.pending_valid = value is not None
+        if value is not None: s.pending_header, s.pending_data = value
+
+    def _deliver_host_message(self, header, data):
+        return bool(self._native_lifecycle.message(3, ((header & 65535) << 16) | (data & 65535)))
 
     def __setattr__(self, name, value):
         super().__setattr__(name, value)
@@ -192,3 +245,43 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
 
 for _name, _field in FIELDS.items():
     setattr(NativeLifecycleBridge, _name, LifecycleField(_field))
+
+
+class NativeMessages:
+    def __init__(self, owner): self.owner = owner
+    def __len__(self): return self.owner.state.inbound_count
+    def __iter__(self): return (self[i] for i in range(len(self)))
+    def __getitem__(self, index):
+        if not self.owner._finalizer.alive: return self.owner._final_inbound[index]
+        if index < 0: index += len(self)
+        if not 0 <= index < len(self): raise IndexError('mailbox index out of range')
+        value = self.owner.message(2, index)
+        return value >> 16, value & 65535
+    def append(self, pair):
+        self.owner.message(0, ((pair[0] & 65535) << 16) | (pair[1] & 65535))
+    def popleft(self):
+        value = self.owner.message(1)
+        if value == 1 << 32: raise IndexError('pop from empty mailbox')
+        return value >> 16, value & 65535
+
+
+class NativeDeliveries(MutableMapping):
+    def __init__(self, owner): self.owner = owner
+    @staticmethod
+    def key(value):
+        header, data = value.split(':')
+        return (int(header, 16) << 16) | int(data, 16)
+    def __getitem__(self, key):
+        if not self.owner._finalizer.alive: return self.owner._final_delivered.get(key, 0)
+        return self.owner.message(4, self.key(key))
+    def __setitem__(self, key, value): self.owner.message(5, self.key(key), value)
+    def __delitem__(self, key): raise TypeError('mailbox totals cannot be deleted')
+    def __iter__(self):
+        if not self.owner._finalizer.alive: return iter(self.owner._final_delivered)
+        count = self.owner._message_keys(self.owner.handle, None, 0)
+        values = (c.c_uint32 * count)()
+        self.owner._message_keys(self.owner.handle, values, count)
+        return iter(f'{v >> 16:04x}:{v & 65535:04x}' for v in values)
+    def __len__(self):
+        if not self.owner._finalizer.alive: return len(self.owner._final_delivered)
+        return self.owner._message_keys(self.owner.handle, None, 0)

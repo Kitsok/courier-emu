@@ -145,9 +145,10 @@ public:
     }
     uint16_t port(unsigned direction,uint16_t p,unsigned n,uint16_t value=0) {
         uint16_t answer=0;
-        if(host_io&&(host_ports[p]&direction)
-                &&host_io(host_context,int(direction),p,int(n),value,host_base+done+1,&answer))
-            return answer;
+        if(host_io&&(host_ports[p]&direction)) {
+            const int handled=host_io(host_context,int(direction),p,int(n),value,host_base+done+1,&answer);
+            if(handled){if(handled>1)stop_after=true;return answer;}
+        }
         return uint16_t(event(direction==1?3:4,p,n,value));
     }
 

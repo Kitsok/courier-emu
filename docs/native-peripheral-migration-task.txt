@@ -369,3 +369,16 @@ A focused worker check disabled Python input methods and verified terminal
 reads, queueing, echo, completed-command notifications and binary payload.
 Three selected scheduling/MAME checks passed. A fifteen-second required-LAPM
 AT&T1 run at 24,000 bit/s echoed 6,016 exact bytes and escaped successfully.
+
+
+Milestone 21 complete: native runtime mailbox and reply queue ownership.
+The C51 lifecycle owner assembles byte latches, reports mailbox status,
+delivers DSP host words and handles queued replies and acknowledgements.
+The commit uses the final latches, preserving word-before-tag sends and
+single-delivery semantics. Complete control messages yield after the OUT
+instruction for existing host actions; byte traffic stays native.
+
+A focused guest-code check disabled Python mailbox byte handlers and DSP
+register writes, and verified assembly, commit order, reply reads, delivery
+totals and repeated acknowledgements. A ten-second required-LAPM AT&T1
+check at 24,000 bit/s transferred exact data and escaped successfully.

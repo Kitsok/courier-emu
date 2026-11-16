@@ -78,6 +78,8 @@ extern "C" void courier_lifecycle_configure(void *handle,void *core,const uint64
     auto &life=*static_cast<courier::DspLifecycle*>(handle);life.core=static_cast<C5xCore*>(core);
     life.first=unsigned(values[0]);life.target=values[1];life.dispatch_cell=unsigned(values[2]);
     life.nmi_entry=unsigned(values[3]);life.frame_irq=unsigned(values[4]);
+    life.tag_cell=unsigned(values[5]);life.word_cell=unsigned(values[6]);
+    life.status_cell=unsigned(values[7]);life.stream_cell=unsigned(values[8]);
 }
 extern "C" void courier_lifecycle_window(void *handle,unsigned strobe,uint8_t *window) {
     if(strobe<256)static_cast<courier::DspLifecycle*>(handle)->windows[strobe]=window;
@@ -90,6 +92,25 @@ extern "C" size_t courier_lifecycle_read(void *handle,uint8_t *out,size_t capaci
     const auto &data=static_cast<courier::DspLifecycle*>(handle)->bootstrap;
     const auto size=std::min(capacity,data.size());if(size)std::memcpy(out,data.data(),size);return size;
 }
+extern "C" uint64_t courier_lifecycle_message(void *handle,unsigned op,uint64_t value,uint64_t argument) {
+    auto &life=*static_cast<courier::DspLifecycle*>(handle);
+    switch(op) {
+    case 0:life.queue(uint16_t(value>>16),uint16_t(value));return 0;
+    case 1:return life.message(0,true);
+    case 2:return life.message(size_t(value));
+    case 3:return life.deliver(uint16_t(value>>16),uint16_t(value));
+    case 4:{const auto found=life.delivered.find(uint32_t(value));
+        return found==life.delivered.end()?0:found->second;}
+    case 5:life.delivered[uint32_t(value)]=argument;return 0;
+    case 6:life.acknowledge(uint16_t(life.s.event_ack));life.s.pending_valid=0;return 0;
+    default:return uint64_t(1)<<32;
+    }
+}
+extern "C" size_t courier_lifecycle_message_keys(void *handle,uint32_t *out,size_t capacity) {
+    const auto &values=static_cast<courier::DspLifecycle*>(handle)->delivered;
+    size_t k=0;for(const auto &entry:values){if(k==capacity)break;out[k++]=entry.first;}return values.size();
+}
+
 extern "C" size_t courier_lifecycle_resets(void *handle,int64_t *out,size_t capacity) {
     const auto &records=static_cast<courier::DspLifecycle*>(handle)->resets;
     const auto count=std::min(capacity,records.size());
@@ -1324,6 +1345,14 @@ int courier_laneio_access(void *context, int direction, uint16_t port,
         }
     } else if (io->invalidates[port]) {
         std::memset(io->fixed_valid, 0, sizeof io->fixed_valid);
+    }
+    if(io->lifecycle) {
+        const int handled=io->lifecycle->mailbox(unsigned(direction),port,value,*out);
+        if(handled) {
+            if(direction==1)++io->in_count[port];
+            else {++io->out_count[port];io->out_last[port]=value;io->out_seen[port]=1;}
+            return handled;
+        }
     }
     if ((port == 0x1c || port == 0x1e) && io->serve_mailbox(direction, port, value, out))
         return 1;
