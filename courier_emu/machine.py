@@ -1223,6 +1223,7 @@ class CourierMachine:
             self.dte_line = NativeDteTransmitLine(self.dte_line)
         if self.cpu_engine == 'interpreter' and cpu_backend == 'mame':
             from .nvram_native import NativeCourierNvram
+            uc._mame_transfer_span = self._rom_transfer_span
             if self.nvram is not None:
                 self.nvram = NativeCourierNvram.adopt(self.nvram)
             uc._mame_nvram = self.nvram if isinstance(self.nvram, NativeCourierNvram) else None

@@ -45,6 +45,10 @@ extern "C" void courier_timer186_layout(uint64_t *out) {
 extern "C" void courier_timer186_tick(void *state, uint64_t instructions) {
     static_cast<courier::Timers186 *>(state)->tick(instructions);
 }
+extern "C" uint32_t courier_timer186_read(void *state,uint32_t address,unsigned size,
+        uint64_t instructions,unsigned grant) {
+    return static_cast<courier::Timers186*>(state)->read(address,size,instructions,bool(grant));
+}
 extern "C" unsigned courier_timer186_write(void *state, uint32_t address, unsigned size,
                                           uint64_t value, uint64_t instructions) {
     return static_cast<courier::Timers186 *>(state)->write(address, size, value, instructions);

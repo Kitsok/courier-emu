@@ -80,6 +80,7 @@ class MameUc(x86.Uc):
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
         self._mame_nvram = self._mame_dte_line = None
         self._mame_transmitter = None
+        self._mame_transfer_span = None
         self._mame_services_synced = True
 
     def _prepare_guard(self):
@@ -181,7 +182,8 @@ class MameUc(x86.Uc):
             key = (id(self.native_irq_state), id(self.native_uart),
                    id(self.native_mmio_callback), host_function, host_context, id(host_ports),
                    id(timer_reads), id(self._mame_nvram), id(self._mame_dte_line),
-                   self.native_poll if polling else None, id(self._mame_transmitter))
+                   self.native_poll if polling else None, id(self._mame_transmitter),
+                   self._mame_transfer_span)
             if key != self._mame_bindings_key:
                 bindings = (self.native_irq_state,
                         self.native_uart.buffer if self.native_uart is not None else None,
@@ -193,7 +195,8 @@ class MameUc(x86.Uc):
                         self._mame_nvram._native_buffer if self._mame_nvram is not None else None,
                         self._mame_dte_line.buffer if self._mame_dte_line is not None else None,
                         self.native_poll if polling else None,
-                        self._mame_transmitter.handle if self._mame_transmitter is not None else None)
+                        self._mame_transmitter.handle if self._mame_transmitter is not None else None,
+                        self._mame_transfer_span)
                 self._mame_configure(self._mame_handle, bindings)
                 self._mame_bindings_key = key
             try:

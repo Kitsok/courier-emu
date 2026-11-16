@@ -149,6 +149,9 @@ class NativeTimerBlock(TimerBlock):
         self._native_write = c.PYFUNCTYPE(c.c_uint, c.c_void_p, c.c_uint32,
                                          c.c_uint, c.c_uint64, c.c_uint64)(
             c.cast(library.courier_timer186_write, c.c_void_p).value)
+        self._native_read = c.PYFUNCTYPE(c.c_uint32, c.c_void_p, c.c_uint32,
+                                        c.c_uint, c.c_uint64, c.c_uint)(
+            c.cast(library.courier_timer186_read, c.c_void_p).value)
         self.timers = list(self.native_state.slots)
         for dest, source in zip(self.timers, reference.timers):
             for name, _ in NativeTimer._fields_:
@@ -172,6 +175,10 @@ class NativeTimerBlock(TimerBlock):
 
     def tick(self, instructions):
         self._native_tick(self.address, instructions)
+
+    def read(self, address, size, instructions, *, grant=True):
+        value = self._native_read(self.address, address, size, instructions, grant)
+        return None if value == 0xffffffff else value
 
     def write(self, address, size, value, instructions):
         if address not in TIMER_REGISTERS and address not in SOURCE_CONTROL and address != IMASK:

@@ -256,8 +256,10 @@ The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.
-Additional device memory observers retain synchronous callbacks. Timer delay
-grants and the timer-0 board-clock selection callback retain their existing slow paths.
+Additional device memory observers retain synchronous callbacks. Timer
+control reads and calibrated delay grants also run natively, preserving the
+ROM transfer-range exclusion for DSP handshake timeouts. Timer-0 board-clock
+selection retains its host callback to propagate DSP/line timebase changes.
 The existing native board-service worker also runs inside the MAME CPU
 batch, retaining the instruction-clock deadlines for timers, DSP/media and
 idle-console checks. It yields for Python-owned events and publishes its

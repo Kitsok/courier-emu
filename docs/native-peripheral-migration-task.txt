@@ -249,3 +249,17 @@ lifetime after CPU destruction. A ten-second required-LAPM AT&T1 check at
 24,000 bit/s echoed 3,995 exact bytes and escaped successfully. Python still
 orchestrates host events and worker snapshot synchronization; this is not
 a standalone executable or complete native ownership of every board object.
+
+
+Milestone 14 complete: native timer control reads and delay grants.
+All modeled timer reads now use the shared C++ implementation, including
+calibrated delay acceleration and existing counters. MAME evaluates the
+existing ROM transfer-range exclusion directly before granting a delay;
+Python timer views call the same implementation. Board-clock selection
+still propagates its DSP/line scheduling change through the host callback.
+
+Three selected existing timer/MAME cases passed, including reference/native
+register-and-clock scripts with acceleration enabled and disabled. A focused
+current-change check matched granted and transfer-excluded control reads
+without Python bus callbacks. A ten-second required-LAPM AT&T1 check at
+24,000 bit/s echoed 4,042 exact bytes and escaped successfully.

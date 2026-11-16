@@ -38,6 +38,22 @@ struct Timers186 {
     uint64_t read_counts[11][2], read_mask, last_read_tick[3];
 
     int64_t tick_at(uint64_t instructions) const { return int64_t(double(instructions) * ratio); }
+    uint32_t read(uint32_t address,unsigned size,uint64_t instructions,bool grant) {
+        if(address<0xff30||address>0xff46||(address&1)||address==0xff44)return UINT32_MAX;
+        const unsigned offset=(address-0xff30)/2,field=offset%4;
+        auto &timer=slots[offset/4];
+        const int64_t now=tick_at(instructions);
+        ++revision;++reads;timer.advance(now);
+        if(field==3&&grant&&fast&&answers_reads&&!(timer.control&0x20)&&timer.counting()) {
+            const int64_t remaining=int64_t(timer.period())-int64_t(timer.count);
+            timer.origin-=remaining;granted+=uint64_t(remaining);++accelerated;
+            timer.advance(now);
+        }
+        if(!answers_reads)return UINT32_MAX;
+        const auto value=field==0?timer.count:field==1?timer.compare_a:
+            field==2?timer.compare_b:timer.control;
+        return uint32_t(value)&(size==1?255:65535);
+    }
     // 0: unrelated address, 1: handled, 2: T0 compare A needs the Python
     // board-selection callback before its final origin is published.
     unsigned write(uint32_t address, unsigned size, uint64_t value, uint64_t instructions) {

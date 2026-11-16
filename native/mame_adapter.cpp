@@ -64,6 +64,7 @@ public:
     void *poll_context=nullptr;
     uint64_t poll_total=0,poll_next=0,poll_period=0;
     int poll_code=-1;
+    uint32_t transfer_first=0,transfer_last=0;
 
     void native_regs(uint32_t *values) const {
         for(unsigned i=0;i<8;++i)values[i]=m_regs.w[i];
@@ -89,17 +90,13 @@ public:
     }
     bool timer_read(uint32_t a,unsigned n,uint32_t &value) {
         if(!timer_access(a,n,false))return false;
-        const unsigned offset=(a-0xff30)/2,index=offset/4,field=offset%4;
-        const int64_t tick=timers->tick_at(timers->instruction_base+done);
-        auto preview=timers->slots[index];preview.advance(tick);
-        // Delay acceleration and board-specific grants retain their existing
-        // slow path; ordinary control/count/compare reads stay native.
-        if(field==3&&timers->fast&&!(preview.control&0x20)&&preview.counting())return false;
-        timers->slots[index]=preview;
-        value=uint32_t(field==0?preview.count:field==1?preview.compare_a:
-                       field==2?preview.compare_b:preview.control)&(n==1?255:65535);
+        const unsigned offset=(a-0xff30)/2,index=offset/4;
+        const uint64_t total=timers->instruction_base+done;
+        const int64_t tick=timers->tick_at(total);
+        const uint32_t pc=((uint32_t(m_sregs[CS])<<4)+m_ip)&0xfffff;
+        value=timers->read(a,n,total,pc<transfer_first||pc>=transfer_last);
         const unsigned entry=offset>10?offset-1:offset;
-        ++timers->reads;++timers->revision;++timers->read_counts[entry][n-1];
+        ++timers->read_counts[entry][n-1];
         timers->read_mask|=uint64_t(1)<<(2*entry+n-1);
         timers->last_read_tick[index]=uint64_t(tick);
         return true;
@@ -337,7 +334,7 @@ PyObject *configure(PyObject *,PyObject *args) {
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
     cpu.poll=nullptr;cpu.output=nullptr;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=13) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=14) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -365,6 +362,15 @@ PyObject *configure(PyObject *,PyObject *args) {
         cpu.wire=reinterpret_cast<courier::DteWire186*>(buffer(10,sizeof(courier::DteWire186)));
         if(PyTuple_GET_ITEM(bindings,12)!=Py_None)
             cpu.output=static_cast<courier::DteTransmit*>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(bindings,12)));
+        PyObject *span=PyTuple_GET_ITEM(bindings,13);
+        cpu.transfer_first=cpu.transfer_last=0;
+        if(span!=Py_None) {
+            if(!PyTuple_Check(span)||PyTuple_GET_SIZE(span)!=2) {
+                PyErr_SetString(PyExc_ValueError,"invalid timer transfer span");return nullptr;
+            }
+            cpu.transfer_first=uint32_t(PyLong_AsUnsignedLong(PyTuple_GET_ITEM(span,0)));
+            cpu.transfer_last=uint32_t(PyLong_AsUnsignedLong(PyTuple_GET_ITEM(span,1)));
+        }
         PyObject *poll=PyTuple_GET_ITEM(bindings,11);
         if(poll!=Py_None) {
             if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=2) {
