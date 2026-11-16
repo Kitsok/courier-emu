@@ -283,6 +283,10 @@ Negative balances are repaid by later CPU time before normal DSP scheduling
 runs more cycles. Nested reference helpers account their work once; native
 strobe acceleration requires a shared native budget, while reference-only
 boards use their accounted host callbacks.
+Live native DSP status/lane reads and commit/acknowledgement strobes also
+synchronize the DSP to the CPU access timestamp before observing or changing
+shared registers. Time granted at those boundaries is excluded from the next
+periodic grant, preserving the clock ratio with the existing large batch.
 Python exposes live loader/runtime fields and retains host completion events.
 The same owner performs DSP reset, NMI/INT1 delivery, runtime-bus invalidation
 and media output cleanup. Repeated asserted-reset writes still sample the

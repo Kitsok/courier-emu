@@ -325,7 +325,7 @@ namespace {
 struct LaneHostIo {
     C5xCore *core = nullptr;
     courier::DspLifecycle *lifecycle = nullptr;
-    double *cycle_debt = nullptr;
+    courier::analog::BoardMedia *clock = nullptr;
     bool live = false;
     uint16_t command_port = 0x18, ack_port = 0x1a;
     uint16_t lane_first = 0x40, banks = 6, dsp_first = 0x58, dsp_status = 0x56;
@@ -399,7 +399,7 @@ struct LaneHostIo {
         event.strobe = strobe;
         std::memcpy(event.window, boot_window[strobe], 8);
         try {
-            courier::DspCycleCharge charge(*core,cycle_debt);
+            courier::DspCycleCharge charge(*core,clock?&clock->s.debt:nullptr);
             const uint64_t before = core->io_port_stat(0x56).writes;
             const uint16_t base = uint16_t(0x58 + 4 * (strobe - boot_first));
             for (unsigned index = 0; index < 4; ++index)
@@ -466,7 +466,7 @@ struct LaneHostIo {
 
     bool ov_commit(OverlayEvent &event)
     {
-        courier::DspCycleCharge charge(*core,cycle_debt);
+        courier::DspCycleCharge charge(*core,clock?&clock->s.debt:nullptr);
         try {
             const uint16_t destination = core->data(0xFF62);
             ov_present(event.block);
@@ -1363,11 +1363,10 @@ std::size_t courier_laneio_take_overlay(void *context, uint8_t *out,
 void courier_laneio_lifecycle(void *context,void *owner) {
     auto &io=*static_cast<LaneHostIo*>(context);
     io.lifecycle=static_cast<courier::DspLifecycle*>(owner);
-    if(io.lifecycle)io.cycle_debt=&io.lifecycle->media.s.debt;
+    if(io.lifecycle)io.clock=&io.lifecycle->media;
 }
 void courier_laneio_clock(void *context,void *board) {
-    static_cast<LaneHostIo*>(context)->cycle_debt=board
-        ? &static_cast<courier::analog::BoardMedia*>(board)->s.debt:nullptr;
+    static_cast<LaneHostIo*>(context)->clock=static_cast<courier::analog::BoardMedia*>(board);
 }
 
 // direction 1 = IN, 2 = OUT. Returns 1 when served; the answer to an IN is in
@@ -1397,6 +1396,19 @@ int courier_laneio_access(void *context, int direction, uint16_t port,
         }
     } else if (io->invalidates[port]) {
         std::memset(io->fixed_valid, 0, sizeof io->fixed_valid);
+    }
+    // Observe all preceding DSP work before sampling a shared register or
+    // publishing a new word/acknowledgement. Window stores are still private
+    // until their command-port strobe, so they need no synchronization.
+    const bool shared=port==io->command_port || port==io->ack_port
+        || port==0x1c || port==0x1e
+        || (direction==1 && port>=io->lane_first && port<io->lane_first+4*io->banks);
+    if(io->live && io->clock && shared) {
+        try {io->clock->sync_dsp(*io->core,int64_t(now));}
+        catch(const std::exception &e) {
+            if(io->lifecycle)copy_error(io->lifecycle->s.error,sizeof io->lifecycle->s.error,e.what());
+            return 0;
+        }
     }
     if(io->lifecycle) {
         const int handled=io->lifecycle->mailbox(unsigned(direction),port,value,*out,now);

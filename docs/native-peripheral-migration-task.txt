@@ -499,3 +499,23 @@ echoed 2021 exact bytes over five seconds and escaped. A capped local pair
 also negotiated 24000 with LAPM/V42bis and exact bidirectional markers.
 The uncapped factory-profile XID timeout has not been revalidated; all new
 call/data validation remained capped at 24000. Codec rounding is unchanged.
+
+
+Milestone 30 complete: synchronize native DSP work at shared-register edges.
+Live status/lane reads and command, acknowledgement and mailbox-control
+strobes run previously earned DSP cycles before observing or changing shared
+state. Private window stores remain buffered until commit. Access-time CPU
+grants carry in the shared remainder and are repaid by later periodic board
+service, while actual DSP execution still debits the common cycle budget.
+The 4096-instruction SIP batch, CPU/DSP ratio and native execution remain.
+
+The native build and 24 existing port/board/worker checks passed. A temporary
+controlled-core check verified old data before commit, new data afterwards,
+repeated timestamps, fractional debt, periodic catch-up and negative-debt
+repayment. With the original 4096 batch, AT&F1&M5 then AT&T1 connected at
+28800 with LAPM/V42bis and echoed 2068 exact bytes over five seconds, with
+zero retransmissions, block errors or link timeouts. Its returned 60-byte
+XID matched transmission with valid CRC. An uninstrumented local pair also
+connected at 24000 with LAPM/V42bis and exact bidirectional markers.
+No permanent tests or debugging interfaces were added. User NVRAM was not
+changed by validation; all runs used isolated temporary configurations.

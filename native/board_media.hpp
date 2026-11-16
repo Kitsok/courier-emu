@@ -68,6 +68,22 @@ struct BoardMedia {
         s.x86_ticks = 0;
         return true;
     }
+    // Shared-register accesses are ordering boundaries even inside a large
+    // CPU batch. x86_ticks may be negative: time granted up to this access
+    // must not be granted again when the periodic board clock catches up.
+    void sync_dsp(C5xCore &core,int64_t now) {
+        if(now<s.board_instructions || s.cycles_per_x86<=0)return;
+        const int64_t ahead=now-s.board_instructions;
+        const int64_t elapsed=s.x86_ticks+ahead;
+        if(elapsed>0) {
+            const volatile double earned=double(elapsed)*s.cycles_per_x86;
+            s.debt+=earned;s.x86_ticks=-ahead;
+        }
+        if(s.debt>=1) {
+            DspCycleCharge charge(core,&s.debt);
+            core.run_cycles(uint64_t(s.debt));
+        }
+    }
     void attach_codec(CodecBringUp *master) {
         if(master)master->retain();if(codec)codec->release();codec=master;
     }

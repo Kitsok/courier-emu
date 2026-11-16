@@ -334,6 +334,17 @@ bind to the shared clock; boards without that owner use accounted reference
 callbacks. This corrects extra unbudgeted DSP execution without changing
 the CPU/DSP ratio or the codec's separate integer-period behavior.
 
+Live native lane accesses use `BoardMedia::sync_dsp` before status/lane
+reads and command, acknowledgement or mailbox-control strobes. It runs the
+DSP up to the CPU access timestamp before sampling old state or publishing a
+new word. Private window stores remain buffered until their commit strobe.
+The shared `x86_ticks` remainder can be negative when a register access has
+already granted time beyond the last periodic board service; later service
+increments repay that advance. Actual DSP cycles still debit the shared debt,
+including instruction overshoot and error exits. Repeated timestamps grant
+no extra time. This native ordering boundary retains the 4096-instruction
+SIP batch and avoids a Python callback for each synchronization.
+
 A worker script seeds deliberately wrong legacy clock/debt values and proves
 native service ignores them. The boot regression compares the entire shared
 board state as well as CPU, interrupt, DSP, codec and media results through a
