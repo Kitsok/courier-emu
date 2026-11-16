@@ -44,6 +44,7 @@ public:
         if(pending>65536){first+=pending-65536;s.dropped+=pending-65536;}
         s.pending=output.size()-first;
     }
+    size_t pending_bytes() const {return output.size()-first;}
     int write(uint8_t byte) {enqueue(byte);return drain();}
     int64_t read(uint8_t *data,size_t limit) {
         const int error=drain();if(error)return -error;

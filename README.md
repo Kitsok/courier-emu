@@ -246,7 +246,13 @@ Use an isolated test configuration and NVRAM file for comparisons.
 `run --cpu-engine interpreter` tool retains that previous backend by default;
 set `COURIER_X86_BACKEND=mame` to use MAME with that tool.
 The MAME backend executes instructions entirely in the vendored 16-bit
-80186 core; it does not invoke the Python instruction decoder. The MAME bus
+80186 core; it does not invoke the Python instruction decoder. Its native
+context allocates and owns RAM, access guards and the shared register bank.
+Python uses live views; register publication no longer converts a Python
+integer list at each callback. Device buffers remain pinned and bound until
+their identities change. Execution batches may span up to 1,048,576
+instructions while retaining service deadlines and bounded output queues.
+The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.

@@ -68,8 +68,11 @@ class MameUc(x86.Uc):
         self.native_enabled = False
         module = load_library()
         self._mame_run = module.run
-        self._mame_guard = bytearray(len(self.memory))
-        self._mame_handle = module.create(self.memory, self._mame_guard)
+        self._mame_configure = module.configure
+        self._mame_handle = module.create()
+        self.memory, self._mame_guard, registers = module.buffers(self._mame_handle)
+        self.regs = memoryview(registers).cast('I')
+        self._mame_bindings_key = None
         self._mame_signature = None
         self._mame_base = 0
         self.mame_retired = 0
@@ -156,7 +159,7 @@ class MameUc(x86.Uc):
         retired = 0
         while self.running and (not count or retired < count):
             self._prepare_guard()
-            budget = min(65536, count - retired) if count else 65536
+            budget = min(1048576, count - retired) if count else 1048576
             polling = self.native_poll is not None and self._clock_callback is not None
             if self._clock_callback is not None and not polling:
                 if self.retired + 1 >= self._clock_next:
@@ -175,21 +178,29 @@ class MameUc(x86.Uc):
             timer_reads = self.native_timer_reads
             if timer_reads is not None:
                 timer_reads.prepare(self.native_host_base + self._mame_base)
-            bindings = (self.native_irq_state,
+            key = (id(self.native_irq_state), id(self.native_uart),
+                   id(self.native_mmio_callback), host_function, host_context, id(host_ports),
+                   id(timer_reads), id(self._mame_nvram), id(self._mame_dte_line),
+                   self.native_poll if polling else None, id(self._mame_transmitter))
+            if key != self._mame_bindings_key:
+                bindings = (self.native_irq_state,
                         self.native_uart.buffer if self.native_uart is not None else None,
                         self._mame_device_access,
                         self._mame_mmio_events if self.native_mmio_callback is not None else None,
                         host_function, host_context, host_ports,
-                        self.native_host_base + self._mame_base,
+                        0,
                         timer_reads.model_buffer if timer_reads is not None else None,
                         self._mame_nvram._native_buffer if self._mame_nvram is not None else None,
                         self._mame_dte_line.buffer if self._mame_dte_line is not None else None,
-                        (*self.native_poll, self.retired, self._clock_next, self._clock_period)
-                        if polling else None,
+                        self.native_poll if polling else None,
                         self._mame_transmitter.handle if self._mame_transmitter is not None else None)
+                self._mame_configure(self._mame_handle, bindings)
+                self._mame_bindings_key = key
             try:
                 done, halted, irq_fallback, mmio_count, poll_next, poll_code = self._mame_run(
-                    self._mame_handle, self.regs, budget, self._mame_event, bindings)
+                    self._mame_handle, budget, self._mame_event,
+                    self.native_host_base + self._mame_base, self.retired,
+                    self._clock_next, self._clock_period)
             except RuntimeError as exc:
                 raise x86.UcError(str(exc)) from exc
             self.retired = self._mame_base + done

@@ -232,3 +232,20 @@ check verified native guest UART output reaches the terminal in order,
 preserves binary bytes, detects CONNECT and keeps access totals without
 Python UART callbacks. A ten-second &M5 AT&T1 run at 24,000 bit/s echoed
 3,995 exact bytes and escaped successfully. No new probes were added.
+
+
+Milestone 13 complete: persistent native CPU/memory/device context.
+The C++ context allocates and owns the RAM, access-guard and shared-register
+buffers. Python uses live views. Native device buffer exports are retained
+until the device set changes, and unchanged bindings are not rebuilt each
+batch. Register synchronization uses native words rather than Python
+integer lists. Execution can continue for up to 1,048,576 instructions per
+batch while native services retain their original deadlines. MMIO capacity
+and terminal flushing bound the larger batches without growing buffers.
+
+Nine focused MAME checks passed. A current-change lifetime check verified
+live register writes, pinned device storage, release on rebinding and view
+lifetime after CPU destruction. A ten-second required-LAPM AT&T1 check at
+24,000 bit/s echoed 3,995 exact bytes and escaped successfully. Python still
+orchestrates host events and worker snapshot synchronization; this is not
+a standalone executable or complete native ownership of every board object.

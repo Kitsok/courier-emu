@@ -53,6 +53,7 @@ struct DteTransmit {
         }
         if(s.online&&s.schedule_pending&&(byte&127)==10)s.schedule_ready=1;
         terminal.enqueue(s.online?byte:byte&127);
+        if(terminal.pending_bytes()>=4096)flush();
         return s.entered||s.left||s.schedule_ready||!results.empty();
     }
     void flush() {if(!s.error)s.error=uint64_t(terminal.drain());}

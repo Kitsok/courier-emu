@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // MAME instruction execution with Courier's existing memory/I/O bus.
 #include <Python.h>
+#include <vector>
 #include "emu.h"
 #include "i186.h"
 #include "i86inline.h"
@@ -41,7 +42,8 @@ class CourierCpu : public i80186_cpu_device {
 public:
     CourierCpu(machine_config &config):i80186_cpu_device(config,"courier186",nullptr,20160000) {}
     uint8_t *memory=nullptr,*guard=nullptr;
-    PyObject *registers=nullptr,*callback=nullptr;
+    uint32_t *registers=nullptr;
+    PyObject *callback=nullptr;
     uint64_t done=0;
     bool failed=false, stop_after=false, irq_fallback=false;
     courier::MachineServiceState *irqs=nullptr;
@@ -137,6 +139,8 @@ public:
         uint8_t *e=mmio_events+8*mmio_count++;
         e[0]=uint8_t(a);e[1]=uint8_t(a>>8);e[2]=uint8_t(a>>16);e[3]=uint8_t(a>>24);
         e[4]=uint8_t(value);e[5]=uint8_t(value>>8);e[6]=uint8_t(n);e[7]=uint8_t(applied);
+        // Leave room for the largest next REP instruction before yielding.
+        if(mmio_count>=mmio_capacity-65536)stop_after=true;
     }
     uint16_t port(unsigned direction,uint16_t p,unsigned n,uint16_t value=0) {
         uint16_t answer=0;
@@ -146,27 +150,8 @@ public:
         return uint16_t(event(direction==1?3:4,p,n,value));
     }
 
-    void publish() {
-        uint32_t values[14];
-        for(unsigned i=0;i<8;++i)values[i]=m_regs.w[i];
-        for(unsigned i=0;i<4;++i)values[8+i]=m_sregs[i];
-        values[12]=m_ip;values[13]=CompressFlags();
-        for(unsigned i=0;i<14;++i) {
-            PyObject *value=PyLong_FromUnsignedLong(values[i]);
-            if(!value){failed=true;throw Stop{};}
-            PyList_SetItem(registers,i,value);
-        }
-    }
-    void restore() {
-        uint16_t values[14];
-        for(unsigned i=0;i<14;++i) {
-            values[i]=uint16_t(PyLong_AsUnsignedLong(PyList_GET_ITEM(registers,i)));
-            if(PyErr_Occurred()){failed=true;throw Stop{};}
-        }
-        for(unsigned i=0;i<8;++i)m_regs.w[i]=values[i];
-        for(unsigned i=0;i<4;++i)m_sregs[i]=values[8+i];
-        m_ip=values[12];ExpandFlags(values[13]);
-    }
+    void publish() {native_regs(registers);}
+    void restore() {native_restore(registers);}
     uint32_t event(unsigned kind,uint32_t address,unsigned size,uint32_t value=0) {
         if(output)output->flush();
         publish();
@@ -286,51 +271,71 @@ public:
     }
 };
 
+// Native context owns the backing buffers. Python APIs expose live views;
+// their storage remains pinned while any native bus pointer can reference it.
+struct NativeBuffer {
+    PyObject *object=nullptr;
+    Py_buffer view{};
+    explicit NativeBuffer(Py_ssize_t size) {
+        object=PyByteArray_FromStringAndSize(nullptr,size);
+        if(!object)throw Stop{};
+        if(PyObject_GetBuffer(object,&view,PyBUF_WRITABLE)<0) {
+            Py_DECREF(object);object=nullptr;throw Stop{};
+        }
+        std::memset(view.buf,0,size_t(size));
+    }
+    ~NativeBuffer(){PyBuffer_Release(&view);Py_XDECREF(object);}
+    uint8_t *data(){return static_cast<uint8_t*>(view.buf);}
+};
 struct Instance {
+    NativeBuffer memory{0x100000},guard{0x100000},registers{14*4};
     running_machine machine;
     machine_config config{machine};
     PlainSpace space;
     CourierCpu cpu{config};
-    Py_buffer memory_view{},guard_view{};
-    Instance(PyObject *m,PyObject *g) {
-        // These exports pin the backing bytearrays for the CPU's lifetime.
-        // A resize must fail rather than invalidate persistent bus pointers.
-        if(PyObject_GetBuffer(m,&memory_view,PyBUF_WRITABLE)<0)throw Stop{};
-        if(PyObject_GetBuffer(g,&guard_view,PyBUF_WRITABLE)<0) {
-            PyBuffer_Release(&memory_view);throw Stop{};
-        }
-        space.memory=cpu.memory=static_cast<uint8_t*>(memory_view.buf);
-        cpu.guard=static_cast<uint8_t*>(guard_view.buf);
+    std::vector<Py_buffer> devices;
+    Instance() {
+        devices.reserve(13);
+        space.memory=cpu.memory=memory.data();cpu.guard=guard.data();
+        cpu.registers=reinterpret_cast<uint32_t*>(registers.data());cpu.registers[13]=2;
         cpu.shim_set_space(AS_PROGRAM,&space);cpu.shim_set_space(AS_IO,&space);
         machine.set_cpu(&cpu);cpu.shim_start();cpu.shim_reset();
     }
-    ~Instance(){PyBuffer_Release(&memory_view);PyBuffer_Release(&guard_view);}
+    void release_devices() {
+        for(auto &view:devices)if(view.obj)PyBuffer_Release(&view);
+        devices.clear();
+    }
+    ~Instance(){release_devices();}
 };
 
 void destroy(PyObject *capsule) {delete static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));}
 PyObject *create(PyObject *,PyObject *args) {
-    PyObject *memory,*guard;
-    if(!PyArg_ParseTuple(args,"OO",&memory,&guard))return nullptr;
-    if(!PyByteArray_Check(memory)||!PyByteArray_Check(guard)
-            ||PyByteArray_GET_SIZE(memory)!=0x100000||PyByteArray_GET_SIZE(guard)!=0x100000) {
-        PyErr_SetString(PyExc_ValueError,"MAME 186 requires 1 MiB memory and guard buffers");return nullptr;
+    if(!PyArg_ParseTuple(args,""))return nullptr;
+    try {
+        auto *instance=new Instance;
+        PyObject *capsule=PyCapsule_New(instance,"courier.mame186",destroy);
+        if(!capsule)delete instance;
+        return capsule;
     }
-    try {return PyCapsule_New(new Instance(memory,guard),"courier.mame186",destroy);}
     catch(const Stop &){return nullptr;}
     catch(const std::exception &e){PyErr_SetString(PyExc_RuntimeError,e.what());return nullptr;}
 }
-PyObject *run(PyObject *,PyObject *args) {
-    PyObject *capsule,*registers,*callback,*bindings=Py_None;unsigned count;
-    if(!PyArg_ParseTuple(args,"OOIO|O",&capsule,&registers,&count,&callback,&bindings))return nullptr;
+PyObject *buffers(PyObject *,PyObject *capsule) {
     auto *instance=static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));
     if(!instance)return nullptr;
-    if(!PyList_Check(registers)||PyList_GET_SIZE(registers)!=14||!PyCallable_Check(callback)) {
-        PyErr_SetString(PyExc_ValueError,"invalid MAME CPU registers or callback");return nullptr;
-    }
-    auto &cpu=instance->cpu;cpu.registers=registers;cpu.callback=callback;
-    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.eeprom=nullptr;cpu.wire=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
+    return Py_BuildValue("OOO",instance->memory.object,instance->guard.object,instance->registers.object);
+}
+PyObject *configure(PyObject *,PyObject *args) {
+    PyObject *capsule,*bindings;
+    if(!PyArg_ParseTuple(args,"OO",&capsule,&bindings))return nullptr;
+    auto *instance=static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));
+    if(!instance)return nullptr;
+    auto &cpu=instance->cpu;
+    instance->release_devices();
+    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.eeprom=nullptr;cpu.wire=nullptr;
+    cpu.device_access=nullptr;cpu.mmio_events=nullptr;
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
-    cpu.poll=nullptr;cpu.poll_next=0;cpu.output=nullptr;
+    cpu.poll=nullptr;cpu.output=nullptr;
     if(bindings!=Py_None) {
         if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=13) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
@@ -341,7 +346,10 @@ PyObject *run(PyObject *,PyObject *args) {
             if(!PyByteArray_Check(value)||PyByteArray_GET_SIZE(value)!=size) {
                 PyErr_SetString(PyExc_ValueError,"invalid MAME device buffer");return nullptr;
             }
-            return reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(value));
+            instance->devices.push_back({});
+            auto &view=instance->devices.back();
+            if(PyObject_GetBuffer(value,&view,PyBUF_WRITABLE)<0)return nullptr;
+            return static_cast<uint8_t*>(view.buf);
         };
         cpu.irqs=reinterpret_cast<courier::MachineServiceState*>(buffer(0,sizeof(courier::MachineServiceState)));
         cpu.uart=reinterpret_cast<courier::Serial186*>(buffer(1,sizeof(courier::Serial186)));
@@ -352,7 +360,6 @@ PyObject *run(PyObject *,PyObject *args) {
             cpu.host_context=PyLong_AsVoidPtr(PyTuple_GET_ITEM(bindings,5));
             cpu.host_ports=buffer(6,65536);
         }
-        cpu.host_base=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(bindings,7));
         cpu.timers=reinterpret_cast<courier::Timers186*>(buffer(8,sizeof(courier::Timers186)));
         cpu.eeprom=reinterpret_cast<courier::Microwire93c66*>(buffer(9,sizeof(courier::Microwire93c66)));
         cpu.wire=reinterpret_cast<courier::DteWire186*>(buffer(10,sizeof(courier::DteWire186)));
@@ -360,20 +367,30 @@ PyObject *run(PyObject *,PyObject *args) {
             cpu.output=static_cast<courier::DteTransmit*>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(bindings,12)));
         PyObject *poll=PyTuple_GET_ITEM(bindings,11);
         if(poll!=Py_None) {
-            if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=5) {
+            if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=2) {
                 PyErr_SetString(PyExc_ValueError,"invalid MAME worker binding");return nullptr;
             }
             cpu.poll=reinterpret_cast<CourierCpu::Poll>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(poll,0)));
             cpu.poll_context=PyLong_AsVoidPtr(PyTuple_GET_ITEM(poll,1));
-            cpu.poll_total=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,2));
-            cpu.poll_next=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,3));
-            cpu.poll_period=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,4));
         }
         if(PyErr_Occurred())return nullptr;
         if(cpu.host_io&&!cpu.host_ports) {
             PyErr_SetString(PyExc_ValueError,"missing MAME native port table");return nullptr;
         }
     }
+    Py_RETURN_NONE;
+}
+PyObject *run(PyObject *,PyObject *args) {
+    PyObject *capsule,*callback;unsigned count;
+    unsigned long long base,total,next,period;
+    if(!PyArg_ParseTuple(args,"OIOKKKK",&capsule,&count,&callback,&base,&total,&next,&period))return nullptr;
+    auto *instance=static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));
+    if(!instance)return nullptr;
+    if(!PyCallable_Check(callback)) {
+        PyErr_SetString(PyExc_ValueError,"invalid MAME bus callback");return nullptr;
+    }
+    auto &cpu=instance->cpu;cpu.callback=callback;
+    cpu.host_base=base;cpu.poll_total=total;cpu.poll_next=next;cpu.poll_period=period;
     try {
         cpu.begin();
         while(cpu.done<count) {
@@ -390,7 +407,9 @@ PyObject *run(PyObject *,PyObject *args) {
     return Py_BuildValue("KiiIKi",(unsigned long long)cpu.done,cpu.halted(),cpu.irq_fallback,cpu.mmio_count,
                          (unsigned long long)cpu.poll_next,cpu.poll_code);
 }
-PyMethodDef methods[]={{"create",create,METH_VARARGS,"Create a MAME 80186 CPU."},
+PyMethodDef methods[]={{"create",create,METH_VARARGS,"Create a native Courier CPU context."},
+    {"buffers",buffers,METH_O,"Expose the context's live RAM and register buffers."},
+    {"configure",configure,METH_VARARGS,"Retain native device bindings until reconfigured."},
     {"run",run,METH_VARARGS,"Run native 80186 instructions on the Courier bus."},{nullptr,nullptr,0,nullptr}};
 PyModuleDef module={PyModuleDef_HEAD_INIT,"_mame_native",nullptr,-1,methods,nullptr,nullptr,nullptr,nullptr};
 }
