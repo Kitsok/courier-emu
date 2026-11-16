@@ -2978,6 +2978,10 @@ class CourierMachine:
             if size == 1:
                 previous_hook = self.panel.off_hook
                 self.panel.observe_write(port, value, pc, self.instructions)
+                if port == 0x12 and self.dsp_bridge is not None:
+                    monitor = self.dsp_bridge.audio_monitor
+                    if hasattr(monitor, 'native_speaker_handle'):
+                        monitor.set_enabled(not bool(value & 0x10))
                 if (
                     self.dsp_bridge is not None
                     and self.panel.off_hook != previous_hook

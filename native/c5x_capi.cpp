@@ -37,6 +37,20 @@
 
 using courier::C5xCore;
 
+extern "C" void *courier_speaker_create(const char *player,double volume) {
+    try{return new courier::Speaker(player,volume);}catch(...){return nullptr;}
+}
+extern "C" void courier_speaker_release(void *handle) {static_cast<courier::Speaker*>(handle)->release();}
+extern "C" void courier_speaker_close(void *handle) {static_cast<courier::Speaker*>(handle)->close();}
+extern "C" void courier_speaker_enable(void *handle,int value) {static_cast<courier::Speaker*>(handle)->enable(bool(value));}
+extern "C" unsigned courier_speaker_status(void *handle) {return static_cast<courier::Speaker*>(handle)->status();}
+extern "C" void courier_speaker_feed(void *handle,const int32_t *tx,size_t nt,const int32_t *rx,size_t nr) {
+    try{static_cast<courier::Speaker*>(handle)->feed(tx,nt,rx,nr);}catch(...){}
+}
+extern "C" void courier_board_media_speaker(void *handle,void *speaker) {
+    static_cast<courier::analog::BoardMedia*>(handle)->attach_speaker(static_cast<courier::Speaker*>(speaker));
+}
+
 extern "C" size_t courier_lifecycle_layout() {return sizeof(courier::DspLifecycleState);}
 extern "C" void *courier_lifecycle_create(void *state,void *media,void *core) {
     try{return new courier::DspLifecycle(*static_cast<courier::DspLifecycleState*>(state),

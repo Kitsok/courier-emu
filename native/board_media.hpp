@@ -2,6 +2,7 @@
 // the current C5x only while servicing; resets never leave a stale core pointer.
 #pragma once
 #include "c5x_core.h"
+#include "speaker.hpp"
 #include "sip_port.hpp"
 #include "stream_resample.hpp"
 #include "codec_bringup.hpp"
@@ -21,6 +22,7 @@ struct BoardMedia {
     SipPort &port;
     Daa *daa;
     CodecBringUp *codec=nullptr;
+    courier::Speaker *speaker=nullptr;
     BoardMediaState s;
     resample::Stream tx_converter,rx_converter;
     std::deque<int16_t> line_buffer,in_flight,deferred_rx;
@@ -42,7 +44,7 @@ struct BoardMedia {
         if(!samples || !period || !quantum)throw std::invalid_argument("invalid native line cadence");
         port.retain();
     }
-    ~BoardMedia(){if(codec)codec->release();port.release_reference();}
+    ~BoardMedia(){if(speaker)speaker->release();if(codec)codec->release();port.release_reference();}
     bool advance_dsp_clock(int64_t count) {
         s.x86_ticks += count;
         if (s.x86_ticks < int64_t(batch)) return false;
@@ -54,6 +56,9 @@ struct BoardMedia {
     }
     void attach_codec(CodecBringUp *master) {
         if(master)master->retain();if(codec)codec->release();codec=master;
+    }
+    void attach_speaker(courier::Speaker *output) {
+        if(output)output->retain();if(speaker)speaker->release();speaker=output;
     }
     void service_codec() {
         if(!codec)throw std::logic_error("native codec master not attached");
@@ -148,6 +153,7 @@ struct BoardMedia {
                 in_frame=true;
             }
             const int event=port.resume();if(event)return event;
+            if(speaker)speaker->feed(frame.data(),frame.size(),port.exchange.output.data(),port.exchange.output.size());
             if(monitor && !monitor_done)return 8;
             queue(core,port.exchange.output);
             if(daa) {

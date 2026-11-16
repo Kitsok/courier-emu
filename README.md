@@ -1723,10 +1723,13 @@ speaker on, and `ATM0` to mute it. External-Courier `ATL` behavior is not
 replaced with host volume control; use the configuration gain for that.
 Direct diagnostic launches can select `--audio-monitor --audio-volume 0.25`.
 
-A separate playback thread mixes the two directions and writes to the player.
-Its queue holds at most 200 ms; a slow or unavailable audio server cannot
-block the modem, and muting invalidates queued audio. Missing `paplay` or a
-failed player produces a warning and leaves the modem running.
+The native runtime mixes and packs the two directions in C++, then a native
+playback thread writes the bounded queue to the player. PCM frames are not
+exported to Python, and muted playback skips frame processing. Its queue holds
+at most 200 ms; a slow or unavailable audio server cannot block the modem,
+and muting invalidates queued audio. Missing `paplay` or a failed player leaves
+the modem running. Custom monitor callbacks and the reference bridge retain
+their existing Python interface.
 
 ### Debian package and systemd
 

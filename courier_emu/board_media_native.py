@@ -52,6 +52,7 @@ def library():
         'codec': ([c.c_void_p, c.c_void_p], None),
         'service_codec': ([c.c_void_p], None),
         'monitor': ([c.c_void_p, c.c_int], None),
+        'speaker': ([c.c_void_p, c.c_void_p], None),
         'monitor_ack': ([c.c_void_p], None),
         'frame': ([c.c_void_p, c.c_int, c.POINTER(c.c_int32), c.c_size_t], c.c_size_t),
     }
@@ -142,6 +143,12 @@ class NativeBoardMedia:
     def set_monitor(self, callback):
         self.monitor_callback = callback
         self._lib.courier_board_media_monitor(self.handle, callback is not None)
+
+    def set_native_monitor(self, output):
+        self._lib.courier_board_media_speaker(
+            self.handle, output.native_speaker_handle if output is not None else None)
+        self._native_monitor = output
+        self.set_monitor(None)
 
     def reset(self, core, *, rebuild=False):
         if self._lib.courier_board_media_reset(self.handle, core.handle, rebuild):

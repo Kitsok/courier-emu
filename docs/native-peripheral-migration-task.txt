@@ -340,3 +340,17 @@ the default native C51 path. Python still handles final host completion
 notifications, overlay metadata, configuration and external signalling,
 plus board-clock propagation. A standalone executable and complete native
 ownership of all board objects remain outside the completed milestones.
+
+
+Milestone 19 complete: native speaker monitoring and bounded playback.
+The native board taps PCM directly into a C++ mixer/packer and bounded
+native playback worker. Python configures the player and volume and updates
+the speaker gate on firmware latch writes; frame callbacks and PCM-list
+exports are removed from this runtime path. Muting skips sample processing
+and invalidates pending audio. Playback backpressure stays outside modem
+execution. Custom monitors and reference bridges retain their interfaces.
+
+A focused current-change check matched mixing, ties-to-even rounding and
+clamping, mute gating and direct media delivery with Python frame export
+disabled. The existing custom-monitor ordering check passed. Fresh boot
+and AT/settings smoke checks passed. No new firmware probes were added.

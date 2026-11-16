@@ -333,7 +333,10 @@ def main() -> int:
     if sip is not None and machine.dsp_bridge is not None:
         LOG.info("[line] SIP transmit gain=%g synthetic local echo=%s", args.sip_line_gain, args.sip_local_echo)
     if args.audio_monitor and machine.dsp_bridge is not None:
-        from .audio_monitor import AudioMonitor
+        if hasattr(machine.dsp_bridge, '_native_media_owner'):
+            from .speaker_native import NativeAudioMonitor as AudioMonitor
+        else:
+            from .audio_monitor import AudioMonitor
         machine.dsp_bridge.audio_monitor = AudioMonitor(args.audio_volume)
         machine.dsp_bridge.speaker_enabled = lambda: not (machine.panel.latches.get(0x12, 0xff) & 0x10)
     if args.line_frames is not None and machine.dsp_bridge is not None:

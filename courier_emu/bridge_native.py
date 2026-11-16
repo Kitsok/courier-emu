@@ -113,7 +113,11 @@ class NativeCourierDspBridge(CourierDspBridge):
             elif name == 'core' and old_core is not None and old_core is not value:
                 owner.reset(value, rebuild=True)
             elif name == 'audio_monitor':
-                owner.set_monitor(self._monitor_frame if value is not None else None)
+                if value is not None and hasattr(value, 'native_speaker_handle'):
+                    owner.set_native_monitor(value)
+                else:
+                    owner.set_native_monitor(None)
+                    owner.set_monitor(self._monitor_frame if value is not None else None)
 
     def _monitor_frame(self, transmitted, received):
         self.audio_monitor.feed(transmitted, received, enabled=self.speaker_enabled())
