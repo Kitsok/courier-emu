@@ -324,6 +324,16 @@ and cycle estimate directly, including service continuation after a media
 yield. Machine interrupt and console scheduling fields still use the existing
 boundary and remain a separate integration task.
 
+Synchronous C51 loader and overlay acknowledgement work also debits that
+budget by the actual DSP cycles consumed. Native scopes cover NMI startup,
+ROM groups and overlay retries/tails, including exception and timeout paths.
+Nested reference helpers charge only their outer operation. A negative
+balance represents DSP work already executed; later CPU grants repay it
+before ordinary scheduled DSP execution resumes. Accelerated native strobes
+bind to the shared clock; boards without that owner use accounted reference
+callbacks. This corrects extra unbudgeted DSP execution without changing
+the CPU/DSP ratio or the codec's separate integer-period behavior.
+
 A worker script seeds deliberately wrong legacy clock/debt values and proves
 native service ignores them. The boot regression compares the entire shared
 board state as well as CPU, interrupt, DSP, codec and media results through a

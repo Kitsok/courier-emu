@@ -481,3 +481,21 @@ passed. Fresh isolated boot and AT/settings queries passed, including DSP
 loader completion. No tests were added; the destination test no longer sets
 the removed field. Historical dialling notes now distinguish the old mock-PBX
 experiment from current decoded-number routing.
+
+
+Milestone 29 complete: charge synchronous DSP execution to the board clock.
+Native NMI startup, ROM download and overlay acknowledgement helpers debit
+their actual cycle use from the shared DSP budget, including errors and the
+overlay tail. Scopes avoid charging nested loader operations twice. Negative
+balances carry forward until later CPU grants repay work already executed.
+Reference helpers account their outer operation once, and native strobe
+acceleration requires an authoritative shared clock owner.
+
+The native build and seventeen existing bridge/port checks passed. A focused
+temporary check verified native/reference nested charging, fractional and
+negative balances, repayment, failed native waits and overlay-tail cycles.
+AT&F1&M5&N12 followed by AT&T1 connected with LAPM/V42bis at 24000 bit/s,
+echoed 2021 exact bytes over five seconds and escaped. A capped local pair
+also negotiated 24000 with LAPM/V42bis and exact bidirectional markers.
+The uncapped factory-profile XID timeout has not been revalidated; all new
+call/data validation remained capped at 24000. Codec rounding is unchanged.

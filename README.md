@@ -277,6 +277,12 @@ EEPROM Microwire commands and ordinary parallel-register traffic also execute
 in C++. The native bus samples the EEPROM output and DTE wire directly.
 The standalone native C51 bridge owns bootstrap storage, completion matching,
 loader startup, NMI settling and transfer acknowledgement loops in C++.
+Synchronous loader and overlay execution debits actual DSP cycles from the
+shared clock budget, including acknowledgement tails and failed waits.
+Negative balances are repaid by later CPU time before normal DSP scheduling
+runs more cycles. Nested reference helpers account their work once; native
+strobe acceleration requires a shared native budget, while reference-only
+boards use their accounted host callbacks.
 Python exposes live loader/runtime fields and retains host completion events.
 The same owner performs DSP reset, NMI/INT1 delivery, runtime-bus invalidation
 and media output cleanup. Repeated asserted-reset writes still sample the

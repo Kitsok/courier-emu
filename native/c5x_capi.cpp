@@ -325,6 +325,7 @@ namespace {
 struct LaneHostIo {
     C5xCore *core = nullptr;
     courier::DspLifecycle *lifecycle = nullptr;
+    double *cycle_debt = nullptr;
     bool live = false;
     uint16_t command_port = 0x18, ack_port = 0x1a;
     uint16_t lane_first = 0x40, banks = 6, dsp_first = 0x58, dsp_status = 0x56;
@@ -398,6 +399,7 @@ struct LaneHostIo {
         event.strobe = strobe;
         std::memcpy(event.window, boot_window[strobe], 8);
         try {
+            courier::DspCycleCharge charge(*core,cycle_debt);
             const uint64_t before = core->io_port_stat(0x56).writes;
             const uint16_t base = uint16_t(0x58 + 4 * (strobe - boot_first));
             for (unsigned index = 0; index < 4; ++index)
@@ -464,6 +466,7 @@ struct LaneHostIo {
 
     bool ov_commit(OverlayEvent &event)
     {
+        courier::DspCycleCharge charge(*core,cycle_debt);
         try {
             const uint16_t destination = core->data(0xFF62);
             ov_present(event.block);
@@ -1358,7 +1361,13 @@ std::size_t courier_laneio_take_overlay(void *context, uint8_t *out,
 }
 
 void courier_laneio_lifecycle(void *context,void *owner) {
-    static_cast<LaneHostIo*>(context)->lifecycle=static_cast<courier::DspLifecycle*>(owner);
+    auto &io=*static_cast<LaneHostIo*>(context);
+    io.lifecycle=static_cast<courier::DspLifecycle*>(owner);
+    if(io.lifecycle)io.cycle_debt=&io.lifecycle->media.s.debt;
+}
+void courier_laneio_clock(void *context,void *board) {
+    static_cast<LaneHostIo*>(context)->cycle_debt=board
+        ? &static_cast<courier::analog::BoardMedia*>(board)->s.debt:nullptr;
 }
 
 // direction 1 = IN, 2 = OUT. Returns 1 when served; the answer to an IN is in

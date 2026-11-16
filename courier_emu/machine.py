@@ -4112,6 +4112,9 @@ class CourierMachine:
             from .dsp import LaneHostIo
 
             lane_io = self._lane_io = LaneHostIo()
+            clock = getattr(bridge, '_native_media_owner', None)
+            if clock is not None:
+                lane_io.set_clock(clock)
             command_port = bridge.transfer.command_port
             lane_ports = range(LANE_FIRST_PORT, LANE_FIRST_PORT + 4 * LANE_BANKS)
             host_ports = bytearray(65536)
@@ -4155,7 +4158,7 @@ class CourierMachine:
             # a row, a 300 ms stall in a live call. COURIER_NATIVE_OVERLAY=0
             # leaves them to `bridge.write`.
             overlay_native = (
-                overlay_static and bridge.boot_rom_enabled
+                clock is not None and overlay_static and bridge.boot_rom_enabled
                 and os.environ.get("COURIER_NATIVE_OVERLAY", "1") != "0"
             )
             # COURIER_LANE_CAPTURE=PATH records the lanes' traffic to PATH
@@ -4170,7 +4173,7 @@ class CourierMachine:
             # port and the window bytes on 58..5e, ~21k OUTs that each left
             # the engine. COURIER_NATIVE_BOOT=0 leaves them to `bridge.write`.
             boot_native = (
-                bridge.boot_rom_enabled
+                clock is not None and bridge.boot_rom_enabled
                 and bridge.transfer.mailbox_shares_window
                 and all(port in bridge._lanes for port in DSP_RUNTIME_PORTS)
                 and os.environ.get("COURIER_NATIVE_BOOT", "1") != "0"

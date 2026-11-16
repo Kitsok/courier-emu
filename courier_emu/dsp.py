@@ -1311,6 +1311,7 @@ class LaneHostIo:
         lib.courier_laneio_create.restype = ctypes.c_void_p
         lib.courier_laneio_destroy.argtypes = [ctypes.c_void_p]
         lib.courier_laneio_lifecycle.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        lib.courier_laneio_clock.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
         lib.courier_laneio_configure.argtypes = [
             ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_uint16,
             ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16,
@@ -1390,6 +1391,10 @@ class LaneHostIo:
     def set_lifecycle(self, owner) -> None:
         self._anchors.append(owner)
         self.library.courier_laneio_lifecycle(self.context, owner.handle)
+
+    def set_clock(self, owner) -> None:
+        self._anchors.append(owner)
+        self.library.courier_laneio_clock(self.context, owner.handle)
 
     def configure(self, core_handle: int | None, live: bool, *,
                   command_port: int, ack_port: int, lane_first: int, banks: int,

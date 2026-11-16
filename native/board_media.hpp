@@ -7,6 +7,20 @@
 #include "stream_resample.hpp"
 #include "codec_bringup.hpp"
 
+namespace courier {
+// Synchronous handshakes may run ahead of the board's next service. Debit
+// their actual cycles once; later CPU time repays any negative balance.
+struct DspCycleCharge {
+    C5xCore &core;
+    double *debt;
+    uint64_t before;
+    DspCycleCharge(C5xCore &part,double *budget):core(part),debt(budget),before(part.cycle_count()) {}
+    DspCycleCharge(const DspCycleCharge &)=delete;
+    DspCycleCharge &operator=(const DspCycleCharge &)=delete;
+    ~DspCycleCharge() {if(debt)*debt-=double(core.cycle_count()-before);}
+};
+} // namespace courier
+
 namespace courier::analog {
 struct BoardMediaState {
     uint64_t tx_index=0,codec_last=0,idle=0,frames=0,tx_consumed=0,resampled=0,crossing_retune=0,reported_tx_index=0;

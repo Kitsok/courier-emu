@@ -266,6 +266,7 @@ struct DspLifecycle {
     }
     void settle() {
         if(!s.restarted)return;
+        DspCycleCharge charge(*core,&media.s.debt);
         for(unsigned k=0;k<64;++k) {
             if(core->data(uint16_t(dispatch_cell))==nmi_entry){s.restarted=0;return;}
             core->run(1);
@@ -274,7 +275,9 @@ struct DspLifecycle {
     }
     void start_loader() {
         if(s.loader_started)return;
-        s.reset_asserted=0;settle();core->set_io(0x58,uint16_t(s.destination));
+        s.reset_asserted=0;settle();
+        DspCycleCharge charge(*core,&media.s.debt);
+        core->set_io(0x58,uint16_t(s.destination));
         if(!s.nmi_seen){core->nmi();s.nmi_seen=1;}
         for(unsigned k=0;k<4096;++k) {
             const auto pc=core->program_counter();
@@ -289,6 +292,7 @@ struct DspLifecycle {
     }
     void commit(unsigned strobe) {
         start_loader();
+        DspCycleCharge charge(*core,&media.s.debt);
         const auto before=core->io_port_stat(0x56).writes;
         if(windows[strobe]) {
             const unsigned base=0x58+4*(strobe-first);

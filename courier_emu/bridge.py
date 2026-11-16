@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from dataclasses import dataclass, field
+from functools import wraps
 import json
 import math
 import os
@@ -317,6 +318,24 @@ DSP_STREAM_PORT = asic.dsp_register("stream")
 # which the board might well reject. That is the known limit of this constant.
 ASIC_DSP_PORT_MASK = 0x2F
 
+
+
+def _account_dsp_steps(method):
+    """Charge nested synchronous reference helpers once, including failures."""
+    @wraps(method)
+    def accounted(self, *args, **kwargs):
+        if getattr(self, '_accounting_dsp_steps', False):
+            return method(self, *args, **kwargs)
+        core = self.core
+        before = core.state()['cycles']
+        self._accounting_dsp_steps = True
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self._accounting_dsp_steps = False
+            self._dsp_cycle_debt = (getattr(self, '_dsp_cycle_debt', 0.0)
+                                    - (core.state()['cycles'] - before))
+    return accounted
 
 
 def _peak(samples) -> int:
@@ -1456,6 +1475,7 @@ class CourierDspBridge:
             self.core.nmi()
             self._loader_nmi_seen = True
 
+    @_account_dsp_steps
     def _settle_nmi_dispatch(self) -> None:
         """Let the DSP run its post-reset startup before the NMI reaches it.
 
@@ -1534,6 +1554,7 @@ class CourierDspBridge:
             return True
         return self.core.pc() in C51_ROM_LOADER_LOOP
 
+    @_account_dsp_steps
     def _start_rom_loader(self) -> None:
         if not self.boot_rom_enabled or self._loader_started:
             return
@@ -1582,6 +1603,7 @@ class CourierDspBridge:
             return count(port)
         return self.core.io_port_stats([port]).get(f"0x{port:02x}", {}).get("writes", 0)
 
+    @_account_dsp_steps
     def _commit_rom_group(self, strobe: int) -> None:
         self._start_rom_loader()
         before = self._port_writes(0x56)
@@ -2290,6 +2312,7 @@ class CourierDspBridge:
         if error:
             raise RuntimeError(error)
 
+    @_account_dsp_steps
     def _commit_overlay_group(self, block: bytes) -> None:
         """Expose four words to the resident loader and await its real ACK."""
         if len(block) != 8:
