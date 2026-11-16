@@ -216,3 +216,19 @@ A focused current-change check passed admission, frame timing, queue order,
 pending-IRQ gating and preservation of online ISR selection. A ten-second
 AT&T1 check with &M5 and a 24,000-bit/s cap echoed 4,042 exact bytes and
 escaped successfully. No additional firmware probes were introduced.
+
+
+Milestone 12 complete: native UART-to-terminal transmit path.
+Native UART writes feed bounded serial capture, result/mode recognition and
+the existing terminal buffer directly. Terminal writes drain at service,
+callback and batch boundaries. Individual transmitted bytes no longer end
+a CPU batch or replay through Python serial processing. Access accounting
+is folded by batch. Result lines and mode/scheduled-input events retain
+their existing host behavior; control-aware serialsim stays on its prior
+path. Live machine views expose online state and captured output.
+
+Thirteen existing MAME/terminal checks passed. A focused current-change
+check verified native guest UART output reaches the terminal in order,
+preserves binary bytes, detects CONNECT and keeps access totals without
+Python UART callbacks. A ten-second &M5 AT&T1 run at 24,000 bit/s echoed
+3,995 exact bytes and escaped successfully. No new probes were added.

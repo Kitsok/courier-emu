@@ -35,6 +35,7 @@ LIBRARY_SOURCES = (SOURCES[:1] + (NATIVE_DIRECTORY / "c5x_capi.cpp",) + SOURCES[
                       NATIVE_DIRECTORY / "interrupts186.hpp", NATIVE_DIRECTORY / "serial186.hpp",
                       NATIVE_DIRECTORY / "dte186.hpp", NATIVE_DIRECTORY / "dte_receive.hpp",
                       NATIVE_DIRECTORY / "terminal_io.hpp",
+                      NATIVE_DIRECTORY / "dte_transmit.hpp",
                       NATIVE_DIRECTORY / "microwire93c66.hpp"))
 _LIBRARY_HANDLE = None
 _SIZE_T_MAX = ctypes.c_size_t(-1).value

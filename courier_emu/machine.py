@@ -909,6 +909,11 @@ class CourierMachine:
                 self._capture_serial(value)
 
     def _capture_serial(self, value: int) -> None:
+        output = getattr(self, '_native_transmitter', None)
+        if output is not None:
+            output.write(value & 255)
+            output.finish()
+            return
         value &= 0xFF
         self.at_events.transmitted(value, command_mode=(not self.online_mode or self._firmware_command_mode()))
         self._serial_recent.append(value)
@@ -945,15 +950,18 @@ class CourierMachine:
             self.serial_trace.append("left-data-mode")
         if (self.online_mode and self._serial_input_after_connect
                 and value & 0x7F == 0x0A):
-            guard = AFTER_CONNECT_GUARD_MS * INSTRUCTIONS_PER_MS
-            self._serial_input_schedule = deque(sorted([
-                *self._serial_input_schedule,
-                *((self.instructions + guard * index, chunk)
-                  for index, chunk in enumerate(self._serial_input_after_connect))]))
-            self._serial_input_after_connect.clear()
-            self.serial_trace.append("connect: scheduled held data")
+            self._schedule_connected_input()
         if self.console is not None:
             self.console.write(value if self.online_mode else value & 0x7F)
+
+    def _schedule_connected_input(self) -> None:
+        guard = AFTER_CONNECT_GUARD_MS * INSTRUCTIONS_PER_MS
+        self._serial_input_schedule = deque(sorted([
+            *self._serial_input_schedule,
+            *((self.instructions + guard * index, chunk)
+              for index, chunk in enumerate(self._serial_input_after_connect))]))
+        self._serial_input_after_connect.clear()
+        self.serial_trace.append("connect: scheduled held data")
 
     @property
     def _dte_dtr_asserted(self) -> bool:
@@ -1236,6 +1244,10 @@ class CourierMachine:
                 and self._native_irq_controller):
             from .receive_native import NativeReceiveMachine
             native_receiver = NativeReceiveMachine.adopt(self, uc)
+
+        if native_receiver is not None and hasattr(self.console, '_terminal_handle'):
+            from .transmit_native import NativeTransmitMachine
+            uc._mame_transmitter = NativeTransmitMachine.adopt(self, uc)
 
         def native_irq_owned() -> bool:
             return (self._native_irq_controller and self._native_service_state.irq_enabled

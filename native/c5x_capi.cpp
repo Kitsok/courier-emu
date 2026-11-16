@@ -14,6 +14,7 @@
 #include "dte186.hpp"
 #include "dte_receive.hpp"
 #include "terminal_io.hpp"
+#include "dte_transmit.hpp"
 #include "microwire93c66.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
@@ -90,6 +91,20 @@ extern "C" int courier_terminal_lamps(void *handle,const char *data,std::size_t 
 }
 extern "C" void courier_terminal_close(void *handle) {
     static_cast<courier::TerminalTransport*>(handle)->close();
+}
+
+extern "C" size_t courier_transmit_layout() {return sizeof(courier::TransmitState);}
+extern "C" void *courier_transmit_create(void *state,void *terminal,uint8_t *memory,const uint64_t *layout) {
+    try{return new courier::DteTransmit(*static_cast<courier::TransmitState*>(state),
+        *static_cast<courier::TerminalTransport*>(terminal),memory,layout);}
+    catch(...){return nullptr;}
+}
+extern "C" void courier_transmit_destroy(void *handle) {delete static_cast<courier::DteTransmit*>(handle);}
+extern "C" void courier_transmit_write(void *handle,unsigned byte) {
+    auto &output=*static_cast<courier::DteTransmit*>(handle);output.write(uint8_t(byte));output.flush();
+}
+extern "C" size_t courier_transmit_take(void *handle,char *out,size_t capacity) {
+    return static_cast<courier::DteTransmit*>(handle)->take(out,capacity);
 }
 
 extern "C" size_t courier_receive_layout() {return sizeof(courier::ReceiveState);}

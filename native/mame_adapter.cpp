@@ -9,6 +9,7 @@
 #include "timers186.hpp"
 #include "microwire93c66.hpp"
 #include "dte186.hpp"
+#include "dte_transmit.hpp"
 
 namespace {
 struct Stop {};
@@ -48,6 +49,7 @@ public:
     courier::Timers186 *timers=nullptr;
     courier::Microwire93c66 *eeprom=nullptr;
     courier::DteWire186 *wire=nullptr;
+    courier::DteTransmit *output=nullptr;
     const uint8_t *device_access=nullptr,*host_ports=nullptr;
     uint8_t *mmio_events=nullptr;
     uint32_t mmio_count=0,mmio_capacity=0;
@@ -166,6 +168,7 @@ public:
         m_ip=values[12];ExpandFlags(values[13]);
     }
     uint32_t event(unsigned kind,uint32_t address,unsigned size,uint32_t value=0) {
+        if(output)output->flush();
         publish();
         PyObject *answer=PyObject_CallFunction(callback,"IIIIK",kind,address,size,value,
                                              (unsigned long long)done);
@@ -207,8 +210,9 @@ public:
         a&=0xfffff;mapped(a,n,2);
         if(serial_access(a,n,true)) {
             ++uart->native_writes;
-            if(uart->write(a,value,*irqs)>=0)stop_after=true;
-            queue_write(a,n,value,4);
+            const int byte=uart->write(a,value,*irqs);
+            if(byte>=0&&output)stop_after=output->write(uint8_t(byte),n)||stop_after;
+            else {if(byte>=0)stop_after=true;queue_write(a,n,value,4);}
         } else if(pio_write(a,n,value)) {
             // Device state and accounting are already committed.
         } else if(a!=0xff32&&timer_access(a,n,true)) {
@@ -254,6 +258,7 @@ public:
     bool halted() const {return m_halt;}
     bool service() {
         if(!poll||poll_total+done+1<poll_next)return true;
+        if(output)output->flush();
         uint32_t values[14];native_regs(values);
         PollCpu cpu{values,memory,0x100000,guard,nullptr,0,
                     mmio_events,mmio_count,poll_total};
@@ -325,9 +330,9 @@ PyObject *run(PyObject *,PyObject *args) {
     auto &cpu=instance->cpu;cpu.registers=registers;cpu.callback=callback;
     cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.eeprom=nullptr;cpu.wire=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
-    cpu.poll=nullptr;cpu.poll_next=0;
+    cpu.poll=nullptr;cpu.poll_next=0;cpu.output=nullptr;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=12) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=13) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -351,6 +356,8 @@ PyObject *run(PyObject *,PyObject *args) {
         cpu.timers=reinterpret_cast<courier::Timers186*>(buffer(8,sizeof(courier::Timers186)));
         cpu.eeprom=reinterpret_cast<courier::Microwire93c66*>(buffer(9,sizeof(courier::Microwire93c66)));
         cpu.wire=reinterpret_cast<courier::DteWire186*>(buffer(10,sizeof(courier::DteWire186)));
+        if(PyTuple_GET_ITEM(bindings,12)!=Py_None)
+            cpu.output=static_cast<courier::DteTransmit*>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(bindings,12)));
         PyObject *poll=PyTuple_GET_ITEM(bindings,11);
         if(poll!=Py_None) {
             if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=5) {
@@ -377,6 +384,7 @@ PyObject *run(PyObject *,PyObject *args) {
         }
     } catch(const Stop &) {}
       catch(const std::exception &e){PyErr_SetString(PyExc_RuntimeError,e.what());cpu.failed=true;}
+    if(cpu.output)cpu.output->flush();
     if(cpu.failed)return nullptr;
     try {cpu.publish();}catch(const Stop &){return nullptr;}
     return Py_BuildValue("KiiIKi",(unsigned long long)cpu.done,cpu.halted(),cpu.irq_fallback,cpu.mmio_count,

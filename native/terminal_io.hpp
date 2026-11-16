@@ -38,13 +38,13 @@ public:
         else if(first>65536){output.erase(0,first);first=0;}
         return 0;
     }
-    int write(uint8_t byte) {
+    void enqueue(uint8_t byte) {
         output.push_back(char(byte));
         const size_t pending=output.size()-first;
         if(pending>65536){first+=pending-65536;s.dropped+=pending-65536;}
         s.pending=output.size()-first;
-        return drain();
     }
+    int write(uint8_t byte) {enqueue(byte);return drain();}
     int64_t read(uint8_t *data,size_t limit) {
         const int error=drain();if(error)return -error;
         if(s.closed||!limit)return 0;

@@ -266,6 +266,11 @@ The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console
 subclasses retain their existing control-aware paths.
+For the plain PTY and recognized ROM path, UART transmit bytes stay native
+through result/mode detection, bounded capture and terminal output. Output
+is drained at service, callback and batch boundaries; transmitting a byte
+alone no longer ends a CPU batch. Python receives completed result lines
+and mode/scheduled-input events, preserving the existing operational log.
 For recognized analog ROM layouts, the DTE input queue, receive admission,
 firmware attention-adapter updates and character completion/UART delivery
 also run in C++. Python retains command observation, echo and service-call

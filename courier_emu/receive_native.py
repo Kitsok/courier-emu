@@ -81,12 +81,13 @@ FIELDS = {'_rom_dte_opened': 'opened', '_online_attention_armed': 'attention_arm
 class NativeReceiveMachine(NativeServiceMachine):
     @classmethod
     def adopt(cls, machine, uc):
-        if type(machine) not in (NativeServiceMachine, cls):
+        if type(machine) is not NativeServiceMachine and not isinstance(machine, cls):
             return None
         original = {name: getattr(machine, name) for name in FIELDS}
         receiver = NativeReceiver(machine, uc)
         machine._native_receiver = receiver
-        machine.__class__ = cls
+        if type(machine) is NativeServiceMachine:
+            machine.__class__ = cls
         machine.serial_rx = receiver
         for name, value in original.items():
             setattr(machine, name, value)

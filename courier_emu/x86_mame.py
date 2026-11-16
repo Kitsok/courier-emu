@@ -28,7 +28,8 @@ def build_library():
                VENDOR / 'cpu/i186.cpp', VENDOR / 'shim/emu.cpp']
     dependencies = sources + list(VENDOR.rglob('*.h')) + [
         ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp', ROOT / 'native/timers186.hpp',
-        ROOT / 'native/microwire93c66.hpp', ROOT / 'native/dte186.hpp']
+        ROOT / 'native/microwire93c66.hpp', ROOT / 'native/dte186.hpp',
+        ROOT / 'native/dte_transmit.hpp', ROOT / 'native/terminal_io.hpp']
     if not LIBRARY.exists() or any(p.stat().st_mtime_ns > LIBRARY.stat().st_mtime_ns
                                    for p in dependencies):
         require_build_allowed(LIBRARY)
@@ -75,6 +76,7 @@ class MameUc(x86.Uc):
         self._mame_device_access = bytearray(256)
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
         self._mame_nvram = self._mame_dte_line = None
+        self._mame_transmitter = None
         self._mame_services_synced = True
 
     def _prepare_guard(self):
@@ -116,6 +118,8 @@ class MameUc(x86.Uc):
             self.native_after_run()
             self._mame_services_synced = True
         self.retired = self._mame_base + done + (kind in (3, 4))
+        if self._mame_transmitter is not None:
+            self._mame_transmitter.finish()
         if kind in (1, 2):
             self._memory_hooks(x86.UC_HOOK_MEM_READ if kind == 1 else x86.UC_HOOK_MEM_WRITE,
                                address, size, value)
@@ -181,7 +185,8 @@ class MameUc(x86.Uc):
                         self._mame_nvram._native_buffer if self._mame_nvram is not None else None,
                         self._mame_dte_line.buffer if self._mame_dte_line is not None else None,
                         (*self.native_poll, self.retired, self._clock_next, self._clock_period)
-                        if polling else None)
+                        if polling else None,
+                        self._mame_transmitter.handle if self._mame_transmitter is not None else None)
             try:
                 done, halted, irq_fallback, mmio_count, poll_next, poll_code = self._mame_run(
                     self._mame_handle, self.regs, budget, self._mame_event, bindings)
@@ -195,6 +200,8 @@ class MameUc(x86.Uc):
                 self._mame_services_synced = True
             if polling:
                 self._clock_next = poll_next
+            if self._mame_transmitter is not None:
+                self._mame_transmitter.finish()
             if timer_reads is not None:
                 timer_reads.finish()
             if self._mame_nvram is not None:
