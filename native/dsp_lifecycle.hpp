@@ -24,6 +24,10 @@ struct DspLifecycleState {
     uint64_t overlay_status=7,overlay_pending=0,overlay_mark=0,overlay_write_mark=0;
     uint64_t overlay_halves=0,overlay_strobes=0,overlay_verified=0,overlay_unreadable=0;
     uint64_t overlay_downloads=0,overlay_id=~uint64_t(0),overlay_match=2,overlay_waits=0;
+    uint64_t asic_started=0,v8_armed=0,call_resume=0,call_overlay_active=0;
+    uint64_t asic_commits=0,asic_register_commits=0,detector_replies=0,rate_trace=0;
+    uint64_t audio_only=0,has_overlay=0,has_exchange=0;
+    uint64_t asic_registers[256]{},asic_valid[256]{},asic_writes[256]{};
     char error[512]{};
 };
 struct DspLifecycle {
@@ -69,6 +73,51 @@ struct DspLifecycle {
         core->set_io(uint16_t(status_cell),uint16_t(core->io(uint16_t(status_cell))|1));
         ++s.host_delivered;return true;
     }
+    void reply(uint16_t header,uint16_t data) {if(!s.audio_only)queue(header,data);}
+    void start_asic() {
+        auto *daa=media.daa;
+        if(s.audio_only||!s.asic_valid[0x82]||s.asic_registers[0x82]!=0xa0
+                ||!s.has_overlay||!daa||daa->qualified_samples<4000)return;
+        if(s.has_exchange&&(daa->operation==analog::Originate||daa->operation==analog::Dialing)
+                &&media.port.exchange.s.state!=analog::Connected
+                &&media.port.exchange.s.state!=analog::AnswerTone)return;
+        s.asic_registers[0x82]=0x60;
+        if(!s.asic_started) {
+            s.asic_started=s.v8_armed=s.call_resume=1;
+            core->set_data_trace(true);s.rate_trace=1;
+            reply(2,0);reply(3,0);
+        }
+    }
+    void advance_asic() {
+        if(s.asic_started&&s.call_overlay_active&&s.asic_valid[0x82]
+                &&s.asic_registers[0x82]==0x60)s.asic_registers[0x82]=0x20;
+    }
+    void observe(uint16_t header,uint16_t data) {
+        if(!((header>=0x13&&header<=0x1f)||(header>=0x7d&&header<=0x84)))return;
+        const auto previous=s.asic_registers[header];
+        s.asic_registers[header]=data;s.asic_valid[header]=1;++s.asic_writes[header];
+        if(s.audio_only)return;
+        if(header==0x82&&data==0xa0){start_asic();return;}
+        if(header==0x82&&(data&0x40)&&!s.asic_started) {
+            s.asic_started=1;reply(2,0);reply(3,0);
+        }
+        if(header!=0x1f||previous||!data)return;
+        for(const unsigned reg:{0x13,0x15,0x16,0x19,0x1a,0x1b})if(!s.asic_valid[reg])return;
+        ++s.asic_commits;++s.asic_register_commits;
+        if(!s.v8_armed&&(s.has_exchange||!media.dial_digits.empty()
+                ||(media.daa&&media.daa->operation==analog::AnswerOperation)))
+            s.v8_armed=s.call_resume=1;
+    }
+    void answer(uint16_t header) {
+        const unsigned tag=header&255;
+        if(tag==0x7c&&media.daa) {
+            reply(0x7c,media.daa->detector()?0x30:0);++s.detector_replies;
+        } else if(tag==0x54&&s.active)reply(0x54,0);
+    }
+    void complete_message(uint16_t header,uint16_t data,uint16_t acknowledgement) {
+        observe(header,data);deliver(header,data);answer(header);
+        s.pending_valid=0;acknowledge(acknowledgement);
+    }
     void acknowledge(uint16_t value) {
         if(value&2) {
             if(!inbound.empty()&&s.inbound_seen) {
@@ -99,6 +148,7 @@ struct DspLifecycle {
             }
             if((value&1)&&s.pending_valid) {
                 s.host_event=1;s.event_header=s.runtime_header;s.event_data=s.runtime_data;s.event_ack=value;
+                complete_message(uint16_t(s.event_header),uint16_t(s.event_data),value);
                 return 2;
             }
             acknowledge(value);return 1;

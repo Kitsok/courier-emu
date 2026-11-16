@@ -289,9 +289,12 @@ yield to refresh existing host/lane state; watched accesses and pending
 host actions keep their synchronous boundary. EEPROM image
 loading/saving remains host orchestration.
 The native C51 runtime also owns mailbox byte latches, status reads, reply
-queues, DSP deliveries and acknowledgement accounting. A completed host
-message yields after its commit instruction for existing host control
-actions; ordinary byte reads and writes remain inside the native batch.
+queues, DSP deliveries and acknowledgement accounting. ASIC command-register
+updates, call-start effects and detector/status poll replies also execute
+there, with live register/counter views for host code. A completed host
+message currently yields only for history recording; its board behavior,
+delivery, replies and acknowledgement complete before that notification.
+Ordinary byte reads and writes remain inside the native batch.
 Overlay start/end framing, destination-ready polling, byte accumulation,
 payload identification and installed-program verification also run in the
 native lifecycle owner. Successful native strobes update its counters

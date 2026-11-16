@@ -2473,12 +2473,15 @@ class CourierDspBridge:
         self._carrier_source = "forced-diagnostic" if diagnostic else "legacy-host-fallback"
 
     def _record_runtime_message(self, words: tuple[int, int], pc: int | None) -> None:
+        self._record_runtime_history(words, pc)
+        self._observe_asic_command(*words)
+
+    def _record_runtime_history(self, words: tuple[int, int], pc: int | None) -> None:
         self.runtime_words_queued += len(words)
         message = f"{words[0]:04x}:{words[1]:04x}"
         self.runtime_messages.append(message)
         self.runtime_message_counts[message] += 1
         self.runtime_message_first_seen.setdefault(message, self._instructions)
-        self._observe_asic_command(*words)
         if pc is not None:
             self.runtime_message_first_pc.setdefault(message, f"{pc:05x}")
 

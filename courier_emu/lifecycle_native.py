@@ -28,9 +28,15 @@ FIELDS = {
     'overlay_words_verified': 'overlay_verified', 'overlay_words_unreadable': 'overlay_unreadable',
     'overlay_downloads': 'overlay_downloads', 'overlay_id': 'overlay_id',
     'overlay_match': 'overlay_match', 'overlay_destination_waits': 'overlay_waits',
+    '_asic_call_engine_started': 'asic_started', '_v8_armed': 'v8_armed',
+    '_call_resume_pending': 'call_resume', '_call_overlay_active': 'call_overlay_active',
+    '_asic_commit_edges': 'asic_commits', '_asic_dsp_register_commits': 'asic_register_commits',
+    'detector_replies': 'detector_replies', '_rate_trace_enabled': 'rate_trace',
+    '_audio_only': 'audio_only',
 }
 BOOLEAN = {'reset_asserted', 'cpu_int1', 'restarted', 'loader_started', 'nmi_seen',
-           'active', 'launched', 'runtime_mode', 'runtime_ready', 'inbound_seen', 'overlay_pending'}
+           'active', 'launched', 'runtime_mode', 'runtime_ready', 'inbound_seen', 'overlay_pending',
+           'asic_started', 'v8_armed', 'call_resume', 'call_overlay_active', 'rate_trace', 'audio_only'}
 
 
 class LifecycleState(c.Structure):
@@ -50,6 +56,10 @@ class LifecycleState(c.Structure):
         'overlay_mark', 'overlay_write_mark', 'overlay_halves', 'overlay_strobes',
         'overlay_verified', 'overlay_unreadable', 'overlay_downloads', 'overlay_id',
         'overlay_match', 'overlay_waits')]
+    _fields_ += [(name, c.c_uint64) for name in ('asic_started', 'v8_armed', 'call_resume',
+        'call_overlay_active', 'asic_commits', 'asic_register_commits', 'detector_replies',
+        'rate_trace', 'audio_only', 'has_overlay', 'has_exchange')]
+    _fields_ += [(name, c.c_uint64 * 256) for name in ('asic_registers', 'asic_valid', 'asic_writes')]
     _fields_ += [('error', c.c_char * 512)]
 
 
@@ -122,6 +132,11 @@ class NativeLifecycle:
             self.state.pending_header, self.state.pending_data = pending
             self.state.pending_valid = 1
         self._final_inbound, self._final_delivered = (), {}
+        self.state.has_overlay = bridge._call_overlay is not None
+        self.state.has_exchange = bridge.exchange is not None
+        self.asic_registers, self.asic_writes = NativeAsicRegisters(self), NativeAsicWrites(self)
+        self.asic_registers.update(bridge.asic_registers)
+        self.asic_writes.update(bridge.asic_writes)
         self.bootstrap = NativeBootstrap(self)
         self.write_bytes(bridge.bootstrap, 0)
         self.write_bytes(bridge.expected_bootstrap, 2)
@@ -174,10 +189,7 @@ class NativeLifecycle:
             cpu = machine.uc
             pc = ((cpu.reg_read(UC_X86_REG_CS) << 4) + cpu.reg_read(UC_X86_REG_IP)) & 0xfffff
             bridge = machine.dsp_bridge
-            bridge._record_runtime_message(words, pc)
-            bridge._deliver_host_message(*words)
-            bridge._answer_runtime_request(*words)
-            self.message(6)
+            bridge._record_runtime_history(words, pc)
         machine._dsp_in_reset = bool(self.state.reset_asserted)
         machine._dsp_nmi_low = bool(self.state.nmi_low)
         if machine.uc.native_after_io is not None:
@@ -232,6 +244,15 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
     _runtime_inbound_delivered = property(lambda self: self._native_lifecycle.delivered)
     overlay_heads = property(lambda self: self._native_lifecycle.heads)
     overlay_destinations = property(lambda self: self._native_lifecycle.destinations)
+    asic_registers = property(lambda self: self._native_lifecycle.asic_registers)
+    asic_writes = property(lambda self: self._native_lifecycle.asic_writes)
+
+    def _observe_asic_command(self, header, data):
+        self._native_lifecycle.message(7, ((header & 65535) << 16) | (data & 65535))
+
+    def _answer_runtime_request(self, header, _data): self._native_lifecycle.message(10, header & 65535)
+    def _maybe_start_asic_call_engine(self): self._native_lifecycle.message(8)
+    def _advance_asic_call_phase(self): self._native_lifecycle.message(9)
 
     def _reset_overlay_transfer(self):
         self._native_lifecycle.overlay(0)
@@ -262,6 +283,9 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
         super().__setattr__(name, value)
         if name == 'core' and '_native_lifecycle' in self.__dict__:
             self._native_lifecycle.bind_core(value)
+        elif name in ('_call_overlay', 'exchange') and '_native_lifecycle' in self.__dict__:
+            setattr(self._native_lifecycle.state, 'has_overlay' if name == '_call_overlay'
+                    else 'has_exchange', value is not None)
 
     def _settle_nmi_dispatch(self): self._native_lifecycle.apply(0)
     def _start_rom_loader(self): self._native_lifecycle.apply(1)
@@ -343,3 +367,29 @@ class NativeDeliveries(MutableMapping):
     def __len__(self):
         if not self.owner._finalizer.alive: return len(self.owner._final_delivered)
         return self.owner._message_keys(self.owner.handle, None, 0)
+
+
+class NativeAsicRegisters(MutableMapping):
+    def __init__(self, owner): self.owner = owner
+    def __getitem__(self, key):
+        if not 0 <= key < 256 or not self.owner.state.asic_valid[key]: raise KeyError(key)
+        return self.owner.state.asic_registers[key]
+    def __setitem__(self, key, value):
+        if not 0 <= key < 256: raise KeyError(key)
+        self.owner.state.asic_registers[key] = value & 65535
+        self.owner.state.asic_valid[key] = 1
+    def __delitem__(self, key):
+        self[key]
+        self.owner.state.asic_valid[key] = 0
+        self.owner.state.asic_registers[key] = 0
+    def __iter__(self): return (k for k, valid in enumerate(self.owner.state.asic_valid) if valid)
+    def __len__(self): return sum(bool(valid) for valid in self.owner.state.asic_valid)
+
+
+class NativeAsicWrites(MutableMapping):
+    def __init__(self, owner): self.owner = owner
+    def __getitem__(self, key): return self.owner.state.asic_writes[key] if 0 <= key < 256 else 0
+    def __setitem__(self, key, value): self.owner.state.asic_writes[key] = value
+    def __delitem__(self, key): self.owner.state.asic_writes[key] = 0
+    def __iter__(self): return (k for k, value in enumerate(self.owner.state.asic_writes) if value)
+    def __len__(self): return sum(bool(value) for value in self.owner.state.asic_writes)

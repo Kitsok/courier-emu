@@ -102,7 +102,10 @@ extern "C" uint64_t courier_lifecycle_message(void *handle,unsigned op,uint64_t 
     case 4:{const auto found=life.delivered.find(uint32_t(value));
         return found==life.delivered.end()?0:found->second;}
     case 5:life.delivered[uint32_t(value)]=argument;return 0;
-    case 6:life.acknowledge(uint16_t(life.s.event_ack));life.s.pending_valid=0;return 0;
+    case 7:life.observe(uint16_t(value>>16),uint16_t(value));return 0;
+    case 8:life.start_asic();return 0;
+    case 9:life.advance_asic();return 0;
+    case 10:life.answer(uint16_t(value));return 0;
     default:return uint64_t(1)<<32;
     }
 }

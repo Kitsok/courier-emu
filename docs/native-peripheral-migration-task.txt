@@ -422,3 +422,18 @@ LAPM/V42bis at both ends and transferred exact bidirectional markers. The
 default path performed native waits and matched explicit reference firmware
 and device state in the existing fixed-work comparison. Three pacing service
 checks passed. No physical calls or unrestricted-rate claims were made.
+
+
+Milestone 25 complete: native mailbox control behavior.
+ASIC command registers, call-start effects, detector/status replies and
+their counters now belong to the native lifecycle owner. Each native
+mailbox commit observes the command, delivers the DSP word, queues replies
+and acknowledges in the original order before notifying Python. Existing
+host-side register and counter access uses live native views. Python still
+receives a per-message history notification at this intermediate milestone.
+
+A focused native/reference comparison passed ASIC state, repeated starts,
+register-block commit edges, detector/status replies, audio-only suppression
+and held-start qualification including the exchange's answer-tone phase.
+The existing guest-mailbox current-change check and fresh isolated firmware
+boot/AT/settings smoke passed. Tests were temporary verification scripts.
