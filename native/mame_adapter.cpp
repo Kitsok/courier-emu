@@ -122,10 +122,12 @@ public:
     bool pio_write(uint32_t a,unsigned n,uint32_t value) {
         if(!pio_access(a,n,true))return false;
         if(a==0xff56) {
-            // External DSP reset/INT1/NMI transitions retain the board's
-            // handler. Repeated writes while reset is held also sample the
-            // download address there, so those cannot be coalesced.
-            if(!(value&2)||((memory[a]^value)&0x8a))return false;
+            if(host_io&&host_ports&&(host_ports[a]&2)) {
+                uint16_t changed=0;
+                if(!host_io(host_context,2,uint16_t(a),int(n),uint16_t(value),host_base+done,&changed))
+                    return false;
+                if(changed)stop_after=true;
+            } else if(!(value&2)||((memory[a]^value)&0x8a))return false;
             eeprom->port1(value);
         } else if(a==0xff5e)eeprom->pio_data_in=bool(value&0x80);
         queue_write(a,n,value,8);return true;

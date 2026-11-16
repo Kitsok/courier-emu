@@ -3210,6 +3210,9 @@ class CourierMachine:
                 if completed == INT0_VECTOR:
                     self._int0_in_service = False
             if address == self.hardware_map.dsp_reset_port and self.dsp_bridge is not None:
+                if hasattr(self.dsp_bridge, '_native_lifecycle'):
+                    self.dsp_bridge._drain_native_boot()
+                    self.dsp_bridge._drain_native_overlay()
                 # The board holds the C52 in reset through this bit, and a part
                 # in reset drives nothing: its transfer interface reads back as
                 # all ones. Both firmwares reset the coprocessor by pulsing the
@@ -4081,6 +4084,12 @@ class CourierMachine:
             command_port = bridge.transfer.command_port
             lane_ports = range(LANE_FIRST_PORT, LANE_FIRST_PORT + 4 * LANE_BANKS)
             host_ports = bytearray(65536)
+            if (cpu_backend == 'mame' and hasattr(bridge, '_native_lifecycle')
+                    and self.hardware_map.dsp_reset_port == 0xff56 and self._dsp_reset_bit == 2):
+                lane_io.set_lifecycle(bridge._native_lifecycle)
+                host_ports[0xff56] |= 2
+                uc._mame_lifecycle = bridge._native_lifecycle
+                uc._mame_lifecycle_machine = self
             for port in (command_port, LANE_RX_ACK_PORT, *lane_ports):
                 host_ports[port] |= 1
             for port in (command_port, LANE_RX_ACK_PORT, *lane_ports[::2]):

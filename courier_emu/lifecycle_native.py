@@ -30,7 +30,7 @@ class LifecycleState(c.Structure):
                     'runtime_mode', 'runtime_ready', 'runtime_delay', 'line_tx_index',
                     'sip_tx_index', 'audio_frames', 'audio_samples_due', 'match', 'last_bytes',
                     'last_match', 'bootstraps', 'transfers', 'checksums', 'bootstrap_size',
-                    'boot_strobes_native')]
+                    'boot_strobes_native', 'pins_seen', 'pin_sync')]
     _fields_ += [('error', c.c_char * 512)]
 
 
@@ -118,6 +118,18 @@ class NativeLifecycle:
         self._resets(self.handle, rows, count)
         return self._past_resets + [dict(frame=rows[3*i], instructions=rows[3*i+1],
                                         tx_written=rows[3*i+2]) for i in range(count)]
+
+    def finish(self, machine):
+        if self.state.error:
+            raise RuntimeError(self.state.error.decode('utf-8', 'replace'))
+        if not self.state.pin_sync:
+            return False
+        self.state.pin_sync = 0
+        machine._dsp_in_reset = bool(self.state.reset_asserted)
+        machine._dsp_nmi_low = bool(self.state.nmi_low)
+        if machine.uc.native_after_io is not None:
+            machine.uc.native_after_io()
+        return True
 
     def close(self):
         if self._finalizer.alive:

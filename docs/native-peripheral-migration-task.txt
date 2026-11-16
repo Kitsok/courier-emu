@@ -278,8 +278,9 @@ existing interrupt checks passed. A ten-second &M5 AT&T1 check at 24,000
 bit/s echoed 3,995 exact bytes, escaped, and reported zero lost characters,
 block errors, resends and timeouts.
 
-Practical boundary remaining: DSP reset/NMI still owns Python loader,
-runtime-bus and bridge lifecycle state alongside native core/media reset.
+Boundary recorded after milestone 15 (resolved by milestones 16-18):
+DSP reset/NMI then owned Python loader, runtime-bus and bridge lifecycle
+state alongside native core/media reset.
 Moving just the pin callback would retain that dependency and split reset
 ownership. Removing it requires migrating the board/DSP lifecycle as one
 unit. Timer-0 clock identification also retains its host propagation callback
@@ -316,3 +317,26 @@ current-change check disabled the Python DSP reset/NMI/step/interrupt APIs
 and still verified native reset/media cleanup, repeated-reset gating,
 loader startup and non-resetting NMI. Fresh firmware boot and AT/settings
 queries passed. Direct native P1 routing is the next milestone.
+
+
+Milestone 18 complete: direct native P1 routing and boot-state updates.
+MAME dispatches P1 reset/INT1/NMI writes through its existing native port
+handler into the shared lifecycle owner. This includes destination sampling
+while reset is held. Significant edges yield for host/lane cache refresh;
+both NMI edges remain synchronized. Pending overlay host actions complete
+before a lifecycle edge, and extra memory observers keep their existing
+synchronous boundary. Native boot strobes now update bootstrap storage and
+transfer counters directly rather than replaying window bytes in Python.
+
+A focused guest-P1 check disabled Python pin and DSP hardware handlers and
+verified reset, held-reset writes, both NMI edges and loader entry remained
+native. Ten selected port/EEPROM checks passed. The final fifteen-second
+AT&T1 check with &M5 and a 24,000-bit/s cap echoed 6,016 exact bytes, escaped
+successfully, and reported zero lost characters, block errors, resends or
+timeouts. DSP download matching and native boot-strobe accounting passed.
+
+The previously reported loader/reset ownership boundary is removed for
+the default native C51 path. Python still handles final host completion
+notifications, overlay metadata, configuration and external signalling,
+plus board-clock propagation. A standalone executable and complete native
+ownership of all board objects remain outside the completed milestones.

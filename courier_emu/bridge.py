@@ -2289,11 +2289,10 @@ class CourierDspBridge:
     def _drain_native_boot(self, *, known_pending: bool = False) -> None:
         """Replay the boot strobes the native port model served.
 
-        Each is the command-port branch of `write` for a window strobe while
-        the mask-ROM loader is armed: the native side has run
-        `_commit_rom_group`; the bootstrap bookkeeping runs here. It never
-        serves the strobe that completes the bootstrap, so none of these
-        activates the program.
+        Contexts with a native lifecycle owner update bootstrap storage and
+        counters directly. Other contexts replay their window bookkeeping
+        here after native `_commit_rom_group`. The completing strobe retains
+        the host completion boundary in both cases.
         """
         native = self._native_boot
         if native is None or not (known_pending or native.boot_pending()):

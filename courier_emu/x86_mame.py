@@ -81,6 +81,7 @@ class MameUc(x86.Uc):
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
         self._mame_nvram = self._mame_dte_line = None
         self._mame_transmitter = None
+        self._mame_lifecycle = self._mame_lifecycle_machine = None
         self._mame_transfer_span = None
         self._mame_fault_buffer = bytearray(8 * 257)
         self._mame_faults = memoryview(self._mame_fault_buffer).cast('Q')
@@ -135,11 +136,15 @@ class MameUc(x86.Uc):
             self._mame_services_synced = True
         self.retired = self._mame_base + done + (kind in (3, 4))
         self._finish_native_faults()
+        if self._mame_lifecycle is not None:
+            self._mame_lifecycle.finish(self._mame_lifecycle_machine)
         if self._mame_transmitter is not None:
             self._mame_transmitter.finish()
         if kind in (1, 2):
             self._memory_hooks(x86.UC_HOOK_MEM_READ if kind == 1 else x86.UC_HOOK_MEM_WRITE,
                                address, size, value)
+            if self._mame_lifecycle is not None and self._mame_lifecycle.finish(self._mame_lifecycle_machine):
+                return 1 | (1 << 32)
         elif kind in (3, 4):
             answer = self._io(x86.UC_X86_INS_IN if kind == 3 else x86.UC_X86_INS_OUT,
                               address, size, value) or 0
@@ -228,6 +233,8 @@ class MameUc(x86.Uc):
                 self._mame_services_synced = True
             if polling:
                 self._clock_next = poll_next
+            if self._mame_lifecycle is not None:
+                self._mame_lifecycle.finish(self._mame_lifecycle_machine)
             if self._mame_transmitter is not None:
                 self._mame_transmitter.finish()
             if timer_reads is not None:

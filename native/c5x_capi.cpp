@@ -240,6 +240,7 @@ namespace {
 // Python handlers answer. Everything else is declined and goes to Python.
 struct LaneHostIo {
     C5xCore *core = nullptr;
+    courier::DspLifecycle *lifecycle = nullptr;
     bool live = false;
     uint16_t command_port = 0x18, ack_port = 0x1a;
     uint16_t lane_first = 0x40, banks = 6, dsp_first = 0x58, dsp_status = 0x56;
@@ -334,7 +335,10 @@ struct LaneHostIo {
             boot_error = exception.what();
         }
         event.failed = !boot_error.empty();
-        boot_events.push_back(event);
+        if(lifecycle&&!event.failed) {
+            ++lifecycle->s.boot_strobes_native;++lifecycle->s.transfers;
+            lifecycle->bytes(event.window,8,1);
+        } else boot_events.push_back(event);
         boot_remaining -= 8;
         return true;
     }
@@ -1259,12 +1263,28 @@ std::size_t courier_laneio_take_overlay(void *context, uint8_t *out,
     return count;
 }
 
+void courier_laneio_lifecycle(void *context,void *owner) {
+    static_cast<LaneHostIo*>(context)->lifecycle=static_cast<courier::DspLifecycle*>(owner);
+}
+
 // direction 1 = IN, 2 = OUT. Returns 1 when served; the answer to an IN is in
 // *out. Byte accesses only.
 int courier_laneio_access(void *context, int direction, uint16_t port,
     int size, uint16_t value, uint64_t now, uint16_t *out)
 {
     auto *io = static_cast<LaneHostIo *>(context);
+    if(direction==2&&port==0xff56&&io->lifecycle&&(size==1||size==2)) {
+        // Pending overlay host actions must complete before a lifecycle edge.
+        // Their existing synchronous handler retains this uncommon boundary.
+        if(!io->ov_events.empty()||!io->boot_events.empty()) {
+            io->lifecycle->s.pin_sync=1;return 0;
+        }
+        try {*out=io->lifecycle->pins(value)?1:0;}
+        catch(const std::exception &e) {
+            copy_error(io->lifecycle->s.error,sizeof io->lifecycle->s.error,e.what());*out=2;
+        }
+        return 1;
+    }
     if (!io->core || size != 1 || port >= 256) return 0;
     if (direction == 1) {
         if (io->fixed_valid[port]) {

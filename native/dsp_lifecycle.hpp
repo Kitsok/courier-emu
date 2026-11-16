@@ -15,6 +15,7 @@ struct DspLifecycleState {
     double audio_samples_due=0;
     uint64_t match=2,last_bytes=0,last_match=2,bootstraps=0,transfers=0,checksums=0;
     uint64_t bootstrap_size=0,boot_strobes_native=0;
+    uint64_t pins_seen=0,pin_sync=0;
     char error[512]{};
 };
 struct DspLifecycle {
@@ -48,6 +49,7 @@ struct DspLifecycle {
             s.loader_started=s.nmi_seen=0;s.restarted=1;s.launched=s.active=0;
             bootstrap.clear();s.bootstrap_size=0;s.match=2;
         }
+        if(s.reset_asserted!=uint64_t(asserted))s.pin_sync=1;
         s.reset_asserted=asserted;
         if(edge)media.reset(true);
     }
@@ -57,7 +59,16 @@ struct DspLifecycle {
     }
     void nmi() {
         s.loader_started=0;bootstrap.clear();s.bootstrap_size=0;s.match=2;
-        core->set_io(0x58,uint16_t(s.destination));settle();core->nmi();s.nmi_seen=1;
+        core->set_io(0x58,uint16_t(s.destination));settle();core->nmi();s.nmi_seen=1;s.pin_sync=1;
+    }
+    bool pins(uint16_t value) {
+        if(!s.pins_seen){s.pins_seen=1;s.pin_sync=1;}
+        reset(!(value&2));int1(!(value&0x80));
+        const bool low=!(value&8);
+        if(low&&!s.nmi_low)nmi();
+        if(uint64_t(low)!=s.nmi_low)s.pin_sync=1;
+        s.nmi_low=low;
+        return bool(s.pin_sync);
     }
     void settle() {
         if(!s.restarted)return;

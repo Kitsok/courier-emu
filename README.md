@@ -279,8 +279,12 @@ The same owner performs DSP reset, NMI/INT1 delivery, runtime-bus invalidation
 and media output cleanup. Repeated asserted-reset writes still sample the
 download destination; reset preserves the codec input queue and FIR history.
 NMI restarts loader bookkeeping without resetting the DSP or media pipeline.
-DSP pin transitions and writes while DSP reset is held retain the existing
-board handler; EEPROM image loading/saving remains host orchestration.
+On the default MAME C51 board, P1 reset/NMI/INT1 writes reach this owner
+directly, including writes while reset is held. Native boot strobes update
+bootstrap bytes and transfer counts without Python replay. Lifecycle edges
+yield to refresh existing host/lane state; watched accesses and pending
+overlay host actions keep their synchronous boundary. EEPROM image
+loading/saving remains host orchestration.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console
