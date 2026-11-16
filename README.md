@@ -283,12 +283,18 @@ On the default MAME C51 board, P1 reset/NMI/INT1 writes reach this owner
 directly, including writes while reset is held. Native boot strobes update
 bootstrap bytes and transfer counts without Python replay. Lifecycle edges
 yield to refresh existing host/lane state; watched accesses and pending
-overlay host actions keep their synchronous boundary. EEPROM image
+host actions keep their synchronous boundary. EEPROM image
 loading/saving remains host orchestration.
 The native C51 runtime also owns mailbox byte latches, status reads, reply
 queues, DSP deliveries and acknowledgement accounting. A completed host
 message yields after its commit instruction for existing host control
 actions; ordinary byte reads and writes remain inside the native batch.
+Overlay start/end framing, destination-ready polling, byte accumulation,
+payload identification and installed-program verification also run in the
+native lifecycle owner. Successful native strobes update its counters
+directly; they no longer enqueue half-blocks for Python replay. The ROM's
+overlay table is copied during configuration, and report fields are live
+views of the native state. Alternate strobe paths use the same accumulator.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console

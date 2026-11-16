@@ -21,9 +21,16 @@ FIELDS = {
     '_runtime_header': 'runtime_header', '_runtime_data': 'runtime_data',
     '_runtime_inbound_seen': 'inbound_seen', 'host_messages_delivered': 'host_delivered',
     'dsp_messages_taken': 'messages_taken', 'dsp_stream_acks': 'stream_acks',
+    '_overlay_status': 'overlay_status', '_overlay_destination_pending': 'overlay_pending',
+    '_overlay_destination_mark': 'overlay_mark',
+    '_overlay_destination_write_mark': 'overlay_write_mark',
+    '_overlay_halves_since_start': 'overlay_halves', 'overlay_strobes_native': 'overlay_strobes',
+    'overlay_words_verified': 'overlay_verified', 'overlay_words_unreadable': 'overlay_unreadable',
+    'overlay_downloads': 'overlay_downloads', 'overlay_id': 'overlay_id',
+    'overlay_match': 'overlay_match', 'overlay_destination_waits': 'overlay_waits',
 }
 BOOLEAN = {'reset_asserted', 'cpu_int1', 'restarted', 'loader_started', 'nmi_seen',
-           'active', 'launched', 'runtime_mode', 'runtime_ready', 'inbound_seen'}
+           'active', 'launched', 'runtime_mode', 'runtime_ready', 'inbound_seen', 'overlay_pending'}
 
 
 class LifecycleState(c.Structure):
@@ -39,6 +46,10 @@ class LifecycleState(c.Structure):
         'pending_header', 'pending_data', 'pending_valid', 'inbound_seen', 'inbound_count',
         'host_delivered', 'messages_taken', 'stream_acks', 'host_event', 'event_header',
         'event_data', 'event_ack')]
+    _fields_ += [(name, c.c_uint64) for name in ('overlay_status', 'overlay_pending',
+        'overlay_mark', 'overlay_write_mark', 'overlay_halves', 'overlay_strobes',
+        'overlay_verified', 'overlay_unreadable', 'overlay_downloads', 'overlay_id',
+        'overlay_match', 'overlay_waits')]
     _fields_ += [('error', c.c_char * 512)]
 
 
@@ -92,6 +103,16 @@ class NativeLifecycle:
         self._resets = bind('resets', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
         self._message = bind('message', c.c_uint64, c.c_void_p, c.c_uint, c.c_uint64, c.c_uint64)
         self._message_keys = bind('message_keys', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
+        self._overlay = bind('overlay', None, c.c_void_p, c.c_uint, c.c_char_p, c.c_size_t, c.c_uint)
+        self._overlay_log = bind('overlay_log', c.c_size_t, c.c_void_p, c.c_uint, c.c_void_p, c.c_size_t)
+        add_overlay = bind('overlay_add', None, c.c_void_p, c.c_uint, c.c_uint, c.c_char_p, c.c_size_t)
+        for row in bridge._overlay_rows():
+            data = bridge._overlay_payload(row)
+            add_overlay(self.handle, row.index, bool(row.entry_word), data, len(data))
+        self.heads, self.destinations = NativeOverlayLog(self, 0), NativeOverlayLog(self, 1)
+        self._final_overlay_logs = ([], [])
+        for value in bridge.overlay_heads: self.heads.append(value)
+        for value in bridge.overlay_destinations: self.destinations.append(value)
         self.inbound = NativeMessages(self)
         self.delivered = NativeDeliveries(self)
         for pair in bridge._runtime_inbound: self.inbound.append(pair)
@@ -166,12 +187,16 @@ class NativeLifecycle:
     def message(self, operation, value=0, argument=0):
         return self._message(self.handle, operation, value, argument)
 
+    def overlay(self, operation, data=b'', value=0):
+        self._overlay(self.handle, operation, data, len(data), value)
+
     def close(self):
         if self._finalizer.alive:
             self._final_bootstrap = self.bytes()
             self._final_resets = self.resets()
             self._final_inbound = tuple(self.inbound)
             self._final_delivered = dict(self.delivered)
+            self._final_overlay_logs = (list(self.heads), list(self.destinations))
             self._finalizer()
 
 
@@ -180,10 +205,12 @@ class LifecycleField:
     def __get__(self, owner, cls=None):
         if owner is None: return self
         value = getattr(owner._native_lifecycle.state, self.field)
-        if self.field in ('match', 'last_match'): return None if value == 2 else bool(value)
+        if self.field in ('match', 'last_match', 'overlay_match'): return None if value == 2 else bool(value)
+        if self.field == 'overlay_id': return None if value == (1 << 64) - 1 else value
         return bool(value) if self.field in BOOLEAN else value
     def __set__(self, owner, value):
-        if self.field in ('match', 'last_match') and value is None: value = 2
+        if self.field in ('match', 'last_match', 'overlay_match') and value is None: value = 2
+        if self.field == 'overlay_id' and value is None: value = (1 << 64) - 1
         setattr(owner._native_lifecycle.state, self.field, value)
 
 
@@ -203,6 +230,19 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
                          lambda self, values: self._native_lifecycle.write_bytes(values, 0))
     _runtime_inbound = property(lambda self: self._native_lifecycle.inbound)
     _runtime_inbound_delivered = property(lambda self: self._native_lifecycle.delivered)
+    overlay_heads = property(lambda self: self._native_lifecycle.heads)
+    overlay_destinations = property(lambda self: self._native_lifecycle.destinations)
+
+    def _reset_overlay_transfer(self):
+        self._native_lifecycle.overlay(0)
+        super()._reset_overlay_transfer()
+
+    def _accumulate_overlay(self, half, *, group_committed):
+        owner = self._native_lifecycle
+        for base, block in self._overlay_groups:
+            owner.overlay(1, bytes(block), base)
+        self._overlay_groups.clear()
+        owner.overlay(2, bytes(half), group_committed)
 
     @property
     def _runtime_pending(self):
@@ -263,6 +303,24 @@ class NativeMessages:
         value = self.owner.message(1)
         if value == 1 << 32: raise IndexError('pop from empty mailbox')
         return value >> 16, value & 65535
+
+
+class NativeOverlayLog:
+    def __init__(self, owner, kind): self.owner, self.kind = owner, kind
+    def values(self):
+        if not self.owner._finalizer.alive: return self.owner._final_overlay_logs[self.kind]
+        count = self.owner._overlay_log(self.owner.handle, self.kind, None, 0)
+        width = 2 if self.kind else 8
+        data = c.create_string_buffer(width * count)
+        self.owner._overlay_log(self.owner.handle, self.kind, data, count)
+        return [f'{int.from_bytes(data.raw[i:i+width], "little"):04x}' if self.kind
+                else data.raw[i:i+width].hex() for i in range(0, len(data), width)]
+    def __iter__(self): return iter(self.values())
+    def __len__(self): return len(self.values())
+    def __getitem__(self, index): return self.values()[index]
+    def append(self, value):
+        data = int(value, 16).to_bytes(2, 'little') if self.kind else bytes.fromhex(value)
+        self.owner.overlay(4 if self.kind else 3, data)
 
 
 class NativeDeliveries(MutableMapping):

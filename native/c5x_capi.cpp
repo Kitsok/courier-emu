@@ -111,6 +111,28 @@ extern "C" size_t courier_lifecycle_message_keys(void *handle,uint32_t *out,size
     size_t k=0;for(const auto &entry:values){if(k==capacity)break;out[k++]=entry.first;}return values.size();
 }
 
+extern "C" void courier_lifecycle_overlay_add(void *handle,unsigned index,unsigned entry,const uint8_t *data,size_t size) {
+    static_cast<courier::DspLifecycle*>(handle)->overlays.push_back({index,bool(entry),{data,data+size}});
+}
+extern "C" void courier_lifecycle_overlay(void *handle,unsigned operation,const uint8_t *data,size_t size,unsigned value) {
+    auto &life=*static_cast<courier::DspLifecycle*>(handle);
+    if(!operation)life.overlay_clear();
+    else if(operation==1)life.overlay_group(uint16_t(value),data);
+    else if(operation==2)life.overlay_accumulate(data,size,bool(value));
+    else if(operation==3&&size==8) {
+        std::array<uint8_t,8> head;std::copy_n(data,8,head.begin());life.overlay_heads.push_back(head);
+    } else if(operation==4&&size==2)life.overlay_destinations.push_back(uint16_t(data[0]|unsigned(data[1])<<8));
+}
+extern "C" size_t courier_lifecycle_overlay_log(void *handle,unsigned kind,uint8_t *out,size_t capacity) {
+    const auto &life=*static_cast<courier::DspLifecycle*>(handle);
+    const size_t count=kind?life.overlay_destinations.size():life.overlay_heads.size();
+    for(size_t k=0;k<std::min(count,capacity);++k) {
+        if(kind){out[2*k]=uint8_t(life.overlay_destinations[k]);out[2*k+1]=uint8_t(life.overlay_destinations[k]>>8);}
+        else std::memcpy(out+8*k,life.overlay_heads[k].data(),8);
+    }
+    return count;
+}
+
 extern "C" size_t courier_lifecycle_resets(void *handle,int64_t *out,size_t capacity) {
     const auto &records=static_cast<courier::DspLifecycle*>(handle)->resets;
     const auto count=std::min(capacity,records.size());
@@ -465,17 +487,27 @@ struct LaneHostIo {
 
     bool serve_strobe(uint8_t strobe)
     {
-        if (!ov_strobes || !ov_window || strobe == ov_start
-                || !ov_window_strobe[strobe] || !ov_error.empty())
-            return false;
+        if(!ov_window||!ov_error.empty())return false;
+        if(lifecycle&&lifecycle->s.active&&strobe==ov_start) {
+            lifecycle->overlay_start();mb_overlay_status=uint8_t(lifecycle->s.overlay_status);
+            ++out_count[0x1e];out_last[0x1e]=strobe;out_seen[0x1e]=1;return true;
+        }
+        const bool enabled=lifecycle?lifecycle->s.active&&!lifecycle->s.overlay_pending:ov_strobes;
+        if(!enabled||strobe==ov_start||!ov_window_strobe[strobe])return false;
         OverlayEvent event{};
         event.strobe = strobe;
         std::memcpy(event.half, ov_window + (strobe == ov_first ? 0 : 4), 4);
+        if(lifecycle)mb_overlay_status=uint8_t(lifecycle->s.overlay_status);
         if (strobe == 2) {
             std::memcpy(event.block, ov_window, 8);
             ov_commit(event);
         }
-        ov_events.push_back(event);
+        if(lifecycle&&ov_error.empty()) {
+            auto &life=*lifecycle;
+            life.s.overlay_status=mb_overlay_status;++life.s.overlay_halves;++life.s.overlay_strobes;
+            if(event.committed)life.overlay_group(event.base,event.block);
+            life.overlay_accumulate(event.half,4,strobe==2);
+        } else ov_events.push_back(event);
         ++out_count[0x1e];
         out_last[0x1e] = strobe;
         out_seen[0x1e] = 1;
@@ -496,8 +528,8 @@ struct LaneHostIo {
                 // bit 2 as the message sender clears bit 1: bridge.py's read.
                 if ((status ^ 0x0006) & 0x04) answer |= 4;
             } else {
-                if (!mb_overlay) return false;
-                answer = mb_overlay_status;
+                if(lifecycle&&ov_window&&lifecycle->s.active)answer=lifecycle->overlay_read();
+                else {if(!mb_overlay)return false;answer=mb_overlay_status;}
             }
             ++in_count[port];
             *out = answer & 0xff;

@@ -2189,6 +2189,11 @@ class CourierDspBridge:
         data = getattr(self.image, "data", b"")
         return bytes(data[overlay.offset:overlay.end])
 
+    def _reset_overlay_transfer(self) -> None:
+        self._overlay_target = None
+        self._overlay_buffer = bytearray()
+        self._overlay_groups = []
+
     def _accumulate_overlay(self, half: bytes, *, group_committed: bool) -> None:
         """Collect and verify a mid-call overlay transferred by the C51.
 
@@ -2633,9 +2638,7 @@ class CourierDspBridge:
                 self._overlay_halves_since_start = 0
                 return
             if strobe == self.transfer_start_command:
-                self._overlay_target = None
-                self._overlay_buffer = bytearray()
-                self._overlay_groups = []
+                self._reset_overlay_transfer()
                 # The supervisor does not send the destination through these
                 # ports: the row's third word goes out as mailbox tag 02,
                 # which the DSP's dispatcher stores to ff62 (the cell the C51

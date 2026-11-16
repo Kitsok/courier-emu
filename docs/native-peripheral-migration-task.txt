@@ -382,3 +382,16 @@ A focused guest-code check disabled Python mailbox byte handlers and DSP
 register writes, and verified assembly, commit order, reply reads, delivery
 totals and repeated acknowledgements. A ten-second required-LAPM AT&T1
 check at 24,000 bit/s transferred exact data and escaped successfully.
+
+
+Milestone 22 complete: native overlay bookkeeping and verification.
+The C51 owner maintains start/end framing, destination-ready polling,
+half-block assembly, overlay-table matching and installed-program read-back.
+Successful native strobes update counters directly without a Python replay
+queue. The existing host/error and alternate-strobe interfaces remain.
+
+A focused current-change check verified matching, corrupted-program
+rejection, repeated-value DSP destination writes and native strobe handling
+without replay. Two existing overlay/error and destination checks passed.
+A ten-second required-LAPM AT&T1 run at 24,000 bit/s echoed 4,042 exact bytes
+and escaped successfully. No new probes or permanent tests were added.

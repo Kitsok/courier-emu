@@ -21,6 +21,9 @@ struct DspLifecycleState {
     uint64_t runtime_header=0,runtime_data=0,pending_header=0,pending_data=0,pending_valid=0;
     uint64_t inbound_seen=0,inbound_count=0,host_delivered=0,messages_taken=0,stream_acks=0;
     uint64_t host_event=0,event_header=0,event_data=0,event_ack=0;
+    uint64_t overlay_status=7,overlay_pending=0,overlay_mark=0,overlay_write_mark=0;
+    uint64_t overlay_halves=0,overlay_strobes=0,overlay_verified=0,overlay_unreadable=0;
+    uint64_t overlay_downloads=0,overlay_id=~uint64_t(0),overlay_match=2,overlay_waits=0;
     char error[512]{};
 };
 struct DspLifecycle {
@@ -33,6 +36,14 @@ struct DspLifecycle {
     std::vector<ResetRecord> resets;
     std::deque<std::pair<uint16_t,uint16_t>> inbound;
     std::map<uint32_t,uint64_t> delivered;
+    struct Overlay {unsigned index;bool entry;std::vector<uint8_t> data;};
+    struct Group {uint16_t base;std::array<uint8_t,8> data;};
+    std::vector<Overlay> overlays;
+    std::vector<uint8_t> overlay_buffer;
+    std::vector<Group> overlay_groups;
+    std::vector<std::array<uint8_t,8>> overlay_heads;
+    std::vector<uint16_t> overlay_destinations;
+    int overlay_target=-1;
     unsigned tag_cell=0x5e,word_cell=0x58,status_cell=0x57,stream_cell=0x59;
     uint64_t target=0;
     unsigned first=1,dispatch_cell=0x6a,nmi_entry=0x610,frame_irq=5;
@@ -102,6 +113,59 @@ struct DspLifecycle {
             return 1;
         }
         return 0;
+    }
+    void overlay_clear() {overlay_buffer.clear();overlay_groups.clear();overlay_target=-1;}
+    void overlay_start() {
+        if(s.overlay_halves){s.overlay_halves=0;return;}
+        overlay_clear();s.overlay_status=3;s.overlay_pending=1;
+        s.overlay_mark=core->data(0xff62);s.overlay_write_mark=core->data_write_count(0xff62);
+    }
+    uint16_t overlay_read() {
+        if(s.overlay_pending) {
+            if(core->data_write_count(0xff62)!=s.overlay_write_mark) {
+                s.overlay_pending=0;s.overlay_status|=4;
+                overlay_destinations.push_back(core->data(0xff62));
+            } else ++s.overlay_waits;
+        }
+        return uint16_t(s.overlay_status);
+    }
+    void overlay_group(uint16_t base,const uint8_t *block) {
+        Group group;group.base=base;std::copy_n(block,8,group.data.begin());overlay_groups.push_back(group);
+    }
+    void overlay_accumulate(const uint8_t *half,size_t size,bool committed) {
+        ++s.transfers;overlay_buffer.insert(overlay_buffer.end(),half,half+size);
+        if(overlay_target<0) {
+            if(overlay_buffer.size()<8)return;
+            if(overlay_heads.size()<6) {
+                std::array<uint8_t,8> head;std::copy_n(overlay_buffer.begin(),8,head.begin());
+                overlay_heads.push_back(head);
+            }
+            for(size_t k=0;k<overlays.size();++k) {
+                const auto &row=overlays[k];
+                if(row.entry&&row.data.size()>=8&&std::equal(row.data.begin(),row.data.begin()+8,overlay_buffer.begin())) {
+                    overlay_target=int(k);break;
+                }
+            }
+            if(overlay_target<0){overlay_clear();return;}
+        }
+        const auto &row=overlays[size_t(overlay_target)];
+        if(overlay_buffer.size()<row.data.size()||!committed)return;
+        s.overlay_match=std::equal(row.data.begin(),row.data.end(),overlay_buffer.begin());s.overlay_id=row.index;
+        if(s.overlay_match) {
+            uint64_t verified=0,unreadable=0;
+            for(const auto &group:overlay_groups) {
+                if(group.base<0x2000){unreadable+=4;continue;}
+                for(unsigned k=0;k<4;++k) {
+                    const uint16_t expected_word=uint16_t(group.data[2*k]|unsigned(group.data[2*k+1])<<8);
+                    if(core->program(uint16_t(group.base+k))!=expected_word){s.overlay_match=0;break;}
+                }
+                if(!s.overlay_match)break;
+                verified+=4;
+            }
+            if(s.overlay_match){s.overlay_verified+=verified;s.overlay_unreadable+=unreadable;}
+        }
+        if(s.overlay_match)++s.overlay_downloads;
+        overlay_clear();
     }
     void float_bus() {s.runtime_mode=s.runtime_ready=0;s.runtime_delay=0;}
     void reset(bool asserted) {
