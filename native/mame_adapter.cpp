@@ -414,10 +414,15 @@ PyObject *configure(PyObject *,PyObject *args) {
     }
     Py_RETURN_NONE;
 }
+PyObject *stop(PyObject *,PyObject *capsule) {
+    auto *instance=static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));
+    if(!instance)return nullptr;
+    instance->cpu.stop_after=true;Py_RETURN_NONE;
+}
 PyObject *run(PyObject *,PyObject *args) {
-    PyObject *capsule,*callback;unsigned count;
-    unsigned long long base,total,next,period;
-    if(!PyArg_ParseTuple(args,"OIOKKKK",&capsule,&count,&callback,&base,&total,&next,&period))return nullptr;
+    PyObject *capsule,*callback;
+    unsigned long long count,base,total,next,period;
+    if(!PyArg_ParseTuple(args,"OKOKKKK",&capsule,&count,&callback,&base,&total,&next,&period))return nullptr;
     auto *instance=static_cast<Instance*>(PyCapsule_GetPointer(capsule,"courier.mame186"));
     if(!instance)return nullptr;
     if(!PyCallable_Check(callback)) {
@@ -427,7 +432,13 @@ PyObject *run(PyObject *,PyObject *args) {
     cpu.host_base=base;cpu.poll_total=total;cpu.poll_next=next;cpu.poll_period=period;
     try {
         cpu.begin();
-        while(cpu.done<count) {
+        while(cpu.done<count&&!cpu.stop_after) {
+            // Keep host signal/stop handling responsive during native runs.
+            // A handled signal can request a stop without raising an error.
+            if(!(cpu.done&65535)) {
+                if(PyErr_CheckSignals()<0){cpu.failed=true;throw Stop{};}
+                if(cpu.stop_after)break;
+            }
             try {if(!cpu.service())continue;cpu.step();++cpu.done;}
             catch(const Redirect &) {continue;}
             catch(const Interrupt &) {++cpu.done;break;}
@@ -444,6 +455,7 @@ PyObject *run(PyObject *,PyObject *args) {
 PyMethodDef methods[]={{"create",create,METH_VARARGS,"Create a native Courier CPU context."},
     {"buffers",buffers,METH_O,"Expose the context's live RAM and register buffers."},
     {"configure",configure,METH_VARARGS,"Retain native device bindings until reconfigured."},
+    {"stop",stop,METH_O,"Stop after the current native instruction."},
     {"run",run,METH_VARARGS,"Run native 80186 instructions on the Courier bus."},{nullptr,nullptr,0,nullptr}};
 PyModuleDef module={PyModuleDef_HEAD_INIT,"_mame_native",nullptr,-1,methods,nullptr,nullptr,nullptr,nullptr};
 }

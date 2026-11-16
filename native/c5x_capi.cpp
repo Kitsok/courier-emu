@@ -3097,7 +3097,6 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     int64_t &clock_bridge_instructions=s.scheduled==3 && s.native_media?s.native_media->s.board_instructions:s.bridge_instructions;
     int64_t &clock_x86_ticks=s.scheduled==3 && s.native_media?s.native_media->s.x86_ticks:s.x86_ticks;
     int64_t &clock_exchange_ticks=s.scheduled==3 && s.native_media?s.native_media->s.exchange_ticks:s.exchange_ticks;
-    int64_t &clock_probe_last=s.scheduled==3 && s.native_media?s.native_media->s.probe_last:s.probe_last;
     double &clock_debt=s.scheduled==3 && s.native_media?s.native_media->s.debt:s.debt;
     double &clock_cpi=s.scheduled==3 && s.native_media?s.native_media->s.cpi:s.cpi;
     double &clock_cycles_per_x86=s.scheduled==3 && s.native_media?s.native_media->s.cycles_per_x86:s.cycles_per_x86;
@@ -3117,8 +3116,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         // step, and input must be sampled on its original polling boundary.
         if ((s.codec_present && (s.scheduled==3?s.native_media->s.codec_instructions:s.codec_instructions) + elapsed >= s.line_frame_instructions
              && !(s.scheduled==3 && s.native_media->codec))
-            || (s.scheduled == 1 && (exchange_due || dsp_due))
-            || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
+            || (s.scheduled == 1 && (exchange_due || dsp_due))) {
             return leave(5);
         }
         if (console_due && !s.input_model) {
@@ -3378,8 +3376,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     const int64_t fresh = produced - s.line_codec_last;
     const bool line_skip = 0 < fresh && fresh < s.line_min_samples
         && s.line_skipped < s.line_max_skip;
-    if ((!line_skip && (fresh <= 0 || !s.timed))
-        || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
+    if (!line_skip && (fresh <= 0 || !s.timed)) {
         return leave(19);
     }
     // fast_service's frame edge, decided now: nothing it reads moves in the

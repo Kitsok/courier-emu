@@ -3057,13 +3057,6 @@ class CourierDspBridge:
         `count` does not divide it.
         """
         self._instructions += count
-        if self._instructions - getattr(self, "_probe_clock_last", 0) >= 200_000:  # PROBE
-            self._probe_clock_last = self._instructions
-            try:
-                self.__dict__.setdefault("probe_clock", []).append(
-                    (self.core.state()["instructions"], self._instructions, self.core.state()["cycles"]))
-            except Exception:
-                pass
         self._advance_line_clocks(count)
         if not self.active or self.error or (self.boot_rom_enabled and not self.launched):
             return
@@ -3280,13 +3273,6 @@ class CourierDspBridge:
             return False
         # Committed: the same updates, in the same order.
         self._instructions += count
-        if self._instructions - getattr(self, "_probe_clock_last", 0) >= 200_000:  # PROBE
-            self._probe_clock_last = self._instructions
-            try:
-                self.__dict__.setdefault("probe_clock", []).append(
-                    (core.state()["instructions"], self._instructions, core.state()["cycles"]))
-            except Exception:
-                pass
         if self.codec is not None:
             self._codec_instructions += count
         self._x86_ticks += count
@@ -4062,8 +4048,7 @@ class CourierDspBridge:
                 self.core.io_events(limit=64, ports=(0x50, 0x52, 0x54, 0x56, 0x58, 0x5A, 0x5C, 0x5E))
                 if hasattr(self.core, "io_events") else []
             ),
-            dsp_pc_trace=(self.core.pc_trace() if hasattr(self.core, "pc_trace") else [])
-            + [{"probe_clock": getattr(self, "probe_clock", [])}],  # PROBE
+            dsp_pc_trace=(self.core.pc_trace() if hasattr(self.core, "pc_trace") else []),
             dsp_writes=[
                 event for event in self.core.data_events()
             ][-int(os.environ.get("COURIER_DSP_TRACE_LIMIT", "4096")):] if self.dsp_write_watch is not None and hasattr(self.core, "data_events") else [],

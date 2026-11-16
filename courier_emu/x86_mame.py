@@ -69,6 +69,7 @@ class MameUc(x86.Uc):
         self.native_enabled = False
         module = load_library()
         self._mame_run = module.run
+        self._mame_stop = module.stop
         self._mame_configure = module.configure
         self._mame_handle = module.create()
         self.memory, self._mame_guard, registers = module.buffers(self._mame_handle)
@@ -168,6 +169,10 @@ class MameUc(x86.Uc):
                 callback(self, address, user)
         return 1 if self.running else 1 << 32
 
+    def emu_stop(self):
+        super().emu_stop()
+        self._mame_stop(self._mame_handle)
+
     def emu_start(self, begin, _until, timeout=0, count=0):
         if timeout:
             raise ValueError('MAME adapter does not support a wall-clock execution timeout')
@@ -178,8 +183,11 @@ class MameUc(x86.Uc):
         retired = 0
         while self.running and (not count or retired < count):
             self._prepare_guard()
-            budget = min(1048576, count - retired) if count else 1048576
             polling = self.native_poll is not None and self._clock_callback is not None
+            # The native worker owns service deadlines and buffer bounds.
+            # Keep executing there until host work, a stop or the run limit.
+            maximum = (1 << 64) - 1 if polling else 1048576
+            budget = min(maximum, count - retired) if count else maximum
             if self._clock_callback is not None and not polling:
                 if self.retired + 1 >= self._clock_next:
                     self._clock_callback(self, self.retired + 1, self._clock_user)

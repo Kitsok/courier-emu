@@ -1043,6 +1043,9 @@ class CourierMachine:
     def request_stop(self) -> None:
         """Ask the run to finish at the next instruction boundary."""
         self.stop_requested = True
+        cpu = getattr(self, 'uc', None)
+        if getattr(cpu, '_mame_handle', None) is not None:
+            cpu.emu_stop()
 
     @property
     def tick_period_instructions(self) -> int:
@@ -3669,8 +3672,6 @@ class CourierMachine:
                 if idle_pacer is not None and not native_pacer:
                     deadlines.append(idle_pacer.next_check)
                 if scheduled:
-                    deadlines.append(self.instructions + 200_000
-                                     - (bridge._instructions - getattr(bridge, "_probe_clock_last", 0)))
                     if self.console is not None and console_fd is None:
                         deadlines.append(self.instructions + max(0, self._console_owed))
                 if self._serial_input_schedule:

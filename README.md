@@ -250,9 +250,12 @@ The MAME backend executes instructions entirely in the vendored 16-bit
 context allocates and owns RAM, access guards and the shared register bank.
 Python uses live views; register publication no longer converts a Python
 integer list at each callback. Device buffers remain pinned and bound until
-their identities change. Execution batches may span up to 1,048,576
-instructions while retaining service deadlines and bounded output queues.
-The MAME bus
+their identities change. With native worker polling, execution continues in
+C++ until a host event, buffer boundary, stop request or the 64-bit run
+limit. Service deadlines and output bounds remain enforced inside the run.
+Host signals are checked every 65,536 instructions; no clock-probe log or
+periodic probe handoff is generated. Runs without native worker polling
+retain the bounded one-million-instruction batches. The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.
