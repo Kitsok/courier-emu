@@ -109,3 +109,17 @@ The earlier custom-core extraction proposal is superseded for now by this
 reuse evaluation. Next compare firmware IRQ/data behavior with the existing
 backend, then migrate the board/bus and host transport around the reused
 CPU. A complete standalone native modem has not yet been delivered.
+
+Milestone 5 complete: remove MAME's UART/IRQ/DSP-port Python hot paths.
+The MAME adapter now uses existing native device buffers and native DSP port
+handlers directly. IRQ requests enter at eligible instruction boundaries,
+with MAME's interrupt shadow; EOI and UART writes are committed once, and
+host output is drained before the CPU resumes. Extra UART observers retain
+synchronous callbacks. No new firmware tracing or diagnostic hooks were
+introduced. The custom CPU's worker batching ABI remains disabled.
+
+Observed focused performance: 40,000 status reads went from 40,000 Python
+UART callbacks to zero (about 61 ms to 2.7 ms CPU in one local comparison).
+This is a register-loop measurement, not an end-to-end modem speed claim.
+Six focused adapter checks and the fresh-NVRAM AT/OK smoke passed. Timer
+register paths, remaining board wiring and host transport still need work.

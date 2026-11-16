@@ -93,3 +93,48 @@ def test_mame_interrupt_notifications_preserve_board_dispatch(code, vector, faul
     machine.emu_start(0x1000, 0, count=1)
     assert observed == [(vector, fault)]
     assert machine.retired == 1
+
+
+def test_mame_native_uart_and_irq_delivery_avoid_device_callbacks():
+    import ctypes
+    from collections import Counter
+    from courier_emu.service_native import ServiceState, NativeSerialPending
+    from courier_emu.uart import EbSerial
+    from courier_emu.uart_native import NativeEbSerial
+
+    machine = cpu()
+    buffer = bytearray(ctypes.sizeof(ServiceState))
+    state = ServiceState.from_buffer(buffer)
+    state.irq_enabled = 1
+    reference = EbSerial()
+    reference.pending = NativeSerialPending(state, [])
+    uart = NativeEbSerial(reference, state)
+    machine.native_irq_state, machine.native_irq_model = buffer, state
+    machine.native_uart, machine.native_uart_counts = uart, Counter()
+
+    def unexpected(*_):
+        pytest.fail('native UART/EOI access crossed into Python')
+
+    machine.hook_add(x.UC_HOOK_MEM_READ, unexpected, None, 0xff60, 0xff6b)
+    machine.hook_add(x.UC_HOOK_MEM_WRITE, unexpected, None, 0xff00, 0xff6b)
+    machine.native_uart_hooks = (unexpected, unexpected)
+    machine.native_mmio_batch = ((0xff02, 0xff03),)
+    output = []
+
+    def replay(events, count):
+        for offset in range(0, count * 8, 8):
+            if events[offset + 7] == 4 and events[offset] == 0x6a:
+                output.append(events[offset + 4])
+
+    machine.native_mmio_callback = replay
+    # RX ISR echoes the byte through native UART and EOIs once, then IRETs.
+    machine.mem_write(0x50, b'\x00\x20\x00\x00')
+    machine.mem_write(0x2000, bytes.fromhex('a0 68 ff a2 6a ff c7 06 02 ff 00 80 cf'))
+    machine.mem_write(0x1000, bytes.fromhex('fb 40 90 90 90'))
+    uart.deliver(0x55)
+    machine.emu_start(0x1000, 0, count=2)
+    assert state.irq_entries[2] == 0  # STI's following instruction is protected
+    machine.emu_start(0x1002, 0, count=4)
+    assert output == [0x55] and state.irq_entries[2] == 1
+    assert state.stack_depth == 0 and list(uart.pending) == [0x15]
+    assert uart.native_state.native_reads == uart.native_state.native_writes == 1

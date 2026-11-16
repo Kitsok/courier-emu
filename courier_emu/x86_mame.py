@@ -26,7 +26,8 @@ def build_library():
         return installed
     sources = [ROOT / 'native/mame_adapter.cpp', VENDOR / 'cpu/i86.cpp',
                VENDOR / 'cpu/i186.cpp', VENDOR / 'shim/emu.cpp']
-    dependencies = sources + list(VENDOR.rglob('*.h'))
+    dependencies = sources + list(VENDOR.rglob('*.h')) + [
+        ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp']
     if not LIBRARY.exists() or any(p.stat().st_mtime_ns > LIBRARY.stat().st_mtime_ns
                                    for p in dependencies):
         require_build_allowed(LIBRARY)
@@ -70,9 +71,11 @@ class MameUc(x86.Uc):
         self._mame_signature = None
         self._mame_base = 0
         self.mame_retired = 0
+        self._mame_uart_access = bytearray(12)
+        self._mame_mmio_events = bytearray(8 * 8 * 65536)
 
     def _prepare_guard(self):
-        signature = (len(self.mapped), len(self.hooks))
+        signature = (len(self.mapped), len(self.hooks), self.native_mmio_batch, id(self.native_uart))
         if signature == self._mame_signature:
             return
         guard = self._mame_guard
@@ -85,6 +88,18 @@ class MameUc(x86.Uc):
                     first, last = 0, len(guard) - 1
                 first, last = max(0, first), min(len(guard) - 1, last)
                 guard[first:last + 1] = guard[first:last + 1].translate(bytes(v | bit for v in range(256)))
+        for first, last in self.native_mmio_batch:
+            for address in range(first, last + 1):
+                guard[address] |= 64
+        self._mame_uart_access[:] = bytes(12)
+        if self.native_uart is not None:
+            for bit, hooks, own_hook in ((1, self._read_hooks, self.native_uart_hooks[0]),
+                                         (2, self._write_hooks, self.native_uart_hooks[1])):
+                for address in range(0xff60, 0xff6c, 2):
+                    if not any(callback is not own_hook
+                               and (end == 0 or begin <= address + 1 and end >= address)
+                               for callback, _, begin, end in hooks):
+                        self._mame_uart_access[address - 0xff60] |= bit
         self._mame_signature = signature
 
     def _mame_event(self, kind, address, size, value, done):
@@ -95,6 +110,9 @@ class MameUc(x86.Uc):
         elif kind in (3, 4):
             answer = self._io(x86.UC_X86_INS_IN if kind == 3 else x86.UC_X86_INS_OUT,
                               address, size, value) or 0
+            if self.native_after_io is not None and (
+                    self.native_after_io_ports is None or self.native_after_io_ports[address]):
+                self.native_after_io()
             return answer | (0 if self.running else 1 << 32)
         elif kind == 5:
             before = self.regs[x86.UC_X86_REG_CS], self.regs[x86.UC_X86_REG_IP]
@@ -121,6 +139,7 @@ class MameUc(x86.Uc):
         self.running, self.halted = True, False
         retired = 0
         while self.running and (not count or retired < count):
+            self._prepare_guard()
             budget = min(65536, count - retired) if count else 65536
             if self._clock_callback is not None:
                 if self.retired + 1 >= self._clock_next:
@@ -132,13 +151,29 @@ class MameUc(x86.Uc):
             if budget <= 0:
                 continue
             self._mame_base = self.retired
+            host_function, host_context, host_ports = self.native_host_io or (None, None, None)
+            bindings = (self.native_irq_state,
+                        self.native_uart.buffer if self.native_uart is not None else None,
+                        self._mame_uart_access,
+                        self._mame_mmio_events if self.native_mmio_callback is not None else None,
+                        host_function, host_context, host_ports,
+                        self.native_host_base + self._mame_base)
             try:
-                done, halted = self._mame_run(self._mame_handle, self.regs, budget, self._mame_event)
+                done, halted, irq_fallback, mmio_count = self._mame_run(
+                    self._mame_handle, self.regs, budget, self._mame_event, bindings)
             except RuntimeError as exc:
                 raise x86.UcError(str(exc)) from exc
             self.retired = self._mame_base + done
             self.mame_retired += done
             retired += done
+            if self.native_uart is not None:
+                self.native_uart.finish_reads(self.native_uart_counts)
+            if mmio_count:
+                self.native_mmio_callback(memoryview(self._mame_mmio_events), mmio_count)
+            if irq_fallback:
+                self._native_irq_fallback = True
+                self._native_irq_guard_fallbacks += 1
+                self.running = False
             self.halted = bool(halted)
             if halted:
                 self.running = False

@@ -244,9 +244,13 @@ COURIER_X86_BACKEND=mame python3 -m courier_emu.runtime --config /path/to/test.i
 Use an isolated test configuration and NVRAM file for comparisons. Unset
 `COURIER_X86_BACKEND` or set it to `native` to select the existing backend.
 The MAME backend executes instructions entirely in the vendored 16-bit
-80186 core; it does not invoke the Python instruction decoder. Python still
-routes the existing board memory/I/O callbacks, interrupts and service clock.
-The custom CPU's native worker/IRQ batching ABI is disabled for this backend.
+80186 core; it does not invoke the Python instruction decoder. The MAME bus
+uses shared native UART state, per-instruction IRQ delivery and DSP port
+handlers to avoid Python callbacks for those accesses. Interrupt entry obeys
+MAME's instruction shadow, and native EOI writes are applied once. Additional
+UART memory observers retain synchronous callbacks. Python still handles
+remaining board accesses and the service clock; the custom CPU's native
+worker batching ABI is disabled for this backend.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog

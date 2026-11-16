@@ -1198,18 +1198,20 @@ class CourierMachine:
             self._x86_const = _native_x86
 
         uc = Uc(UC_ARCH_X86, UC_MODE_16)
-        if (self.cpu_engine == 'interpreter' and uc.native_enabled
+        native_device_engine = self.cpu_engine == 'interpreter' and (
+            uc.native_enabled or cpu_backend == 'mame')
+        if (native_device_engine
                 and hasattr(self, '_native_service_state') and type(self.uart) is EbSerial
                 and os.environ.get('COURIER_NATIVE_UART', '1') != '0'):
             from .uart_native import NativeEbSerial
             self.uart = NativeEbSerial(self.uart, self._native_service_state)
-        if (self.cpu_engine == 'interpreter' and uc.native_enabled
+        if (native_device_engine
                 and hasattr(self, '_native_service_state') and type(self.dte_line) is DteTransmitLine
                 and os.environ.get('COURIER_NATIVE_DTE', '1') != '0'):
             from .dte_native import NativeDteTransmitLine
             self.dte_line = NativeDteTransmitLine(self.dte_line)
         self._native_irq_controller = (
-            self.cpu_engine == 'interpreter' and uc.native_enabled
+            native_device_engine
             and hasattr(self, '_native_service_state')
             and os.environ.get('COURIER_NATIVE_IRQ', '1') != '0')
         if hasattr(self, '_native_service_state'):
@@ -4005,7 +4007,7 @@ class CourierMachine:
             and getattr(bridge, "boot_rom_enabled", False)
             and getattr(bridge, "board3453", None) is None
             and hasattr(bridge, "_lanes_live")
-            and uc.native_enabled
+            and native_device_engine
         ):
             from .dsp import LaneHostIo
 
