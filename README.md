@@ -272,6 +272,9 @@ keeps every periodic service on the Python path for comparison. The custom
 CPU decoder and diagnostic-store trace-buffer ABI remain disabled.
 EEPROM Microwire commands and ordinary parallel-register traffic also execute
 in C++. The native bus samples the EEPROM output and DTE wire directly.
+The standalone native C51 bridge owns bootstrap storage, completion matching,
+loader startup, NMI settling and transfer acknowledgement loops in C++.
+Python exposes live loader/runtime fields and retains host completion events.
 DSP pin transitions and writes while DSP reset is held retain the existing
 board handler; EEPROM image loading/saving remains host orchestration.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,

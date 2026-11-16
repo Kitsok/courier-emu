@@ -287,3 +287,17 @@ because it updates DSP and line scheduling together. These rare paths have
 no demonstrated performance benefit from an isolated callback migration.
 The native execution context is persistent, but complete board ownership
 and a standalone native executable are not yet implemented.
+
+
+Milestone 16 complete: native C51 loader and shared lifecycle state.
+The standalone native bridge owns bootstrap storage, completion comparison,
+loader startup/NMI settling and transfer acknowledgement loops in C++.
+Loader, active/runtime and reset-related fields are live native state views;
+core replacement updates the borrowed native core reference. Python retains
+the existing host completion actions and, at this milestone, reset routing.
+
+Three selected bridge checks passed construction, core replacement and
+shared reset state. Fresh isolated firmware boot, AT commands and settings
+queries passed with a matching DSP download. No probes or new debugging
+interfaces were added. Work continues with native reset/media ownership
+and direct P1 pin routing, as requested after the earlier boundary report.

@@ -6,6 +6,7 @@
 #include "line_media.hpp"
 #include "sip_port.hpp"
 #include "board_media.hpp"
+#include "dsp_lifecycle.hpp"
 #include "silicon_daa.hpp"
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
@@ -35,6 +36,50 @@
 #include <time.h>
 
 using courier::C5xCore;
+
+extern "C" size_t courier_lifecycle_layout() {return sizeof(courier::DspLifecycleState);}
+extern "C" void *courier_lifecycle_create(void *state,void *media,void *core) {
+    try{return new courier::DspLifecycle(*static_cast<courier::DspLifecycleState*>(state),
+        *static_cast<courier::analog::BoardMedia*>(media),*static_cast<C5xCore*>(core));}
+    catch(...){return nullptr;}
+}
+extern "C" void courier_lifecycle_destroy(void *handle) {delete static_cast<courier::DspLifecycle*>(handle);}
+extern "C" void courier_lifecycle_configure(void *handle,void *core,const uint64_t *values) {
+    auto &life=*static_cast<courier::DspLifecycle*>(handle);life.core=static_cast<C5xCore*>(core);
+    life.first=unsigned(values[0]);life.target=values[1];life.dispatch_cell=unsigned(values[2]);
+    life.nmi_entry=unsigned(values[3]);life.frame_irq=unsigned(values[4]);
+}
+extern "C" void courier_lifecycle_window(void *handle,unsigned strobe,uint8_t *window) {
+    if(strobe<256)static_cast<courier::DspLifecycle*>(handle)->windows[strobe]=window;
+}
+extern "C" int courier_lifecycle_bytes(void *handle,const uint8_t *data,size_t size,unsigned operation) {
+    try{static_cast<courier::DspLifecycle*>(handle)->bytes(data,size,operation);return 0;}
+    catch(...){return -1;}
+}
+extern "C" size_t courier_lifecycle_read(void *handle,uint8_t *out,size_t capacity) {
+    const auto &data=static_cast<courier::DspLifecycle*>(handle)->bootstrap;
+    const auto size=std::min(capacity,data.size());if(size)std::memcpy(out,data.data(),size);return size;
+}
+extern "C" int courier_lifecycle_accept(void *handle,const uint8_t *window,unsigned codec) {
+    auto &life=*static_cast<courier::DspLifecycle*>(handle);
+    try{return life.accept(window,bool(codec));}
+    catch(const std::exception &e){std::strncpy(life.s.error,e.what(),sizeof life.s.error-1);return -1;}
+}
+extern "C" int courier_lifecycle_apply(void *handle,unsigned operation,unsigned value) {
+    auto &life=*static_cast<courier::DspLifecycle*>(handle);
+    try {
+        switch(operation) {
+        case 0:life.settle();return 0;
+        case 1:life.start_loader();return 0;
+        case 2:if(value>255)throw std::invalid_argument("invalid loader strobe");life.commit(value);return 0;
+        case 3:return life.armed();
+        case 4:return life.accept(life.windows[value&255],bool(value&256));
+        default:throw std::invalid_argument("invalid lifecycle operation");
+        }
+    } catch(const std::exception &e) {
+        std::strncpy(life.s.error,e.what(),sizeof life.s.error-1);return -1;
+    }
+}
 
 extern "C" void courier_timer186_layout(uint64_t *out) {
     out[0] = sizeof(courier::Timers186);

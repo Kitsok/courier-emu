@@ -2271,6 +2271,21 @@ class CourierDspBridge:
         self._overlay_groups = []
         self._overlay_target = None
 
+    def _accept_bootstrap_window(self, window: bytes) -> bool:
+        self.transfer_commands += 1
+        self.bootstrap.extend(window)
+        if len(self.bootstrap) < self.bootstrap_target_size:
+            return False
+        self.bootstrap_match = (self.bootstrap[:self.bootstrap_target_size]
+                                == self.expected_bootstrap[:self.bootstrap_target_size])
+        self._last_bootstrap_bytes = len(self.bootstrap)
+        self._last_bootstrap_match = self.bootstrap_match
+        self.active = True
+        self.bootstraps += 1
+        self._runtime_mode = self.bootstraps >= 2 or self.codec is not None
+        self._runtime_ready = self._runtime_mode
+        return True
+
     def _drain_native_boot(self, *, known_pending: bool = False) -> None:
         """Replay the boot strobes the native port model served.
 
@@ -2739,22 +2754,7 @@ class CourierDspBridge:
             self.transfer_commands += 1
             return
         if not self.active:
-            self.transfer_commands += 1
-            self.bootstrap.extend(window)
-            if len(self.bootstrap) >= self.bootstrap_target_size:
-                self.bootstrap_match = (
-                    self.bootstrap[:self.bootstrap_target_size]
-                    == self.expected_bootstrap[:self.bootstrap_target_size]
-                )
-                self._last_bootstrap_bytes = len(self.bootstrap)
-                self._last_bootstrap_match = self.bootstrap_match
-                self.active = True
-                self.bootstraps += 1
-                # A modelled codec reports itself at power up, so the mailbox
-                # has to carry traffic from the first download rather than
-                # from the dial/answer boundary.
-                self._runtime_mode = self.bootstraps >= 2 or self.codec is not None
-                self._runtime_ready = self._runtime_mode
+            if self._accept_bootstrap_window(window):
                 if self.codec is not None and self.bootstraps == 1:
                     # The DAA identity is a power-up report, not a call event.
                     # Without it [0x287] stays zero, which is the value the

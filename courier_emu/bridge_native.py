@@ -93,6 +93,9 @@ class NativeCourierDspBridge(CourierDspBridge):
         bridge.__class__ = cls
         bridge.dial_digits = digits
         bridge._sync_media_flags()
+        if bridge.boot_rom_enabled and getattr(bridge, 'board3453', None) is None:
+            from .lifecycle_native import NativeLifecycleBridge
+            NativeLifecycleBridge.adopt(bridge)
         return bridge
 
     def _sync_media_flags(self):
