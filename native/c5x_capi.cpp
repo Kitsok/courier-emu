@@ -12,6 +12,7 @@
 #include "interrupts186.hpp"
 #include "serial186.hpp"
 #include "dte186.hpp"
+#include "dte_receive.hpp"
 #include "terminal_io.hpp"
 #include "microwire93c66.hpp"
 #include "pacer_wait.hpp"
@@ -89,6 +90,28 @@ extern "C" int courier_terminal_lamps(void *handle,const char *data,std::size_t 
 }
 extern "C" void courier_terminal_close(void *handle) {
     static_cast<courier::TerminalTransport*>(handle)->close();
+}
+
+extern "C" size_t courier_receive_layout() {return sizeof(courier::ReceiveState);}
+extern "C" void *courier_receive_create(void *state,const uint64_t *layout) {
+    try{return new courier::DteReceive(*static_cast<courier::ReceiveState*>(state),layout);}
+    catch(...){return nullptr;}
+}
+extern "C" void courier_receive_destroy(void *handle) {delete static_cast<courier::DteReceive*>(handle);}
+extern "C" int courier_receive_push(void *handle,const uint8_t *bytes,size_t size) {
+    try{static_cast<courier::DteReceive*>(handle)->push(bytes,size);return 0;}
+    catch(...){return -1;}
+}
+extern "C" int courier_receive_pop(void *handle) {return static_cast<courier::DteReceive*>(handle)->pop();}
+extern "C" int courier_receive_peek(void *handle,size_t index) {
+    const auto &queue=static_cast<courier::DteReceive*>(handle)->input;
+    return index<queue.size()?queue[index]:-1;
+}
+extern "C" unsigned courier_receive_advance(void *handle,uint8_t *memory,void *uart,
+        void *irqs,void *wire,uint64_t now,unsigned flags) {
+    return static_cast<courier::DteReceive*>(handle)->advance(memory,
+        *static_cast<courier::Serial186*>(uart),*static_cast<courier::MachineServiceState*>(irqs),
+        *static_cast<courier::DteWire186*>(wire),now,flags);
 }
 
 extern "C" std::size_t courier_dte186_layout() {return sizeof(courier::DteWire186);}

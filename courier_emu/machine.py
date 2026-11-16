@@ -1229,6 +1229,14 @@ class CourierMachine:
             uc.native_irq_state = self._native_service_buffer
             uc.native_irq_model = self._native_service_state
 
+        native_receiver = None
+        if (self.cpu_engine == 'interpreter' and cpu_backend == 'mame'
+                and self._rom_tick and self._rom_serial is not None
+                and hasattr(self.uart, 'address') and hasattr(self.dte_line, 'address')
+                and self._native_irq_controller):
+            from .receive_native import NativeReceiveMachine
+            native_receiver = NativeReceiveMachine.adopt(self, uc)
+
         def native_irq_owned() -> bool:
             return (self._native_irq_controller and self._native_service_state.irq_enabled
                     and not uc._native_irq_fallback)
@@ -1906,6 +1914,25 @@ class CourierMachine:
             if self._dte_probe is not None:
                 self._dte_probe.sample(self, _uc)
 
+        def observe_received_byte(_uc: Any, byte: int) -> None:
+            # Read the line the terminal typed alongside the
+            # firmware, which parses it for itself. Nothing is
+            # intercepted; the line model needs the text only to
+            # know whether this end was told to answer or to call.
+            command_mode = self._firmware_command_mode()
+            self._echo_command_byte(_uc, byte)
+            self.at_events.received(byte, command_mode=command_mode)
+            if not command_mode:
+                self._rom_command_line.clear()
+            elif byte in (10, 13):
+                self._online_attention_armed = False
+                typed = attention_body(bytes(self._rom_command_line))
+                self._rom_command_line.clear()
+                if typed is not None and self.dsp_bridge is not None:
+                    self.dsp_bridge.note_dte_command(typed)
+            elif len(self._rom_command_line) < 1024:
+                self._rom_command_line.append(byte)
+
         def service_after_tick(_uc: Any, elapsed: int, interrupts_on: bool) -> None:
             """Every interrupt source the board raises on a service, once the timers have run."""
             # The ROM arms INT1 and starts timer 1 as a stopwatch, then
@@ -1949,7 +1976,28 @@ class CourierMachine:
             ):
                 self._timer_interrupt_pending = self.timers.take_interrupt()
                 request_interrupt_dispatch(_uc)
-            if (
+            if native_receiver is not None:
+                if self.serial_rx:
+                    bridge = self.dsp_bridge
+                    dsp_ready = bridge is None or not (
+                        self._dsp_in_reset or not bridge.active or bridge.error
+                        or bridge.boot_rom_enabled and not bridge.launched)
+                    flags = (int(interrupts_on) | int(bool(self.online_mode)) << 1
+                             | int(bool(bridge and bridge.daa and bridge.daa.off_hook)) << 2
+                             | int(dsp_ready) << 3)
+                    opened = self._rom_dte_opened
+                    event = native_receiver.advance(self.instructions, flags)
+                    if not opened and self._rom_dte_opened:
+                        self._trace_serial('rom-dte: firmware attention adapter')
+                        self._trace_serial(f'rom-dte: receiver ready at {self.instructions}')
+                    if event & 256:
+                        byte = event & 255
+                        self._trace_serial(
+                            f"rom-rx {byte:02x} callbacks="
+                            + bytes(_uc.mem_read(self._serial_callbacks, 6)).hex())
+                        observe_received_byte(_uc, byte)
+                        request_interrupt_dispatch(_uc)
+            elif (
                 self.uart is not None
                 and not self.uart.pending
                 and self.quad_terminal is None
@@ -2071,23 +2119,7 @@ class CourierMachine:
                         f"rom-rx {byte:02x} callbacks="
                         + bytes(_uc.mem_read(self._serial_callbacks, 6)).hex()
                     )
-                    # Read the line the terminal typed alongside the
-                    # firmware, which parses it for itself. Nothing is
-                    # intercepted; the line model needs the text only to
-                    # know whether this end was told to answer or to call.
-                    command_mode = self._firmware_command_mode()
-                    self._echo_command_byte(_uc, byte)
-                    self.at_events.received(byte, command_mode=command_mode)
-                    if not command_mode:
-                        self._rom_command_line.clear()
-                    elif byte in (10, 13):
-                        self._online_attention_armed = False
-                        typed = attention_body(bytes(self._rom_command_line))
-                        self._rom_command_line.clear()
-                        if typed is not None and self.dsp_bridge is not None:
-                            self.dsp_bridge.note_dte_command(typed)
-                    elif len(self._rom_command_line) < 1024:
-                        self._rom_command_line.append(byte)
+                    observe_received_byte(_uc, byte)
                     self.uart.deliver(byte)
                     request_interrupt_dispatch(_uc)
             if self.quad_usart is not None:

@@ -203,3 +203,16 @@ The final short AT&T1 check passed at 24,000 bit/s with required LAPM:
 characters, block errors, resends and timeouts. Existing reporting counted
 15,268 native service intervals. Full-modem CPU time was approximately
 unchanged against the preceding milestone; no overall speedup is claimed.
+
+
+Milestone 11 complete: native analog DTE receive queue and admission.
+C++ owns queued bytes, firmware-readiness and command-state checks, the
+existing attention/autobaud adapter updates, character start/completion,
+ISR selection and UART delivery. Python exposes live adapter fields and
+retains echo, command observation and service-call orchestration. Unknown
+ROM layouts and other backends retain their existing receive path.
+
+A focused current-change check passed admission, frame timing, queue order,
+pending-IRQ gating and preservation of online ISR selection. A ten-second
+AT&T1 check with &M5 and a 24,000-bit/s cap echoed 4,042 exact bytes and
+escaped successfully. No additional firmware probes were introduced.

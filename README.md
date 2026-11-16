@@ -266,6 +266,10 @@ The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
 output buffering/writes, EOF/error handling and lamp output. The existing
 console API and output bound are preserved. Serialsim and custom console
 subclasses retain their existing control-aware paths.
+For recognized analog ROM layouts, the DTE input queue, receive admission,
+firmware attention-adapter updates and character completion/UART delivery
+also run in C++. Python retains command observation, echo and service-call
+orchestration; unknown layouts retain their previous receive path.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog
