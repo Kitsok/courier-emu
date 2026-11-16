@@ -101,9 +101,9 @@ and component tests do not explain or outweigh this failed training gate;
 timing-sensitive modem/audio behavior remains unresolved. No whole-call
 speedup is claimed, and there was no additional physical call.
 
-**The reference wait remains the normal default.** The candidate requires
-explicit `COURIER_NATIVE_PACER_WAIT=1`. Its code and measurements are kept
-for investigation, but it is not an accepted normal-operation enhancement.
+**That version retained reference waiting as its default.** The candidate
+required explicit `COURIER_NATIVE_PACER_WAIT=1`; these historical results
+did not establish acceptance for that runtime path.
 The earlier implementation milestone supplied the candidate; final
 validation is what determined this conservative default. No deployment or
 physical modem settings change was made, and no temperatures were sampled.
@@ -125,3 +125,19 @@ physical modem answered but did not connect. Unarmed snapshots and DSP
 transitions dominate observed native yield reasons in that attempt.
 See `docs/physical-call-rebuilt-20261103.json` and the dated section in
 `docs/physical-call-a53.md`. No experimental-wait call was placed.
+
+## Current MAME terminal default
+
+Following migration of terminal receive service into the native worker,
+the MAME path with native input now enables bounded native waits by default.
+Legacy/custom paths retain reference waiting. `COURIER_NATIVE_PACER_WAIT=0`
+selects the reference explicitly, and `=1` retains the existing opt-in.
+Readiness, signalling deadlines and exceptional conditions still yield to
+host handling; no guest cycles or media frames are skipped.
+
+An uninstrumented local pair at a 24,000-bit/s cap with mandatory `&M5`
+negotiated LAPM/V42bis at both ends and transferred exact markers in both
+directions. The default native wait also passed the existing fixed-work
+firmware/device comparison against explicit reference waiting. This
+acceptance is limited to that local configuration and does not replace
+physical-call or unrestricted-rate qualification.

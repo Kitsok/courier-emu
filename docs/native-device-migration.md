@@ -562,11 +562,28 @@ previous saturated physical call.
 
 Final local modem validation is mixed: a profiled candidate pair connects
 with LAPM/V42bis and transfers exact data, but an unprofiled candidate pair
-returns NO CARRIER while the reference passes. The normal default therefore
-retains Python waiting; native waiting requires explicit
+returns NO CARRIER while the reference passes. At that stage the default
+therefore retained Python waiting, with native waiting requiring explicit
 `COURIER_NATIVE_PACER_WAIT=1`. No full-call gain or normal-operation
-acceptance is claimed. Results and failure evidence are in
+acceptance was claimed for that version. Results and failure evidence are in
 `docs/native-service-yields.md` and `docs/native-service-pacing-results.json`.
 No physical call, remote checkout deployment, physical settings change or
 temperature sampling occurred. Remaining unarmed snapshots are a more
 relevant next target for A53 catch-up execution.
+
+## Native waiting on the migrated MAME terminal path
+
+The MAME path with native terminal receive service now defaults to bounded
+native worker waits. It retains terminal/SIP readiness, signalling deadlines,
+full-queue and exceptional-descriptor handoffs. Explicit
+`COURIER_NATIVE_PACER_WAIT=0` selects reference waiting; legacy/custom paths
+retain their previous default. This scope follows native input ownership,
+not a change to guest clock rates or frame timing.
+
+Current local validation used an uninstrumented caller and answerer with
+`&M5`, a 24,000-bit/s cap and isolated loopback SIP/RTP. Both negotiated
+`24000/ARQ/V34/LAPM/V42BIS` and received the other's exact data marker. A
+fixed-work comparison confirmed default native waits occurred and matched
+reference memory, registers, DSP/serial state, timers and service phases.
+These checks qualify the tested local configuration, not unrestricted
+speeds or physical calls; no full-call speedup measurement is claimed.

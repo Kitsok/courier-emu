@@ -1622,6 +1622,11 @@ does not disable the SIP media clock. Diagnostic reports include wait counts
 and elapsed wait time under `pacing`, and native poll and DSP batch counts
 under `scheduler`. `COURIER_NATIVE_EXCHANGE=0` disables native exchange DSP
 services independently of clock-only native polling.
+On the migrated MAME plain-terminal input path, bounded media-clock waits
+also run inside the native worker by default. Terminal/SIP readiness,
+signalling deadlines, full input queues and exceptional descriptors retain
+their host boundary. `COURIER_NATIVE_PACER_WAIT=0` selects reference waiting;
+legacy/custom paths retain that default and can opt in with `=1`.
 
 The native analog board runtime shares external, frame, UART, INT1 and timer
 interrupt requests with the CPU interpreter. C++ selects pending requests,

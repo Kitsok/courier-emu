@@ -3647,7 +3647,8 @@ class CourierMachine:
                 state.pacer_wait.enabled = bool(
                     native_pacer and scheduled == 3 and console_fd is not None
                     and len(self.serial_rx) < CONSOLE_INPUT_FIFO and not self.stop_requested
-                    and os.environ.get('COURIER_NATIVE_PACER_WAIT', '0') != '0')
+                    and os.environ.get('COURIER_NATIVE_PACER_WAIT',
+                                       '1' if native_input is not None else '0') != '0')
                 if native_pacer:
                     state.pacer_wait.interval = sip_pacer.interval
                     line = bridge._sip_line

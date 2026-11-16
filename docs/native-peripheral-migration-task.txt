@@ -409,3 +409,16 @@ A focused current-change check verified three million instructions in one
 native call, service deadlines, a 64-bit limit and signal-driven stop.
 Seven existing stop/clock/worker-arm checks passed. A ten-second &M5 AT&T1
 check at 24,000 bit/s transferred exact data and escaped successfully.
+
+
+Milestone 24 complete: native waiting on the migrated MAME input path.
+Bounded media-clock waits now default to the existing native worker when
+native terminal receive service owns input. Legacy/custom paths retain
+reference waiting. COURIER_NATIVE_PACER_WAIT=0 selects reference waiting;
+readiness, signalling deadlines, full queues and errors retain host handoffs.
+
+An uninstrumented local pair with &M5 and a 24,000-bit/s cap connected with
+LAPM/V42bis at both ends and transferred exact bidirectional markers. The
+default path performed native waits and matched explicit reference firmware
+and device state in the existing fixed-work comparison. Three pacing service
+checks passed. No physical calls or unrestricted-rate claims were made.
