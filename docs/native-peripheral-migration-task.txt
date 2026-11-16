@@ -263,3 +263,27 @@ register-and-clock scripts with acceleration enabled and disabled. A focused
 current-change check matched granted and transfer-excluded control reads
 without Python bus callbacks. A ten-second required-LAPM AT&T1 check at
 24,000 bit/s echoed 4,042 exact bytes and escaped successfully.
+
+
+Milestone 15 complete: native software interrupt and CPU exception entry.
+The configured MAME runtime uses the existing MAME interrupt entry for
+ordinary vectors. It builds FLAGS/CS/IP frames and handles interrupt flags
+inside the CPU. Existing fault counts are folded by batch. Parameter-flash
+host services and watched/guarded frames retain their existing boundary;
+COURIER_NATIVE_INTERRUPTS=0 retains the previous software/fault path.
+
+Focused current-change checks passed native INT/IRET, the stack/FLAGS frame,
+fault accounting and explicit host/watched-frame fallback. Two selected
+existing interrupt checks passed. A ten-second &M5 AT&T1 check at 24,000
+bit/s echoed 3,995 exact bytes, escaped, and reported zero lost characters,
+block errors, resends and timeouts.
+
+Practical boundary remaining: DSP reset/NMI still owns Python loader,
+runtime-bus and bridge lifecycle state alongside native core/media reset.
+Moving just the pin callback would retain that dependency and split reset
+ownership. Removing it requires migrating the board/DSP lifecycle as one
+unit. Timer-0 clock identification also retains its host propagation callback
+because it updates DSP and line scheduling together. These rare paths have
+no demonstrated performance benefit from an isolated callback migration.
+The native execution context is persistent, but complete board ownership
+and a standalone native executable are not yet implemented.

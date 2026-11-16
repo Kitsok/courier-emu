@@ -4,6 +4,7 @@ All instruction decoding/execution runs in MAME. The Python superclass supplies
 the existing register, memory and hook API; its instruction interpreter is
 never called. Board services retain their current instruction-clock schedule.
 """
+from collections import Counter
 import importlib.util
 import os
 from pathlib import Path
@@ -81,6 +82,9 @@ class MameUc(x86.Uc):
         self._mame_nvram = self._mame_dte_line = None
         self._mame_transmitter = None
         self._mame_transfer_span = None
+        self._mame_fault_buffer = bytearray(8 * 257)
+        self._mame_faults = memoryview(self._mame_fault_buffer).cast('Q')
+        self._mame_fault_counter = Counter()
         self._mame_services_synced = True
 
     def _prepare_guard(self):
@@ -114,6 +118,14 @@ class MameUc(x86.Uc):
                         self._mame_device_access[address & 255] |= bit
         self._mame_signature = signature
 
+    def _finish_native_faults(self):
+        if self._mame_faults[0]:
+            for vector, count in enumerate(self._mame_faults[1:]):
+                if count:
+                    self._mame_fault_counter[vector] += count
+                    self._mame_faults[vector + 1] = 0
+            self._mame_faults[0] = 0
+
     def _mame_event(self, kind, address, size, value, done):
         # Publish native service work before a Python device handler sees it.
         # The worker stays disarmed until the existing instruction-clock
@@ -122,6 +134,7 @@ class MameUc(x86.Uc):
             self.native_after_run()
             self._mame_services_synced = True
         self.retired = self._mame_base + done + (kind in (3, 4))
+        self._finish_native_faults()
         if self._mame_transmitter is not None:
             self._mame_transmitter.finish()
         if kind in (1, 2):
@@ -183,7 +196,7 @@ class MameUc(x86.Uc):
                    id(self.native_mmio_callback), host_function, host_context, id(host_ports),
                    id(timer_reads), id(self._mame_nvram), id(self._mame_dte_line),
                    self.native_poll if polling else None, id(self._mame_transmitter),
-                   self._mame_transfer_span)
+                   self._mame_transfer_span, id(self.native_int_mode))
             if key != self._mame_bindings_key:
                 bindings = (self.native_irq_state,
                         self.native_uart.buffer if self.native_uart is not None else None,
@@ -196,7 +209,7 @@ class MameUc(x86.Uc):
                         self._mame_dte_line.buffer if self._mame_dte_line is not None else None,
                         self.native_poll if polling else None,
                         self._mame_transmitter.handle if self._mame_transmitter is not None else None,
-                        self._mame_transfer_span)
+                        self._mame_transfer_span, self.native_int_mode, self._mame_fault_buffer)
                 self._mame_configure(self._mame_handle, bindings)
                 self._mame_bindings_key = key
             try:
@@ -208,6 +221,7 @@ class MameUc(x86.Uc):
                 raise x86.UcError(str(exc)) from exc
             self.retired = self._mame_base + done
             self.mame_retired += done
+            self._finish_native_faults()
             retired += done
             if not self._mame_services_synced:
                 self.native_after_run()

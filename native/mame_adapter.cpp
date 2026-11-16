@@ -65,6 +65,8 @@ public:
     uint64_t poll_total=0,poll_next=0,poll_period=0;
     int poll_code=-1;
     uint32_t transfer_first=0,transfer_last=0;
+    const uint8_t *interrupt_policy=nullptr;
+    uint64_t *fault_counts=nullptr;
 
     void native_regs(uint32_t *values) const {
         for(unsigned i=0;i<8;++i)values[i]=m_regs.w[i];
@@ -230,9 +232,30 @@ public:
             if(action==2)throw Redirect{};
         }
     }
+    bool direct_interrupt(unsigned vector) const {
+        if(vector>255||!interrupt_policy||(interrupt_policy[vector]&3)!=3)return false;
+        for(unsigned k=0;k<4;++k) {
+            const auto access=guard[vector*4+k];
+            if(!(access&1)||(access&16))return false;
+        }
+        for(unsigned k=0;k<3;++k) {
+            const uint32_t a=((uint32_t(m_sregs[SS])<<4)+uint16_t(m_regs.w[SP]-2*(k+1)))&0xfffff;
+            for(unsigned j=0;j<2;++j) {
+                const auto access=guard[(a+j)&0xfffff];
+                if(!(access&2)||(access&32))return false;
+            }
+        }
+        return true;
+    }
     void interrupt(int vector,int trap=1) override {
-        // Hardware IRQs are dispatched by the existing Courier board. CPU
-        // faults and INT instructions retain its diagnostic/service hooks.
+        if(direct_interrupt(unsigned(vector))) {
+            // Reuse MAME's FLAGS/CS/IP frame and interrupt flag handling.
+            // CPU exceptions are not controller requests and need no EOI.
+            i8086_common_cpu_device::interrupt(vector,trap);
+            if(trap&&fault_counts){++fault_counts[0];++fault_counts[unsigned(vector)+1];}
+            return;
+        }
+        // Host services and watched/guarded frames retain the existing hook.
         event(6,unsigned(vector),unsigned(trap));
         throw Interrupt{};
     }
@@ -292,7 +315,7 @@ struct Instance {
     CourierCpu cpu{config};
     std::vector<Py_buffer> devices;
     Instance() {
-        devices.reserve(13);
+        devices.reserve(16);
         space.memory=cpu.memory=memory.data();cpu.guard=guard.data();
         cpu.registers=reinterpret_cast<uint32_t*>(registers.data());cpu.registers[13]=2;
         cpu.shim_set_space(AS_PROGRAM,&space);cpu.shim_set_space(AS_IO,&space);
@@ -334,7 +357,7 @@ PyObject *configure(PyObject *,PyObject *args) {
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
     cpu.poll=nullptr;cpu.output=nullptr;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=14) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=16) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -371,6 +394,8 @@ PyObject *configure(PyObject *,PyObject *args) {
             cpu.transfer_first=uint32_t(PyLong_AsUnsignedLong(PyTuple_GET_ITEM(span,0)));
             cpu.transfer_last=uint32_t(PyLong_AsUnsignedLong(PyTuple_GET_ITEM(span,1)));
         }
+        cpu.interrupt_policy=buffer(14,256);
+        cpu.fault_counts=reinterpret_cast<uint64_t*>(buffer(15,8*257));
         PyObject *poll=PyTuple_GET_ITEM(bindings,11);
         if(poll!=Py_None) {
             if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=2) {

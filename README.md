@@ -256,6 +256,10 @@ The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.
+Ordinary software interrupts and CPU exceptions also use MAME's native
+entry, preserving the existing fault totals. Parameter-flash host services
+and watched/guarded interrupt frames retain the existing Python boundary.
+`COURIER_NATIVE_INTERRUPTS=0` keeps software/fault entry on that path.
 Additional device memory observers retain synchronous callbacks. Timer
 control reads and calibrated delay grants also run natively, preserving the
 ROM transfer-range exclusion for DSP handshake timeouts. Timer-0 board-clock

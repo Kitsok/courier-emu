@@ -3076,6 +3076,11 @@ class CourierMachine:
             _uc.emu_stop()
 
         native_interrupts = os.environ.get("COURIER_NATIVE_INTERRUPTS", "1") != "0"
+        if self.cpu_engine == 'interpreter' and cpu_backend == 'mame' and native_interrupts:
+            uc.native_int_mode = bytearray([3] * 256)
+            if self.parameter_flash is not None:
+                uc.native_int_mode[self.hardware_map.flash_service_vector] = 0
+            uc._mame_fault_counter = self.cpu_faults
 
         def dispatch_interrupt(number: int, *, software: bool = True,
                                fault: bool = False) -> int:
