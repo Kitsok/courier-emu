@@ -3900,7 +3900,7 @@ class CourierMachine:
                     waited.resume_flags = 0
                     sip_pacer.next_check = state.pacer_next
                 resume_ready[0] = bool(state.armed and state.pending_native
-                                       and uc._native.exit_reason == 4)
+                                       and getattr(uc._native, 'exit_reason', None) == 4)
                 state.armed = 0
                 if state.presend_error:
                     # A frame the native service sent and took back: the
@@ -4216,7 +4216,8 @@ class CourierMachine:
             else:
                 uc.native_after_io = refresh_native_lanes
             refresh_native_lanes()
-            if (fast_service_on and uc.native_enabled
+            if (fast_service_on and (uc.native_enabled
+                    or cpu_backend == 'mame' and self._native_irq_controller)
                     and os.environ.get("COURIER_WORKER_POLL", "1") != "0"):
                 install_worker_poll(bridge)
         mmio = self.hardware_map.mmio
@@ -4229,6 +4230,7 @@ class CourierMachine:
             dsp_queue.first, dsp_queue.last,
         )
         if (self.cpu_engine == 'interpreter' and uc.native_poll is not None
+                and uc.native_enabled
                 and self.mem_watch is None
                 and os.environ.get('COURIER_NATIVE_QUEUE_TRACE', '1') != '0'):
             uc.native_write_trace = ((dsp_queue.first, dsp_queue.last),)

@@ -177,3 +177,29 @@ services, the DTE admission/firmware adapter, rare DSP pin/reset callbacks,
 and serialsim control-aware transport. Existing timer delay/clock callbacks
 also retain their current slow paths. Unused peripheral features have not
 been added solely for completeness; current work prioritizes hot paths.
+
+
+Milestone 10 complete: reuse native board-service batching with MAME.
+The existing board worker now services eligible instruction-clock deadlines
+inside the MAME batch. Timer/DSP/media/idle-console handling retains its
+existing guards and yields for Python-owned events. Native service state is
+published before remaining Python device handlers run. MAME's shared IRQ
+arbiter still owns delivery and respects the CPU's interrupt shadow. The
+custom decoder/diagnostic-store trace ABI remains disabled for this backend.
+COURIER_WORKER_POLL=0 retains Python service scheduling for comparison.
+
+The two focused handoff cases use the actual native worker and verify both
+elided periodic services and publication before a watched memory handler.
+A one-million-instruction microbenchmark reduced Python service callbacks
+from 976 to 4 (972 native services) with matching AX; median CPU time over
+five local runs fell from 12.49 ms to 10.71 ms. This measures service-loop
+overhead, not end-to-end modem throughput. No new debugging interfaces or
+firmware probes were added. Python still owns startup, remaining board
+callbacks, scheduled external events and control-aware host orchestration;
+cycle-based timing and a standalone native application remain future work.
+
+The final short AT&T1 check passed at 24,000 bit/s with required LAPM:
+6,016 exact bytes over 15 seconds, working escape handling, zero lost
+characters, block errors, resends and timeouts. Existing reporting counted
+15,268 native service intervals. Full-modem CPU time was approximately
+unchanged against the preceding milestone; no overall speedup is claimed.

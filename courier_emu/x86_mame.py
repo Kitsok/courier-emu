@@ -62,8 +62,8 @@ class MameUc(x86.Uc):
         if profile != '186eb':
             raise ValueError('the MAME backend supports only the 186eb board')
         super().__init__(arch, mode, profile=profile)
-        # Existing board code uses this flag to enable the custom CPU's batch
-        # ABI. The MAME backend deliberately does not advertise that ABI.
+        # Keep the custom CPU decoder/trace-buffer ABI disabled. Shared native
+        # devices and board-worker callbacks are enabled independently.
         self.native_enabled = False
         module = load_library()
         self._mame_run = module.run
@@ -75,6 +75,7 @@ class MameUc(x86.Uc):
         self._mame_device_access = bytearray(256)
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
         self._mame_nvram = self._mame_dte_line = None
+        self._mame_services_synced = True
 
     def _prepare_guard(self):
         signature = (len(self.mapped), len(self.hooks), self.native_mmio_batch,
@@ -108,6 +109,12 @@ class MameUc(x86.Uc):
         self._mame_signature = signature
 
     def _mame_event(self, kind, address, size, value, done):
+        # Publish native service work before a Python device handler sees it.
+        # The worker stays disarmed until the existing instruction-clock
+        # callback rearms it; ordinary instructions can finish this batch.
+        if not self._mame_services_synced:
+            self.native_after_run()
+            self._mame_services_synced = True
         self.retired = self._mame_base + done + (kind in (3, 4))
         if kind in (1, 2):
             self._memory_hooks(x86.UC_HOOK_MEM_READ if kind == 1 else x86.UC_HOOK_MEM_WRITE,
@@ -146,7 +153,8 @@ class MameUc(x86.Uc):
         while self.running and (not count or retired < count):
             self._prepare_guard()
             budget = min(65536, count - retired) if count else 65536
-            if self._clock_callback is not None:
+            polling = self.native_poll is not None and self._clock_callback is not None
+            if self._clock_callback is not None and not polling:
                 if self.retired + 1 >= self._clock_next:
                     self._clock_callback(self, self.retired + 1, self._clock_user)
                     self._clock_next = self.retired + 1 + self._clock_period
@@ -155,6 +163,9 @@ class MameUc(x86.Uc):
                 budget = min(budget, self._clock_next - self.retired - 1)
             if budget <= 0:
                 continue
+            if self.native_before_run is not None:
+                self.native_before_run()
+            self._mame_services_synced = self.native_after_run is None
             self._mame_base = self.retired
             host_function, host_context, host_ports = self.native_host_io or (None, None, None)
             timer_reads = self.native_timer_reads
@@ -168,15 +179,22 @@ class MameUc(x86.Uc):
                         self.native_host_base + self._mame_base,
                         timer_reads.model_buffer if timer_reads is not None else None,
                         self._mame_nvram._native_buffer if self._mame_nvram is not None else None,
-                        self._mame_dte_line.buffer if self._mame_dte_line is not None else None)
+                        self._mame_dte_line.buffer if self._mame_dte_line is not None else None,
+                        (*self.native_poll, self.retired, self._clock_next, self._clock_period)
+                        if polling else None)
             try:
-                done, halted, irq_fallback, mmio_count = self._mame_run(
+                done, halted, irq_fallback, mmio_count, poll_next, poll_code = self._mame_run(
                     self._mame_handle, self.regs, budget, self._mame_event, bindings)
             except RuntimeError as exc:
                 raise x86.UcError(str(exc)) from exc
             self.retired = self._mame_base + done
             self.mame_retired += done
             retired += done
+            if not self._mame_services_synced:
+                self.native_after_run()
+                self._mame_services_synced = True
+            if polling:
+                self._clock_next = poll_next
             if timer_reads is not None:
                 timer_reads.finish()
             if self._mame_nvram is not None:
@@ -192,5 +210,12 @@ class MameUc(x86.Uc):
             self.halted = bool(halted)
             if halted:
                 self.running = False
-            if not done and self.running:
+            if poll_code >= 0 and self.running:
+                now = self.retired + 1
+                if poll_code >= 2:
+                    self.native_poll_resume(self, now, poll_code)
+                else:
+                    self._clock_callback(self, now, self._clock_user)
+                self._clock_next = now + self._clock_period
+            if not done and self.running and poll_code < 0:
                 raise x86.UcError('MAME made no instruction progress')

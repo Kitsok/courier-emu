@@ -175,3 +175,46 @@ def test_mame_native_timer_bus_matches_reference_without_register_callbacks():
         accesses.append(calls)
     assert results[0] == results[1]
     assert accesses[0] and accesses[1] == []
+
+
+@pytest.mark.parametrize('watched', [False, True])
+def test_mame_reuses_native_worker_and_publishes_before_python_handler(watched):
+    from courier_emu.worker_poll import WorkerPoll
+
+    machine = cpu()
+    poll = WorkerPoll()
+    state = poll.state
+    state.armed = state.scheduled = 1
+    state.elide_until = 12
+    state.batch = state.line_frame_instructions = 1000
+    state.timer_poll_period = state.timer_poll_owed = 4
+    state.panel_latch = 256
+    machine.native_poll = poll.function, poll.context
+    snapshots, clocks, reads = [], [], []
+
+    def publish():
+        snapshots.append(state.last_service)
+        state.armed = 0
+
+    def service(owner, now, _):
+        clocks.append(now)
+        owner.emu_stop()
+
+    machine.native_after_run = publish
+    machine.instruction_clock_add(4, service)
+    machine.mem_write(0x1000, b'\x40' * 20)
+    if watched:
+        machine.mem_write(0x1006, bytes.fromhex('a1 00 20'))
+
+        def read(owner, *_):
+            reads.append((state.last_service, bool(state.armed)))
+            owner.mem_write(0x2000, b'\x64\x00')
+
+        machine.hook_add(x.UC_HOOK_MEM_READ, read, None, 0x2000, 0x2001)
+    machine.emu_start(0x1000, 0, count=20)
+    assert clocks == ([8] if watched else [12])
+    assert state.polls == (1 if watched else 2)
+    assert machine.retired == (7 if watched else 11)
+    assert machine.regs[x.UC_X86_REG_AX] == (100 if watched else 11)
+    assert snapshots[0] == (4 if watched else 8)
+    assert reads == ([(4, False)] if watched else [])

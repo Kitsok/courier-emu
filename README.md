@@ -252,8 +252,12 @@ port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.
 Additional device memory observers retain synchronous callbacks. Timer delay
 grants and the timer-0 board-clock selection callback retain their existing slow paths.
-Python still handles remaining board accesses and the service clock; the
-custom CPU's native worker batching ABI is disabled for this backend.
+The existing native board-service worker also runs inside the MAME CPU
+batch, retaining the instruction-clock deadlines for timers, DSP/media and
+idle-console checks. It yields for Python-owned events and publishes its
+state before any remaining Python handler runs. `COURIER_WORKER_POLL=0`
+keeps every periodic service on the Python path for comparison. The custom
+CPU decoder and diagnostic-store trace-buffer ABI remain disabled.
 EEPROM Microwire commands and ordinary parallel-register traffic also execute
 in C++. The native bus samples the EEPROM output and DTE wire directly.
 DSP pin transitions and writes while DSP reset is held retain the existing

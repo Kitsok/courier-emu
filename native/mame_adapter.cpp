@@ -16,6 +16,19 @@ struct Redirect {};
 struct Interrupt {};
 class CourierCpu;
 
+// Existing native board-worker ABI, shared with the reference CPU engine.
+struct PollCpu {
+    uint32_t *regs;
+    uint8_t *memory;
+    std::size_t memory_size;
+    const uint8_t *guard;
+    uint8_t *io_events;
+    uint32_t io_event_count;
+    uint8_t *mmio_events;
+    uint32_t mmio_count;
+    uint64_t batch_total;
+};
+
 class PlainSpace : public address_space {
 public:
     uint8_t *memory=nullptr;
@@ -42,6 +55,11 @@ public:
     HostIo host_io=nullptr;
     void *host_context=nullptr;
     uint64_t host_base=0;
+    using Poll=int (*)(void*,uint64_t,uint32_t,void*);
+    Poll poll=nullptr;
+    void *poll_context=nullptr;
+    uint64_t poll_total=0,poll_next=0,poll_period=0;
+    int poll_code=-1;
 
     void native_regs(uint32_t *values) const {
         for(unsigned i=0;i<8;++i)values[i]=m_regs.w[i];
@@ -232,8 +250,24 @@ public:
         event(6,unsigned(vector),unsigned(trap));
         throw Interrupt{};
     }
-    void begin() {m_halt=false;failed=stop_after=irq_fallback=false;done=mmio_count=0;restore();}
+    void begin() {m_halt=false;failed=stop_after=irq_fallback=false;done=mmio_count=0;poll_code=-1;restore();}
     bool halted() const {return m_halt;}
+    bool service() {
+        if(!poll||poll_total+done+1<poll_next)return true;
+        uint32_t values[14];native_regs(values);
+        PollCpu cpu{values,memory,0x100000,guard,nullptr,0,
+                    mmio_events,mmio_count,poll_total};
+        const int code=poll(poll_context,host_base+done+1,values[13],&cpu);
+        native_restore(values);
+        if(code==1||code==4) {
+            poll_next=poll_total+done+1+poll_period;
+            // The reference worker's legacy IRQ entry consumes a dispatch
+            // edge. Managed 186 IRQs use MAME's shadow in step() instead.
+            if(code==4){++done;return false;}
+            return true;
+        }
+        poll_code=code;throw Stop{};
+    }
     void step() {
         // MAME maintains its STI/MOV-SS/POP-SS shadow across calls. Deliver
         // shared board requests before the next eligible instruction.
@@ -291,8 +325,9 @@ PyObject *run(PyObject *,PyObject *args) {
     auto &cpu=instance->cpu;cpu.registers=registers;cpu.callback=callback;
     cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.eeprom=nullptr;cpu.wire=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
+    cpu.poll=nullptr;cpu.poll_next=0;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=11) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=12) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -316,6 +351,17 @@ PyObject *run(PyObject *,PyObject *args) {
         cpu.timers=reinterpret_cast<courier::Timers186*>(buffer(8,sizeof(courier::Timers186)));
         cpu.eeprom=reinterpret_cast<courier::Microwire93c66*>(buffer(9,sizeof(courier::Microwire93c66)));
         cpu.wire=reinterpret_cast<courier::DteWire186*>(buffer(10,sizeof(courier::DteWire186)));
+        PyObject *poll=PyTuple_GET_ITEM(bindings,11);
+        if(poll!=Py_None) {
+            if(!PyTuple_Check(poll)||PyTuple_GET_SIZE(poll)!=5) {
+                PyErr_SetString(PyExc_ValueError,"invalid MAME worker binding");return nullptr;
+            }
+            cpu.poll=reinterpret_cast<CourierCpu::Poll>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(poll,0)));
+            cpu.poll_context=PyLong_AsVoidPtr(PyTuple_GET_ITEM(poll,1));
+            cpu.poll_total=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,2));
+            cpu.poll_next=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,3));
+            cpu.poll_period=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll,4));
+        }
         if(PyErr_Occurred())return nullptr;
         if(cpu.host_io&&!cpu.host_ports) {
             PyErr_SetString(PyExc_ValueError,"missing MAME native port table");return nullptr;
@@ -324,7 +370,7 @@ PyObject *run(PyObject *,PyObject *args) {
     try {
         cpu.begin();
         while(cpu.done<count) {
-            try {cpu.step();++cpu.done;}
+            try {if(!cpu.service())continue;cpu.step();++cpu.done;}
             catch(const Redirect &) {continue;}
             catch(const Interrupt &) {++cpu.done;break;}
             if(cpu.halted()||cpu.stop_after)break;
@@ -333,7 +379,8 @@ PyObject *run(PyObject *,PyObject *args) {
       catch(const std::exception &e){PyErr_SetString(PyExc_RuntimeError,e.what());cpu.failed=true;}
     if(cpu.failed)return nullptr;
     try {cpu.publish();}catch(const Stop &){return nullptr;}
-    return Py_BuildValue("KiiI",(unsigned long long)cpu.done,cpu.halted(),cpu.irq_fallback,cpu.mmio_count);
+    return Py_BuildValue("KiiIKi",(unsigned long long)cpu.done,cpu.halted(),cpu.irq_fallback,cpu.mmio_count,
+                         (unsigned long long)cpu.poll_next,cpu.poll_code);
 }
 PyMethodDef methods[]={{"create",create,METH_VARARGS,"Create a MAME 80186 CPU."},
     {"run",run,METH_VARARGS,"Run native 80186 instructions on the Courier bus."},{nullptr,nullptr,0,nullptr}};
