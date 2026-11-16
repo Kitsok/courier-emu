@@ -1126,7 +1126,14 @@ class CourierMachine:
             UC_HOOK_MEM_WRITE = _backend.UC_HOOK_MEM_WRITE
             UC_MODE_16 = _backend.UC_MODE_16
             UcError = _backend.UcError
-            Uc = lambda arch, mode: _backend.Uc(arch, mode, profile="186eb")
+            cpu_class = _backend.Uc
+            cpu_backend = os.environ.get('COURIER_X86_BACKEND', 'native')
+            if cpu_backend not in ('native', 'mame'):
+                raise ValueError(f'unknown Courier CPU backend: {cpu_backend!r}')
+            if cpu_backend == 'mame':
+                from .x86_mame import MameUc
+                cpu_class = MameUc
+            Uc = lambda arch, mode: cpu_class(arch, mode, profile="186eb")
             UC_X86_INS_IN = _backend.UC_X86_INS_IN
             UC_X86_INS_OUT = _backend.UC_X86_INS_OUT
             UC_X86_REG_AX = _backend.UC_X86_REG_AX

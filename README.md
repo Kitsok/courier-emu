@@ -233,6 +233,31 @@ ISDN per-address profiling is enabled by `--report`; ordinary runs use bounded
 instruction-clock callbacks instead. `COURIER_X86_NATIVE=0` selects the Python
 reference for comparison.
 
+An experimental MAME CPU backend is available for the analog Courier board
+(`--cpu-engine interpreter`). Build it explicitly with a C++20 compiler:
+
+```sh
+COURIER_X86_BACKEND=mame ./build.sh
+COURIER_X86_BACKEND=mame python3 -m courier_emu.runtime --config /path/to/test.ini
+```
+
+Use an isolated test configuration and NVRAM file for comparisons. Unset
+`COURIER_X86_BACKEND` or set it to `native` to select the existing backend.
+The MAME backend executes instructions entirely in the vendored 16-bit
+80186 core; it does not invoke the Python instruction decoder. Python still
+routes the existing board memory/I/O callbacks, interrupts and service clock.
+The custom CPU's native worker/IRQ batching ABI is disabled for this backend.
+Board scheduling retains instruction-based time rather than adopting MAME
+cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
+fork's incomplete 80C188EB peripherals are bypassed. It supports the analog
+Courier board only, is not included in the packaged runtime, and has not
+been validated for connected data or AT&T1.
+
+The CPU and standalone compatibility layer are BSD-3-Clause; provenance,
+copyright notices and the local address-space bounds fix are recorded in
+`native/vendor/mame186/ORIGIN.txt`. Focused adapter checks are in
+`tests/test_mame_backend.py`; the optional backend must be built first.
+
 Measure firmware execution with `python tools/benchmark_x86.py Ie030002.nac`
 or `python tools/benchmark_x86.py IDSDL302.ROM --with-dsp`. Add `--profile-exits`
 to identify native fallback addresses (with profiling overhead), or `--python`

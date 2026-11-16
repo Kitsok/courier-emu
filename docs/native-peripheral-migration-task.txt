@@ -1,5 +1,5 @@
 Task: Move practical peripheral emulation from Python into native C++
-Status: Paused at the standalone-runtime architecture boundary
+Status: In progress; evaluating a reusable native CPU backend
 
 Inventory the analog Courier's remaining Python peripheral implementation
 and move as much as practical into the native C++ runtime. Python should
@@ -89,3 +89,23 @@ After that, move board boot, DTE admission, terminal transport and runtime
 control to the native owner before switching the production launcher.
 This is an architectural prerequisite rather than a peripheral algorithm
 that cannot be expressed in C++; no claim of a fully native runtime is made.
+
+Milestone 4 complete: experimental MAME CPU-to-Courier board adapter.
+The user approved evaluating reuse before extending the custom CPU. A
+pinned BSD-3-Clause MAME 80186 core and standalone compatibility layer now
+execute instructions against the existing Courier memory/I/O callbacks.
+The shim's optional address-space bounds bug is corrected. There is no
+Python instruction-decoder fallback in this backend. Select it with
+COURIER_X86_BACKEND=mame after explicitly building that optional backend.
+
+Observed validation: fresh-NVRAM analog403 boot, matching DSP download, and
+AT/ATE0&M5/ATI4/ATI5 responses passed. Focused checks cover word-wide bus
+access, I/O timestamps, clock stop/resume, watched-code stops, stable backing
+buffers and interrupt/fault notifications. No AT&T1 or data-rate claim is
+made for MAME. Python still owns the board callbacks, IRQ dispatch and host
+transport; the custom native CPU's worker/IRQ batching ABI is not enabled.
+
+The earlier custom-core extraction proposal is superseded for now by this
+reuse evaluation. Next compare firmware IRQ/data behavior with the existing
+backend, then migrate the board/bus and host transport around the reused
+CPU. A complete standalone native modem has not yet been delivered.

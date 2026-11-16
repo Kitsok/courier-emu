@@ -81,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
         spec.loader.exec_module(module)
         print("Building the native C5x DSP library...", flush=True)
         dsp.load_library()
+        if os.environ.get('COURIER_X86_BACKEND') == 'mame':
+            from . import x86_mame
+            print("Building the experimental MAME 80186 backend...", flush=True)
+            x86_mame.load_library()
         print("Analog Courier build complete; native libraries loaded successfully.")
         return 0
     except (OSError, ValueError, RuntimeError, ImportError, subprocess.CalledProcessError) as exc:

@@ -1,0 +1,19 @@
+MAME 80186 CPU and standalone compatibility layer
+
+Imported from https://github.com/daiverd/doubletalk-pc
+Commit: b1a93202a9150d2f989deaadc64ded00bb6955aa
+CPU files: doubletalk/mame/
+Compatibility layer: doubletalk/shim/
+Upstream CPU project: https://github.com/mamedev/mame
+
+All imported files retain their BSD-3-Clause license and copyright headers.
+The LICENSE file covers the standalone compatibility layer; CPU attribution
+is retained in each CPU source file, including the EB fork's modifications.
+
+Local changes:
+- shim/emu.h: reserve seven address spaces rather than four and bounds-check
+  optional-space queries. The CPU queries AS_STACK/AS_CODE/AS_EXTRA (4..6).
+
+The Courier adapter uses the 16-bit i80186_cpu_device and routes all memory
+and I/O accesses to Courier devices. It does not use the fork's incomplete
+80C188EB peripheral model or the DoubleTalk board/firmware.

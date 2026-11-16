@@ -193,6 +193,9 @@ def main(argv: list[str] | None = None) -> int:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         dsp.load_library()
+        if os.environ.get('COURIER_X86_BACKEND') == 'mame':
+            from . import x86_mame
+            x86_mame.load_library()
         if args.check_config:
             if nvram.exists():
                 device = validated_nvram(nvram)
