@@ -247,11 +247,15 @@ The MAME backend executes instructions entirely in the vendored 16-bit
 80186 core; it does not invoke the Python instruction decoder. The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
-obeys MAME's instruction shadow, and native EOI writes are applied once. Additional
-device memory observers retain synchronous callbacks. Timer delay grants and
+obeys MAME's instruction shadow, and native EOI writes are applied once.
+Additional device memory observers retain synchronous callbacks. Timer delay grants and
 the timer-0 board-clock selection callback retain their existing slow paths.
-Python still handles remaining board accesses and the service clock; the custom CPU's native
-worker batching ABI is disabled for this backend.
+Python still handles remaining board accesses and the service clock; the
+custom CPU's native worker batching ABI is disabled for this backend.
+The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
+output buffering/writes, EOF/error handling and lamp output. The existing
+console API and output bound are preserved. Serialsim and custom console
+subclasses retain their existing control-aware paths.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog

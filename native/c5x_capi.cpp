@@ -12,6 +12,7 @@
 #include "interrupts186.hpp"
 #include "serial186.hpp"
 #include "dte186.hpp"
+#include "terminal_io.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -47,6 +48,35 @@ extern "C" unsigned courier_timer186_write(void *state, uint32_t address, unsign
 }
 extern "C" uint64_t courier_timer186_deadline(void *state) {
     return static_cast<courier::Timers186 *>(state)->deadline();
+}
+
+extern "C" std::size_t courier_terminal_layout() {return sizeof(courier::TerminalState);}
+extern "C" void *courier_terminal_create(void *state) {
+    try {return new courier::TerminalTransport(*static_cast<courier::TerminalState*>(state));}
+    catch(...){return nullptr;}
+}
+extern "C" void courier_terminal_destroy(void *handle) {
+    delete static_cast<courier::TerminalTransport*>(handle);
+}
+extern "C" int courier_terminal_write(void *handle,unsigned byte) {
+    try {return static_cast<courier::TerminalTransport*>(handle)->write(uint8_t(byte));}
+    catch(...){return ENOMEM;}
+}
+extern "C" int64_t courier_terminal_read(void *handle,uint8_t *data,std::size_t limit) {
+    return static_cast<courier::TerminalTransport*>(handle)->read(data,limit);
+}
+extern "C" int courier_terminal_drain(void *handle) {
+    return static_cast<courier::TerminalTransport*>(handle)->drain();
+}
+extern "C" int courier_terminal_wait(void *handle,int milliseconds) {
+    return static_cast<courier::TerminalTransport*>(handle)->wait(milliseconds);
+}
+extern "C" int courier_terminal_lamps(void *handle,const char *data,std::size_t size) {
+    try {return static_cast<courier::TerminalTransport*>(handle)->show_lamps(data,size);}
+    catch(...){return ENOMEM;}
+}
+extern "C" void courier_terminal_close(void *handle) {
+    static_cast<courier::TerminalTransport*>(handle)->close();
 }
 
 extern "C" std::size_t courier_dte186_layout() {return sizeof(courier::DteWire186);}

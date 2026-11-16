@@ -136,3 +136,16 @@ Seven focused adapter checks passed. A 15-second AT&T1 run at 24,000 bit/s
 with required LAPM returned 6,016 exact bytes, escaped successfully, and
 reported zero block errors, resends or timeouts. No additional firmware
 probes or debugging interfaces were added.
+
+Milestone 7 complete: native terminal byte transport for MAME's plain PTY.
+Nonblocking reads/writes, bounded pending output, EOF/error handling, waiting,
+lamp writes and descriptor closure now execute in C++. Python retains the
+existing console interface and live counter views. Existing objects are
+adopted in place to retain descriptor ownership. Serialsim/custom console
+subclasses keep their existing control-aware implementations.
+
+Four focused reference/native checks cover bidirectional bytes, EOF,
+accounting and bounded output with a stalled reader. Fresh-NVRAM AT/OK and
+matching DSP download passed. Empty polling was approximately unchanged in
+a small comparison; no transport speedup is claimed. The native transport
+is reusable by a future native machine owner without Python byte-I/O code.

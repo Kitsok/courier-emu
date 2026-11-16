@@ -1200,6 +1200,9 @@ class CourierMachine:
         uc = Uc(UC_ARCH_X86, UC_MODE_16)
         native_device_engine = self.cpu_engine == 'interpreter' and (
             uc.native_enabled or cpu_backend == 'mame')
+        if self.cpu_engine == 'interpreter' and cpu_backend == 'mame' and self.console is not None:
+            from .console_native import NativeSerialConsole
+            self.console = NativeSerialConsole.adopt(self.console)
         if (native_device_engine
                 and hasattr(self, '_native_service_state') and type(self.uart) is EbSerial
                 and os.environ.get('COURIER_NATIVE_UART', '1') != '0'):
