@@ -11,6 +11,7 @@
 #include "timers186.hpp"
 #include "interrupts186.hpp"
 #include "serial186.hpp"
+#include "dte186.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -46,6 +47,20 @@ extern "C" unsigned courier_timer186_write(void *state, uint32_t address, unsign
 }
 extern "C" uint64_t courier_timer186_deadline(void *state) {
     return static_cast<courier::Timers186 *>(state)->deadline();
+}
+
+extern "C" std::size_t courier_dte186_layout() {return sizeof(courier::DteWire186);}
+extern "C" int64_t courier_dte186_wire(void *state,unsigned operation,int64_t now,unsigned byte) {
+    auto &wire=*static_cast<courier::DteWire186 *>(state);
+    switch(operation) {
+    case 0:wire.begin(uint8_t(byte),uint64_t(now));return 0;
+    case 1:return wire.take_edge();
+    case 2:return wire.bit_index(now);
+    case 3:return wire.level(now);
+    case 4:return wire.complete(now);
+    case 5:wire.idle();return 0;
+    default:return -1;
+    }
 }
 
 extern "C" void courier_serial186_layout(uint64_t *out) {

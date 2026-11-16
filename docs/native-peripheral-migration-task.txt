@@ -1,5 +1,5 @@
 Task: Move practical peripheral emulation from Python into native C++
-Status: In progress
+Status: Paused at the standalone-runtime architecture boundary
 
 Inventory the analog Courier's remaining Python peripheral implementation
 and move as much as practical into the native C++ runtime. Python should
@@ -57,3 +57,35 @@ Remaining ownership boundary:
   eligible CPU register accesses and shared interrupt arbitration/entry.
 - Native timers retain their existing shared-state implementation; their
   board callbacks and some register access paths still use Python.
+
+Milestone 3 complete: native DTE input-wire model.
+Frame state, bit sampling, start-edge consumption and character completion
+now execute in C++. Python retains a live inspection view and orchestration;
+COURIER_NATIVE_DTE=0 selects the reference wire. This supersedes the earlier
+ownership entry for wire timing; byte admission and autobaud adaptation are
+not yet migrated.
+
+Expanded target requested by the user: move host terminal transport and
+runtime CPU fallback into C++ too. A Python reference interpreter may only
+remain as a development tool, not as a runtime dependency.
+
+Architecture audit and reason for pausing:
+- runtime.py launches a Python machine; build.py builds a CPython extension
+  and native DSP library, not a standalone 80186 modem executable.
+- x86_interpreter.cpp deliberately exits on watched memory, unhandled I/O
+  and unsupported instructions. x86_interpreter.py owns their fallback,
+  including Python memory/I/O callbacks and remaining instruction handling.
+- machine.py owns firmware boot/mapping, board callbacks, DTE admission and
+  firmware callback adaptation. console.py owns terminal input/output and
+  pending-output/error handling.
+- The native c5x_runner.cpp executable is a DSP runner, not a modem machine.
+
+The standalone target is feasible, but removing Python fallback requires
+an owning native machine/bus layer first. Thin C API wrappers around more
+Python callbacks would not satisfy the expanded target. The next milestone
+must extract a host-independent CPU interface with structured exit reasons,
+then provide native bus/device dispatch and a C++ slow instruction path.
+After that, move board boot, DTE admission, terminal transport and runtime
+control to the native owner before switching the production launcher.
+This is an architectural prerequisite rather than a peripheral algorithm
+that cannot be expressed in C++; no claim of a fully native runtime is made.

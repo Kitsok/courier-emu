@@ -1196,6 +1196,11 @@ class CourierMachine:
                 and os.environ.get('COURIER_NATIVE_UART', '1') != '0'):
             from .uart_native import NativeEbSerial
             self.uart = NativeEbSerial(self.uart, self._native_service_state)
+        if (self.cpu_engine == 'interpreter' and uc.native_enabled
+                and hasattr(self, '_native_service_state') and type(self.dte_line) is DteTransmitLine
+                and os.environ.get('COURIER_NATIVE_DTE', '1') != '0'):
+            from .dte_native import NativeDteTransmitLine
+            self.dte_line = NativeDteTransmitLine(self.dte_line)
         self._native_irq_controller = (
             self.cpu_engine == 'interpreter' and uc.native_enabled
             and hasattr(self, '_native_service_state')

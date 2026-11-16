@@ -1549,8 +1549,10 @@ native device state. Direct register access requires native IRQ delivery.
 handled in the native CPU, while `mmio_summary` retains total access counts.
 The migration preserves immediate transmitter readiness and the CTS stand-in;
 it does not add framing or overrun errors, RI status reporting, or a timed
-transmit shift register. DTE wire timing, byte admission and the firmware
-autobaud adapter remain in Python.
+transmit shift register. DTE wire state, start-edge consumption, bit sampling
+and 8N1 frame completion now execute in C++ behind a live Python view.
+`COURIER_NATIVE_DTE=0` retains the Python wire for comparison. Byte admission
+and the firmware autobaud adapter remain in Python.
 
 Set `COURIER_DTE_PROBE=/tmp/courier-dte.jsonl` before launching a diagnostic
 session to record receive-path snapshots at most ten times per second and
