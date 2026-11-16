@@ -109,6 +109,7 @@ class WorkerPollState(ctypes.Structure):
         ("error", ctypes.c_char * 512),
         ("yield_counts", ctypes.c_void_p),
         ("pacer_wait", PacerWaitState),
+        ("interrupt_retry", U64),
     ]
 
 
@@ -136,7 +137,8 @@ YIELD_REASONS = dict(enumerate((
     'comparison_frame_boundary', 'comparison_frame_state', 'comparison_send',
     'comparison_receive')))
 YIELD_REASONS.update({40: 'media_edge', 41: 'media_error',
-                      42: 'dsp_transition', 43: 'dsp_error', 44: 'pacer_event'})
+                      42: 'dsp_transition', 43: 'dsp_error', 44: 'pacer_event',
+                      45: 'interrupt_window'})
 
 
 class WorkerPoll:

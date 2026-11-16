@@ -30,6 +30,17 @@ def scheduled():
     return poll, lambda now, flags=0: fn(poll.context, now, flags, c.byref(cpu))
 
 
+def test_masked_native_irq_service_returns_without_committing_clock():
+    poll, run = scheduled()
+    s = poll.state
+    s.pending_native = s.interrupt_retry = 1
+    assert run(1024, 2) == 0
+    assert s.polls == s.last_service == 0
+    assert s.exchange_ticks == s.x86_ticks == 0
+    assert s.timer_poll_owed == 1024
+    assert not s.armed
+
+
 def test_services_preserve_clock_debt_and_yield_before_exchange():
     poll, run = scheduled()
     for at in (1024, 2048, 3072):
@@ -531,3 +542,20 @@ def test_shared_stack_retains_python_overflow_and_list_semantics():
         assert stack.pop() == expected.pop()
     assert list(stack) == expected and not stack.overflow
     assert list(live.stack[:live.stack_depth]) == expected
+
+
+def test_worker_does_not_apply_cpu_completed_eoi_twice():
+    from courier_emu.service_native import ServiceState
+    poll, run, regs, memory, guard = tick_scheduled()
+    live = ServiceState()
+    live.timer_poll_owed = 1024
+    live.stack_depth = 2
+    live.stack[:2] = (12, 15)
+    live.int0_in_service = 1
+    poll.state.service_model = c.addressof(live)
+    poll.state.tick_period = 0
+    event = (c.c_uint8 * 8)(2, 255, 0, 0, 0, 128, 2, 1)
+    poll.cpu.mmio_events, poll.cpu.mmio_count = c.addressof(event), 1
+    assert run(1024, 0x102) == 1
+    assert list(live.stack[:live.stack_depth]) == [12, 15]
+    assert live.int0_in_service == 1

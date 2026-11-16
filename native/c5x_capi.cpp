@@ -9,6 +9,7 @@
 #include "silicon_daa.hpp"
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
+#include "interrupts186.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -2434,12 +2435,7 @@ void courier_bearer_set_partial(void *handle, const uint8_t *data, std::size_t c
 // Python, and the harness takes the fields back whenever it regains control.
 namespace {
 
-struct MachineServiceState {
-    int64_t console_owed=0,timer_poll_owed=0,last_frame=0;
-    uint64_t last_tick=0,ticks=0;
-    uint64_t int0_pending=0,int1_pending=0,timer_pending=0,timer_delivered=0,int0_in_service=0,stack_depth=0;
-    uint8_t stack[64]{};
-};
+using courier::MachineServiceState;
 
 struct WorkerPollState {
     void *core;
@@ -2529,6 +2525,7 @@ struct WorkerPollState {
     char error[512];
     uint64_t *yield_counts;
     courier::PacerWait pacer_wait;
+    uint64_t interrupt_retry;
 };
 
 // A line frame can change the predicates that made the DSP/ASIC tail static.
@@ -2606,6 +2603,7 @@ void worker_apply_eois(WorkerPollState &s, const PollCpu &cpu)
         const uint32_t address = uint32_t(event[0]) | uint32_t(event[1]) << 8
             | uint32_t(event[2]) << 16 | uint32_t(event[3]) << 24;
         const uint16_t value = uint16_t(event[4] | event[5] << 8);
+        if(address==0xFF02 && (event[7]&1))continue;
         if (address == 0xFF02 && irq_stack_depth) {
             unsigned completed;
             if (value & 0x8000) completed = irq_stack[--irq_stack_depth];
@@ -2782,7 +2780,9 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint64_t &irq_stack_depth=s.service_model?s.service_model->stack_depth:s.stack_depth;
     uint8_t *irq_stack=s.service_model?s.service_model->stack:s.stack;
 
+    const bool managed_irq=s.service_model && s.service_model->irq_enabled;
     auto leave = [&](unsigned reason, int code=0) {
+        if(s.service_model)s.service_model->refresh_pending();
         if(s.yield_counts) ++s.yield_counts[reason];
         s.armed=0;
         return code;
@@ -2792,6 +2792,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     worker_apply_eois(s, cpu);
     const int64_t total = s.instruction_base + int64_t(now);
     if (uint64_t(total) >= s.elide_until) { return leave(1); }
+    // Python latches due requests while IF is clear and asks the CPU clock
+    // to retry at the next interruptible instruction. Repeating a fixed
+    // quantum here can sample the same CLI-protected instruction forever.
+    if (s.interrupt_retry && s.pending_native && !managed_irq && !(flags & WORKER_IF)) return leave(45);
     // The comparison path leaves deferred frame/INT1 delivery to Python.
     if (!s.pending_native && (irq_int0_pending || irq_int1_pending || irq_timer_pending)) { return leave(2); }
     // Lamp writes waiting for the harness's replay: harmless only if they
@@ -2857,7 +2861,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         bool frame_edge = false;
         uint32_t slots[3];
         uint32_t *r = cpu.regs;
-        bool tick_due = s.tick_period && (flags & WORKER_IF)
+        bool tick_due = s.tick_period && (managed_irq || (flags & WORKER_IF))
+            && (!managed_irq || !s.service_model->external_pending)
             && uint64_t(total) >= service_last_tick
             && uint64_t(total) - service_last_tick >= s.tick_period;
         const bool timer_poll = service_timer_poll_owed - elapsed <= 0;
@@ -2868,14 +2873,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             // touching a counter until all entry/service guards have passed.
             preview = *s.timer_model;
             preview.tick(uint64_t(total));
-            if ((flags & WORKER_IF) && !timer_pending && preview.pending_interrupt())
+            if ((managed_irq || (flags & WORKER_IF)) && !timer_pending && preview.pending_interrupt())
                 timer_pending = preview.take_interrupt();
         }
         // The Python board tick is not generated while a timer request is
         // latched for delivery, including one collected by this service.
         tick_due = tick_due && !timer_pending;
         if (timer_poll && s.int0_ok && !irq_int0_pending
-            && !irq_int0_in_service && (flags & WORKER_IF)
+            && !irq_int0_in_service && (managed_irq || (flags & WORKER_IF))
             && total - service_last_frame >= int64_t(s.frame_instructions)) {
             if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { return leave(10); }
             const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
@@ -2885,7 +2890,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         }
         const bool pending_due = s.pending_native && timer_poll && (flags & WORKER_IF)
             && (irq_int0_pending || irq_int1_pending || timer_pending);
-        const bool enter_irq = tick_due || frame_edge || pending_due;
+        const bool enter_irq = !managed_irq && (tick_due || frame_edge || pending_due);
         const unsigned vector_number = tick_due ? unsigned(s.tick_vector)
             : (frame_edge || irq_int0_pending) ? WORKER_INT0
             : irq_int1_pending ? 13 : unsigned(timer_pending);
@@ -3062,12 +3067,14 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             }
         }
         if (tick_due) {
+            if(managed_irq)s.service_model->external_pending=s.tick_vector;
             service_last_tick = uint64_t(total);
             ++service_ticks;
             ++s.native_ticks;
             if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
                 irq_int1_pending = 13;
         }
+        if(s.service_model)s.service_model->refresh_pending();
         ++s.polls;
         return 1;
     }
@@ -3092,7 +3099,8 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
     uint32_t *r = cpu.regs;
     const uint32_t sp = r[REG_SP] & 0xFFFF, ss = r[REG_SS] & 0xFFFF;
     uint32_t slots[3];
-    if (timer_poll && s.int0_ok && !irq_int0_in_service && (flags & WORKER_IF)
+    if (timer_poll && s.int0_ok && !irq_int0_in_service
+        && (managed_irq || (flags & WORKER_IF))
         && total - service_last_frame >= int64_t(s.frame_instructions)) {
         if (!worker_readable(cpu, WORKER_INT0 * 4, 4)) { return leave(20); }
         const uint8_t *vector = cpu.memory + WORKER_INT0 * 4;
@@ -3233,6 +3241,9 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             service_last_frame += int64_t(s.frame_instructions);
             if (total - service_last_frame >= int64_t(s.frame_instructions))
                 service_last_frame = total - int64_t(s.frame_instructions);
+            if(managed_irq) {
+                irq_int0_pending=WORKER_INT0;
+            } else {
             irq_int0_in_service = 1;
             // dispatch_interrupt(INT0_VECTOR, software=False)
             const uint32_t flags16 = r[REG_FLAGS] & 0xFFFF;
@@ -3247,8 +3258,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             r[REG_FLAGS] = flags16 & ~WORKER_IF;
             r[REG_CS] = uint32_t(vector[2] | vector[3] << 8);
             r[REG_IP] = uint32_t(vector[0] | vector[1] << 8);
+            }
         }
     }
+    if(s.service_model)s.service_model->refresh_pending();
     // A far end that hangs up or rings changes the next frame's call state:
     // that one is the harness's.
     if (frame && !(s.peer_off_hook && !s.peer_ringing && s.peer_call_state <= 3)) s.armed = 0;

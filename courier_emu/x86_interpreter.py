@@ -226,6 +226,8 @@ class Uc:
         self._clock_next = 0
         self._clock_callback: Callable[[Any, int, Any], None] | None = None
         self._clock_user: Any = None
+        self._clock_interrupt_retry = False
+        self._clock_interrupt_retries = 0
         self.running = False
         self.halted = False
         self.retired = 0
@@ -241,6 +243,10 @@ class Uc:
         # context) as native_host_io is, and the callback that finishes a poll
         # the engine began but could not complete (see Core::poll_fn).
         self.native_poll: tuple[int, int] | None = None
+        self.native_irq_state: bytearray | None = None
+        self.native_irq_model = None
+        self._native_irq_fallback = False
+        self._native_irq_guard_fallbacks = 0
         self.native_poll_resume: Callable[[Any, int, int], None] | None = None
         # Called around every native batch: the poll's arming, and taking back
         # what it changed before any Python handler runs.
@@ -895,8 +901,17 @@ class Uc:
             native = None
         retired = 0
         while self.running and (not count or retired < count):
+            interrupt_window = False
+            if clock_callback is not None and self._clock_interrupt_retry:
+                if cpu_regs[UC_X86_REG_FLAGS] & IF:
+                    self._clock_interrupt_retry = False
+                    self._clock_interrupt_retries += 1
+                    clock_next = self._clock_next = self.retired + 1
+                    interrupt_window = True
             if native is not None:
                 budget = 65536
+                if interrupt_window:
+                    budget = 0
                 if count and count - retired < budget:
                     budget = count - retired
                 if clock_callback is not None and self.native_poll is None:
@@ -929,6 +944,13 @@ class Uc:
                 self._clock_next = clock_next
                 if not self.running:
                     break
+                if (native is not None and self.native_irq_model is not None
+                        and self.native_irq_model.irq_enabled
+                        and self.native_irq_model.pending_mask):
+                    # The device callback queued an IRQ for this boundary.
+                    # Let the native arbiter enter it before executing the
+                    # boundary instruction, as a fully native poll does.
+                    continue
             if single_hook is not None:
                 single_hook(self, physical, 1, single_user)
             else:
@@ -960,6 +982,7 @@ class Uc:
             # The opcode fetch is inlined: it is the one memory read every
             # instruction makes, and it always reads mapped code through the
             # same CS:IP the loop just computed.
+            irq_flags_before = cpu_regs[UC_X86_REG_FLAGS]
             opcode = cpu_memory[physical]
             cpu_regs[UC_X86_REG_IP] = (start_ip + 1) & 0xFFFF
             undefined_prefix = False
@@ -997,6 +1020,8 @@ class Uc:
             else:
                 bits = 16
             group = _GROUP[opcode]
+            irq_modrm = (cpu_memory[(code_base + cpu_regs[REG_IP]) & address_mask]
+                         if opcode == 0x8e else 0)
             if group == 11:  # Jcc rel8
                 ip = cpu_regs[REG_IP]; displacement = cpu_memory[(code_base + ip) & address_mask]; ip = (ip + 1) & 0xFFFF
                 if self._condition(opcode & 15):
@@ -1616,6 +1641,10 @@ class Uc:
                 raise UcError(f"unsupported opcode {opcode:02x} ({self.profile}) at {physical:#x}")
             retired += 1
             self.retired += 1
+            if self.native_irq_model is not None and self.native_irq_model.irq_enabled:
+                self.native_irq_model.interrupt_shadow = int(
+                    opcode == 0x17 or opcode == 0xfb and not irq_flags_before & IF
+                    or opcode == 0x8e and (irq_modrm >> 3) & 3 == 2)
             if self._after_instruction is not None:
                 callback, self._after_instruction = self._after_instruction, None
                 callback()

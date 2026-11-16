@@ -21,7 +21,7 @@ def build_library():
     installed = packaged_library(LIBRARY.name)
     if installed is not None:
         return installed
-    sources = (SOURCE, SOURCE.with_name('timers186.hpp'))
+    sources = (SOURCE, SOURCE.with_name('timers186.hpp'), SOURCE.with_name('interrupts186.hpp'))
     if not LIBRARY.exists() or any(LIBRARY.stat().st_mtime_ns < p.stat().st_mtime_ns for p in sources):
         require_build_allowed(LIBRARY)
         LIBRARY.parent.mkdir(exist_ok=True)
@@ -150,7 +150,9 @@ class NativeInterpreter:
         # A fixed positional call avoids rebuilding and padding several
         # intermediate tuples at every native/Python boundary. Optional
         # buffers keep their previous positions and None means disabled.
-        if host_function is None and not batching and timer_reads is None and not cpu.native_write_trace:
+        if (host_function is None and not batching and timer_reads is None
+                and not cpu.native_write_trace and not cpu._clock_interrupt_retry
+                and cpu.native_irq_state is None):
             result = self.run(cpu.regs, cpu.memory, self.guard, self.fast_out,
                               self.io_events, count, cpu.native_int_mode, self.int_counts)
         else:
@@ -163,6 +165,8 @@ class NativeInterpreter:
                 timer_reads.buffer if timer_reads is not None else None,
                 timer_reads.model_buffer if timer_reads is not None else None,
                 self.write_trace if cpu.native_write_trace else None,
+                cpu._clock_interrupt_retry,
+                cpu.native_irq_state,
             )
         done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = result
         self.exit_reason = reason
@@ -177,13 +181,24 @@ class NativeInterpreter:
         if polling and poll_next != cpu._clock_next:
             # Polls the engine ran itself: the next one falls due later.
             cpu._clock_next = poll_next
+        if reason == 10:
+            # The native batch completed the instruction restoring IF. Run
+            # the deferred board service before the next guest instruction.
+            cpu._clock_interrupt_retry = False
+            cpu._clock_interrupt_retries += 1
+            cpu._clock_next = cpu.retired + done + 1
+        if reason == 11:
+            cpu._native_irq_fallback = True
+            cpu._native_irq_guard_fallbacks += 1
+            cpu.emu_stop()
         self.handled_io = reason == 8
         self.batches += 1
         self.zero_batches += done == 0
         if self.profile and reason:
             pc = cpu._physical(cpu.regs[UC_X86_REG_CS], cpu.regs[UC_X86_REG_IP])
             names = ("budget", "unsupported", "boundary", "read-watch", "write-watch",
-                     "wide-registers", "code-hook", "system", "io", "poll")
+                     "wide-registers", "code-hook", "system", "io", "poll",
+                     "interrupt-window", "irq-guard")
             self.exits[(names[reason], hex(pc), hex(cpu.memory[pc]))] += 1
         if event_count and self.out_batch_callback is not None:
             self.out_batch_callback(memoryview(self.io_events), event_count)

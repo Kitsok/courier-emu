@@ -318,6 +318,16 @@ yields before changing a service that needs those handlers, and publishes
 its counters before Python sees them.
 `COURIER_WORKER_POLL=0` retains the Python service path for comparison.
 
+The analog CPU also shares the board's pending interrupt requests directly.
+With `COURIER_NATIVE_IRQ=1` (the default), vector selection, stack entry and
+EOI handling run in C++; `COURIER_NATIVE_IRQ=0` retains reference dispatch.
+Frame/tick requests can latch while IF is clear and are delivered when the
+CPU becomes interruptible, including STI/SS-load interrupt shadows. The
+native worker produces requests for this controller rather than maintaining
+a second dispatcher. Entry registers are published even when a watched first
+handler instruction returns control before retiring an instruction. Native
+entry counts and guarded fallbacks are reported under `scheduler`.
+
 Between complete exchange frames, stable runtime services can also advance
 the DSP and convert new codec samples into the exchange buffer natively.
 The resampler keeps the same history; a conversion completing a frame is

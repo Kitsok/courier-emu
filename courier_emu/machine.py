@@ -527,6 +527,10 @@ class CourierMachine:
         if cpu_engine not in ("unicorn", "interpreter"):
             raise ValueError(f"unknown x86 engine {cpu_engine!r}")
         self.cpu_engine = cpu_engine
+        self._dte_probe = None
+        if os.environ.get('COURIER_DTE_PROBE'):
+            from .dte_probe import DteReceiveProbe
+            self._dte_probe = DteReceiveProbe(os.environ['COURIER_DTE_PROBE'])
         self.image = image
         self.hardware_map = courier_machine_map(image)
         self.quad_terminal = QuadTerminal() if quad_terminal else None
@@ -1187,6 +1191,23 @@ class CourierMachine:
             self._x86_const = _native_x86
 
         uc = Uc(UC_ARCH_X86, UC_MODE_16)
+        self._native_irq_controller = (
+            self.cpu_engine == 'interpreter' and uc.native_enabled
+            and hasattr(self, '_native_service_state')
+            and os.environ.get('COURIER_NATIVE_IRQ', '1') != '0')
+        if hasattr(self, '_native_service_state'):
+            self._native_service_state.irq_enabled = self._native_irq_controller
+        if self._native_irq_controller:
+            uc.native_irq_state = self._native_service_buffer
+            uc.native_irq_model = self._native_service_state
+
+        def native_irq_owned() -> bool:
+            return (self._native_irq_controller and self._native_service_state.irq_enabled
+                    and not uc._native_irq_fallback)
+
+        def request_interrupt_dispatch(_uc):
+            if not native_irq_owned():
+                _uc.emu_stop()
         # Diagnostics that need to read emulated RAM (a console script sampling
         # a firmware variable, for example) have no other handle on the engine.
         self.uc = uc
@@ -1841,6 +1862,8 @@ class CourierMachine:
                 # Whatever the service changed is now what the native port
                 # model has to answer the board's input latches from.
                 fixed_refresh[0]()
+            if self._dte_probe is not None:
+                self._dte_probe.sample(self, _uc)
 
         def service_after_tick(_uc: Any, elapsed: int, interrupts_on: bool) -> None:
             """Every interrupt source the board raises on a service, once the timers have run."""
@@ -1858,7 +1881,7 @@ class CourierMachine:
             ):
                 self._external_interrupt_pending = INT1_VECTOR
                 self.int1_delivered = True
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
             if (
                 not self.int1_delivered
                 and self.int1_after_ms is not None
@@ -1877,14 +1900,14 @@ class CourierMachine:
             ):
                 self._external_interrupt_pending = INT1_VECTOR
                 self.int1_delivered = True
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
             elif (
                 self._timer_interrupt_pending is None
                 and self.timers.pending_interrupt() is not None
                 and interrupts_on
             ):
                 self._timer_interrupt_pending = self.timers.take_interrupt()
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
             if (
                 self.uart is not None
                 and not self.uart.pending
@@ -2025,7 +2048,7 @@ class CourierMachine:
                     elif len(self._rom_command_line) < 1024:
                         self._rom_command_line.append(byte)
                     self.uart.deliver(byte)
-                    _uc.emu_stop()
+                    request_interrupt_dispatch(_uc)
             if self.quad_usart is not None:
                 # The DUART drives Quad INT0 (type 0x0c). Its ISR starts
                 # with STI, so IF alone cannot prevent recursive entry:
@@ -2053,7 +2076,7 @@ class CourierMachine:
                 not self._quad_profile
                 and self._int0_pending is None
                 and not self._int0_in_service
-                and interrupts_on
+                and (interrupts_on or self.online_mode or native_irq_owned())
                 and self.instructions - self._last_frame >= self.frame_instructions
                 and self._int0_vector_installed(_uc)
             ):
@@ -2092,7 +2115,7 @@ class CourierMachine:
                 # stop. Stop again while anything is outstanding. The
                 # dispatch clears IF, so a handler still runs to its IRET
                 # before the next source is delivered.
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
 
         def service_tail_suffix(_uc: Any, elapsed: int) -> None:
             """The board tick and the DSP-paced tick."""
@@ -2119,7 +2142,7 @@ class CourierMachine:
                 self._last_tick = self.instructions
                 self._external_interrupt_pending = self.hardware_map.tick_vector
                 self.ticks += 1
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
             if (
                 (self._rom_tick or self._quad_modem_tick)
                 and self.tick_ms
@@ -2130,7 +2153,7 @@ class CourierMachine:
                 and self._timer_interrupt_pending is None
                 and self.instructions - self._last_tick
                 >= self.tick_period_instructions
-                and _uc.reg_read(UC_X86_REG_FLAGS) & 0x0200
+                and (native_irq_owned() or _uc.reg_read(UC_X86_REG_FLAGS) & 0x0200)
             ):
                 # The tick keeps the vector the ROM's own handlers install.
                 # INT1 rides alongside it whenever the firmware has that
@@ -2146,7 +2169,7 @@ class CourierMachine:
                     self._int1_pending = INT1_VECTOR
 
                 self.ticks += 1
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
             if (
                 self._tick_owed
                 and not self._serial_in_handler
@@ -2162,7 +2185,7 @@ class CourierMachine:
                 self._last_tick = self.instructions
                 self._external_interrupt_pending = self.hardware_map.tick_vector
                 self.ticks += 1
-                _uc.emu_stop()
+                request_interrupt_dispatch(_uc)
 
         def service_tail(_uc: Any, elapsed: int) -> None:
             """Everything a service does once the DSP has been clocked."""
@@ -2410,7 +2433,7 @@ class CourierMachine:
                     service_tail_suffix(_uc, elapsed)
                 elif (
                     self._int0_pending is None and not self._int0_in_service
-                    and interrupts_on
+                    and (interrupts_on or native_irq_owned())
                     and instructions - self._last_frame >= self.frame_instructions
                     and self._int0_vector_installed(_uc)
                 ):
@@ -2418,9 +2441,12 @@ class CourierMachine:
                     self._last_frame += self.frame_instructions
                     if instructions - self._last_frame >= self.frame_instructions:
                         self._last_frame = instructions - self.frame_instructions
-                    self._int0_in_service = True
-                    dispatch_interrupt(INT0_VECTOR, software=False)
-                    _uc.redirect_is_free = True
+                    if native_irq_owned():
+                        self._int0_pending = INT0_VECTOR
+                    else:
+                        self._int0_in_service = True
+                        dispatch_interrupt(INT0_VECTOR, software=False)
+                        _uc.redirect_is_free = True
                 elif self._int0_pending is not None and interrupts_on:
                     service_after_tick(_uc, elapsed, interrupts_on)
                     service_tail_suffix(_uc, elapsed)
@@ -3330,9 +3356,27 @@ class CourierMachine:
                 self._last_service = total
                 self._next_service = total + interpreter_period
                 worker_arm[0] = True
-                if fast_service_on and fast_service(_uc, elapsed):
+                if not (fast_service_on and fast_service(_uc, elapsed)):
+                    service_chunk(_uc, elapsed)
+                if not self.online_mode or native_irq_owned():
                     return
-                service_chunk(_uc, elapsed)
+                # Frame requests latch while IF is clear. Revisit the service
+                # when the critical section restores IF, even if the ordinary
+                # polling quantum aliases the same CLI-protected instruction.
+                pending = (self._int0_pending is not None
+                           or self._int1_pending is not None
+                           or self._external_interrupt_pending is not None
+                           or self._timer_interrupt_pending is not None
+                           or self.uart is not None and self.uart.pending)
+                flags = _uc.reg_read(UC_X86_REG_FLAGS)
+                if flags & 0x200:
+                    if pending:
+                        _uc.emu_stop()
+                elif self._rom_dte_opened and (
+                        pending or self.serial_rx
+                        or self.tick_ms and self.instructions - self._last_tick
+                        >= self.tick_period_instructions):
+                    _uc._clock_interrupt_retry = True
 
             uc.instruction_clock_add(interpreter_period, interpreter_service)
         elif disassembler is not None and not fast_rom_clock:
@@ -3426,6 +3470,9 @@ class CourierMachine:
 
             def arm() -> None:
                 worker_arm[0] = False
+                if uc._clock_interrupt_retry:
+                    return
+                state.interrupt_retry = self.online_mode
                 core = bridge.core
                 scheduled = not (fast_service_static() and bridge.fast_clock_static())
                 pending_native = bool(native_worker_irqs and native_board_tick
@@ -4219,6 +4266,11 @@ class CourierMachine:
                     begin = dispatch_interrupt(self.interrupt)
                     self.interrupt = None
                     continue
+                if native_irq_owned() and self._native_service_state.pending_mask:
+                    begin = current_pc()
+                    continue
+                if self.cpu_engine == 'interpreter':
+                    uc._native_irq_fallback = False
                 if self._external_interrupt_pending is not None:
                     begin = dispatch_interrupt(
                         self._external_interrupt_pending, software=False
@@ -4291,6 +4343,8 @@ class CourierMachine:
         }
         registers = {name: uc.reg_read(reg) for name, reg in register_ids.items()}
         self._flush_native_io()
+        if self._dte_probe is not None:
+            self._dte_probe.sample(self, uc, final=True)
         final_callbacks = bytes(uc.mem_read(self._serial_callbacks, 6))
         self.serial_trace.append(
             f"final callbacks[{self._serial_callbacks:03x}]="
@@ -4353,6 +4407,11 @@ class CourierMachine:
                       "native_timer_writes": self._native_timer_writes,
                       "native_configuration_refreshes": worker_poll.configuration_refreshes}
                      if worker_poll is not None else None)
+        if scheduler is not None and self._native_irq_controller:
+            scheduler['native_irq_entries'] = dict(zip(
+                ('external', 'int0', 'uart', 'int1', 'timer'),
+                self._native_service_state.irq_entries))
+            scheduler['native_irq_guard_fallbacks'] = uc._native_irq_guard_fallbacks
         return RunResult(
             status=status,
             instructions=self.instructions,

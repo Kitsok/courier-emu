@@ -9,11 +9,21 @@ class ServiceState(c.Structure):
                 ('last_frame', c.c_int64), ('last_tick', c.c_uint64), ('ticks', c.c_uint64)]
     _fields_ += [(name, c.c_uint64) for name in ('int0_pending', 'int1_pending', 'timer_pending', 'timer_delivered', 'int0_in_service', 'stack_depth')]
     _fields_ += [('stack', c.c_uint8 * 64)]
+    _fields_ += [('external_pending', c.c_uint64), ('serial_count', c.c_uint64),
+                ('serial_pending', c.c_uint64 * 2), ('pending_mask', c.c_uint64),
+                ('irq_enabled', c.c_uint64), ('irq_entries', c.c_uint64 * 5)]
+    _fields_ += [('interrupt_shadow', c.c_uint64)]
+
+    def refresh_pending(self):
+        self.pending_mask = (bool(self.external_pending) | bool(self.int0_pending) << 1
+                             | bool(self.serial_count) << 2 | bool(self.int1_pending) << 3
+                             | bool(self.timer_pending) << 4)
 
 
 FIELDS = {'_console_owed': 'console_owed', '_timer_poll_owed': 'timer_poll_owed',
           '_last_frame': 'last_frame', '_last_tick': 'last_tick', 'ticks': 'ticks',
           '_int0_pending': 'int0_pending', '_int1_pending': 'int1_pending',
+          '_external_interrupt_pending': 'external_pending',
           '_timer_interrupt_pending': 'timer_pending', 'timer_interrupts': 'timer_delivered',
           '_int0_in_service': 'int0_in_service'}
 
@@ -23,9 +33,13 @@ class ServiceField:
     def __get__(self, owner, cls=None):
         if owner is None:return self
         value = getattr(owner._native_service_state, self.field)
-        if self.field in ('int0_pending', 'int1_pending', 'timer_pending'):return value or None
+        if self.field in ('int0_pending', 'int1_pending', 'timer_pending', 'external_pending'):return value or None
         return bool(value) if self.field == 'int0_in_service' else value
-    def __set__(self, owner, value):setattr(owner._native_service_state, self.field, value or 0)
+    def __set__(self, owner, value):
+        state = owner._native_service_state
+        setattr(state, self.field, value or 0)
+        if self.field.endswith('_pending'):
+            state.refresh_pending()
 
 
 class NativeServiceMachine(CourierMachine):
@@ -46,6 +60,9 @@ class NativeServiceMachine(CourierMachine):
         machine.__class__ = cls
         for name, value in original.items():setattr(machine, name, value)
         machine._interrupt_stack = NativeInterruptStack(machine._native_service_state, stack)
+        if machine.uart is not None:
+            machine.uart.pending = NativeSerialPending(machine._native_service_state,
+                                                      list(machine.uart.pending))
         return machine
 
 
@@ -74,6 +91,30 @@ class NativeInterruptStack(MutableSequence):
         values = self.values();del values[index];self.replace(values)
     def insert(self, index, value):
         values = self.values();values.insert(index, value);self.replace(values)
+
+
+class NativeSerialPending(MutableSequence):
+    """The UART's two request latches, shared with native IRQ delivery."""
+    def __init__(self, state, values):
+        self.state = state
+        self.replace(values)
+    def values(self):return list(self.state.serial_pending[:self.state.serial_count])
+    def replace(self, values):
+        if len(values)>2:raise ValueError('UART has only two interrupt request latches')
+        self.state.serial_count=len(values)
+        self.state.serial_pending[:len(values)]=values
+        self.state.refresh_pending()
+    def __len__(self):return self.state.serial_count
+    def __iter__(self):return iter(self.values())
+    def __getitem__(self, index):return self.values()[index]
+    def __setitem__(self, index, value):
+        values=self.values();values[index]=value;self.replace(values)
+    def __delitem__(self, index):
+        values=self.values();del values[index];self.replace(values)
+    def insert(self, index, value):
+        values=self.values();values.insert(index,value);self.replace(values)
+    def popleft(self):
+        values=self.values();value=values.pop(0);self.replace(values);return value
 
 
 def fold_native_eois(events, count, counts):

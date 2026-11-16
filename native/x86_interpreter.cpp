@@ -4,6 +4,7 @@
 #include <cstring>
 #include <csetjmp>
 #include "timers186.hpp"
+#include "interrupts186.hpp"
 namespace {
 enum { AX,CX,DX,BX,SP,BP,SI,DI,ES,CS,SS,DS,IP,F };
 constexpr uint32_t CF=1, PF=4, AF=16, ZF=64, SF=128, IF=512, DF=1024, OF=2048;
@@ -77,6 +78,15 @@ struct Core {
     Write writes[8]; int nw=0;
     TimerReadState *timers=nullptr;
     courier::Timers186 *timer_model=nullptr;
+    courier::MachineServiceState *irqs=nullptr;
+    bool interrupt_block=false;
+    uint32_t irq_entered=0;
+    void retire_irq_shadow() {
+        if(irqs && irqs->irq_enabled) {
+            if(irqs->interrupt_shadow)--irqs->interrupt_shadow;
+            if(interrupt_block)irqs->interrupt_shadow=1;
+        }
+    }
     struct TimerRead { uint32_t address, value, size, index, timer; uint64_t tick; };
     TimerRead timer_reads[8]; unsigned nr=0;
     bool timer_read(uint32_t a, int n, uint32_t &value) {
@@ -187,6 +197,7 @@ struct Core {
         reason=8;
     }
     void step(){
+        interrupt_block=false;
         uint32_t start=r[IP];int op=fetch(),rep=0;seg=-1;nw=0;nr=0;width=2;
         for(int prefixes=0;;++prefixes){
             if(prefixes==15)yield();
@@ -224,7 +235,7 @@ struct Core {
             else if(op<0x88){uint32_t v=read(m,n,a);write(m,n,a,get(k,n));put(k,n,v);}
             else if(is386&&n==2&&m>=192){if(op&2)r[k]=r[m&7];else r[m&7]=r[k];}
             else if(op&2)put(k,n,read(m,n,a));else write(m,n,a,get(k,n));break;}
-        case 0x8c:case 0x8e:{int m=fetch(),k=ES+((m>>3)&3);uint32_t a=m<192?ea(m):0;if(op==0x8c)write(m,2,a,r[k]);else r[k]=read(m,2,a);break;}
+        case 0x8c:case 0x8e:{int m=fetch(),k=ES+((m>>3)&3);uint32_t a=m<192?ea(m):0;if(op==0x8c)write(m,2,a,r[k]);else {r[k]=read(m,2,a);if(k==SS)interrupt_block=true;}break;}
         case 0x8d:{int m=fetch();if(m>=192)yield();int oldseg=seg;seg=0;uint32_t a=ea(m);seg=oldseg;r[(m>>3)&7]=a&65535;break;}
         case 0xa0:case 0xa1:case 0xa2:case 0xa3:{int n=(op&1)?2:1;uint32_t a=phys(seg<0?r[DS]:seg,fetch(2));if(op&2)store(a,n,get(0,n));else put(0,n,load(a,n));break;}
         case 0xa4:case 0xa5:case 0xaa:case 0xab:case 0xac:case 0xad:{if(rep&&!r[CX])break;int n=(op&1)?width:1,form=(op>>1)&7,delta=(r[F]&DF)?-n:n;uint32_t v;
@@ -295,7 +306,7 @@ struct Core {
         case 0xfe:case 0xff:{int m=fetch(),k=(m>>3)&7,n=op==0xfe?1:2;if(k>1&&(op==0xfe||k==7))yield();if((k==3||k==5)&&m>=192)yield();uint32_t a=m<192?ea(m):0,v=read(m,n,a);
             if(k<=1){uint32_t cf=r[F]&CF;v=alu(k?5:0,v,1,n);r[F]=(r[F]&~CF)|cf;write(m,n,a,v);}else if(k==2){push(r[IP]);r[IP]=v;}else if(k==3||k==5){uint32_t cs=load(a+2,2);if(k==3){push(r[CS]);push(r[IP]);}r[CS]=cs;r[IP]=v;}else if(k==4)r[IP]=v;else if(k==6)push(v);break;}
         case 0x06:case 0x0e:case 0x16:case 0x1e:push(r[ES+(op>>3)]);break;
-        case 0x07:case 0x17:case 0x1f:r[ES+(op>>3)]=pop();break;
+        case 0x07:case 0x17:case 0x1f:r[ES+(op>>3)]=pop();interrupt_block=op==0x17;break;
         case 0x68:push(fetch(2));break;case 0x6a:push(int8_t(fetch()));break;
         case 0x98:r[AX]=uint16_t(int16_t(int8_t(r[AX])));break;
         case 0x99:r[DX]=(r[AX]&0x8000)?65535:0;break;
@@ -309,13 +320,13 @@ struct Core {
         case 0x9e:r[F]=(r[F]&~(CF|PF|AF|ZF|SF))|((r[AX]>>8)&(CF|PF|AF|ZF|SF))|2;break;
         case 0x9f:put(4,1,r[F]|2);break;
         case 0xf5:r[F]^=CF;break;case 0xf8:r[F]&=~CF;break;case 0xf9:r[F]|=CF;break;
-        case 0xfa:r[F]&=~IF;break;case 0xfb:r[F]|=IF;break;case 0xfc:r[F]&=~DF;break;case 0xfd:r[F]|=DF;break;
+        case 0xfa:r[F]&=~IF;break;case 0xfb:interrupt_block=!(r[F]&IF);r[F]|=IF;break;case 0xfc:r[F]&=~DF;break;case 0xfd:r[F]|=DF;break;
         default:yield();
         }
     }
 };
 }
-template<bool Trace>
+template<bool Trace, bool InterruptRetry = false>
 static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
     // One exit target per batch; guarded data accesses can abort without the
     // cost of exception unwinding at every memory-mapped device instruction.
@@ -325,6 +336,9 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
         return c.done;
     }
     for (c.done=0;c.done<count;++c.done) {
+        if constexpr(InterruptRetry) {
+            if(c.r[F]&IF){c.reason=10;break;}
+        }
         if(c.poll_fn&&c.poll_total+c.done+1>=c.poll_next) {
             typename Core<Trace>::PollCpu lent{c.r,c.mem,std::size_t(c.mask)+1,c.guard,
                 c.io_events,c.io_event_count,c.mmio_events,c.mmio_count,c.poll_total};
@@ -338,11 +352,17 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
             }
             else {c.poll_code=uint32_t(code);c.reason=9;break;}
         }
+        if(c.irqs && c.irqs->pending_mask) {
+            const int entered=c.irqs->dispatch(c.r,c.mem,std::size_t(c.mask)+1,c.guard);
+            if(entered<0){c.reason=11;break;}
+            c.irq_entered+=unsigned(entered);
+        }
         uint32_t pc=c.phys(c.r[CS],c.r[IP]);
         if(c.guard[pc]&8){c.reason=6;break;}
         uint8_t opcode=c.mem[pc];
         if(opcode==0xec||opcode==0xed||opcode==0xee||opcode==0xef||
            opcode==0xe4||opcode==0xe5||opcode==0xe6||opcode==0xe7) {
+            c.interrupt_block=false;
             c.prepare_io(opcode);
             if(c.host_io&&(c.host_ports[c.io_port&0xffff]&c.io_direction)) {
                 uint16_t answer=0;
@@ -355,6 +375,7 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
                         c.r[AX]=c.io_size==1?(c.r[AX]&~0xffu)|(answer&0xffu)
                                             :(c.r[AX]&~0xffffu)|answer;
                     c.reason=0;
+                    c.retire_irq_shadow();
                     continue;
                 }
             }
@@ -370,8 +391,10 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
                 event[0]=c.io_port;event[1]=c.io_port>>8;
                 event[2]=c.io_value;event[3]=c.io_value>>8;
                 c.reason=0;
+                c.retire_irq_shadow();
                 continue;
             }
+            c.retire_irq_shadow();
             break;
         }
         if(opcode==0xcd&&c.int_mode&&(c.int_mode[c.mem[c.phys(c.r[CS],c.r[IP]+1)]]&1)) {
@@ -397,6 +420,8 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
             for(unsigned k=0;k<read.size;++k)c.mem[read.address+k]=uint8_t(read.value>>(8*k));
         }
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
+            const bool irq_eoi=c.irqs && c.irqs->irq_enabled && w.address==0xff02;
+            if(irq_eoi)c.irqs->eoi(uint16_t(w.value));
             if(c.mmio_events&&(c.guard[w.address]&64)){
                 // T2 register writes have no board callback. Apply only after
                 // the entire instruction passed its guards, at the same
@@ -409,8 +434,9 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
                 uint8_t *event=c.mmio_events+8*c.mmio_count++;
                 event[0]=w.address;event[1]=w.address>>8;event[2]=w.address>>16;event[3]=w.address>>24;
                 event[4]=w.value;event[5]=w.value>>8;event[6]=uint8_t(w.size);
-                event[7]=timer_applied ? 2 : 0;
+                event[7]=(timer_applied ? 2 : 0) | (irq_eoi ? 1 : 0);
             }}
+        c.retire_irq_shadow();
     }
     return c.done;
 }
@@ -432,11 +458,13 @@ static PyObject *run_python_impl(PyObject *, PyObject *args) {
     PyObject *timer_reads = Py_None;
     PyObject *timer_model = Py_None;
     PyObject *write_trace = Py_None;
+    PyObject *irq_state = Py_None;
     unsigned int count;
-    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOOO", &registers, &memory, &guard,
+    int interrupt_retry = 0;
+    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOOOpO", &registers, &memory, &guard,
         &fast_out, &io_events, &count, &int_mode, &int_counts,
         &host_io, &host_context, &host_ports, &host_base,
-        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model, &write_trace)) return nullptr;
+        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model, &write_trace, &interrupt_retry, &irq_state)) return nullptr;
     if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
         !PyByteArray_Check(memory) || !PyByteArray_Check(guard) ||
         !PyByteArray_Check(fast_out) || PyByteArray_GET_SIZE(fast_out)!=65536 ||
@@ -453,6 +481,12 @@ static PyObject *run_python_impl(PyObject *, PyObject *args) {
         }
         c.write_trace=reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(write_trace));
         c.trace_capacity=PyByteArray_GET_SIZE(write_trace)/32;
+    }
+    if(irq_state!=Py_None) {
+        if(!PyByteArray_Check(irq_state) || PyByteArray_GET_SIZE(irq_state)!=sizeof(courier::MachineServiceState)) {
+            PyErr_SetString(PyExc_ValueError,"invalid native IRQ state");return nullptr;
+        }
+        c.irqs=reinterpret_cast<courier::MachineServiceState*>(PyByteArray_AS_STRING(irq_state));
     }
     uint32_t original[14];
     for (int i=0;i<14;++i) {
@@ -521,10 +555,10 @@ static PyObject *run_python_impl(PyObject *, PyObject *args) {
         c.poll_period=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(poll_state,2));
         if (PyErr_Occurred()) return nullptr;
     }
-    uint32_t done=run_batch(c,count);
+    uint32_t done=interrupt_retry ? run_batch<Trace, true>(c,count) : run_batch(c,count);
     // Convert each register once on entry; publish only changed registers.
     // Running directly on Core also avoids two redundant full-state copies.
-    if(done||c.reason==8||c.polls_elided)for(int i=0;i<14;++i){
+    if(done||c.reason==8||c.polls_elided||c.irq_entered)for(int i=0;i<14;++i){
         if(c.r[i]!=original[i]){
             PyObject *v=PyLong_FromUnsignedLong(c.r[i]);if(!v)return nullptr;
             PyList_SetItem(registers,i,v);

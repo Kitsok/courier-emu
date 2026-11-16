@@ -1525,6 +1525,23 @@ and elapsed wait time under `pacing`, and native poll and DSP batch counts
 under `scheduler`. `COURIER_NATIVE_EXCHANGE=0` disables native exchange DSP
 services independently of clock-only native polling.
 
+The native analog board runtime shares external, frame, UART, INT1 and timer
+interrupt requests with the CPU interpreter. C++ selects pending requests,
+enters firmware vectors at eligible instruction boundaries, observes the
+interrupt shadow after STI or stack-segment loads, and applies each EOI once.
+This avoids a periodic service repeatedly sampling the masked part of a
+CLI/POPF loop. UART and other device callbacks can still supply events from
+Python. `COURIER_NATIVE_IRQ=0` selects the reference IRQ dispatcher; watched
+vectors or stacks also retain a guarded fallback. `scheduler` reports native
+entries by source and the number of guarded IRQ fallbacks.
+
+Set `COURIER_DTE_PROBE=/tmp/courier-dte.jsonl` before launching a diagnostic
+session to record receive-path snapshots at most ten times per second and
+once at shutdown. The file is replaced on launch. Snapshots include CPU IF/PC,
+queued terminal bytes, UART state, receive callbacks, pending/in-service IRQs
+and native entry counts. This optional probe performs host file I/O and is
+intended for fault isolation rather than performance measurements.
+
 The source launcher uses the system Python and refuses runtime compilation.
 Its default SIP and RTP ports are 5074 and 4014, allowing it to coexist with
 the Eicon emulator on 5072/4012. It binds both sockets to `0.0.0.0`; an
