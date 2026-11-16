@@ -457,3 +457,13 @@ selected existing port/clock checks passed. A ten-second required-LAPM AT&T1
 run at 24000 bit/s echoed 4042 exact bytes and escaped. An uninstrumented
 local pair negotiated LAPM/V42bis at 24000 and exchanged exact bidirectional
 markers. No permanent tests or physical calls were added.
+
+
+Milestone 27 complete: remove obsolete clock-probe scaffolding.
+The removed clock probe no longer leaves state in the native board/worker
+layouts, Python live views, snapshot packing or benchmark setup. The stale
+deadline-test parameter and probe-specific yield label were removed too.
+Native/Python layout checks and packed snapshot offsets remain enforced.
+
+The native build and eleven selected existing scheduling/media checks
+passed. No new tests were added and no modem timing behavior was changed.

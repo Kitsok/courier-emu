@@ -315,7 +315,7 @@ measurements were performed for this milestone.
 ## Shared native DSP scheduling context
 
 The persistent native board now owns the bridge instruction count, exchange
-service remainder, accumulated DSP ticks, probe-clock marker, DSP cycle debt,
+service remainder, accumulated DSP ticks, DSP cycle debt,
 cycle estimate and CPU-to-DSP ratio. Native bridge attributes are live views
 of those fields. Worker mode 3 operates on the same storage and no longer
 seeds or takes back these fields through its legacy snapshot; comparison

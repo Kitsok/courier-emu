@@ -3746,7 +3746,6 @@ class CourierMachine:
                             state.stack[index] = vector
                     if scheduled != 3:
                         state.bridge_instructions = bridge._instructions
-                        state.probe_last = getattr(bridge, "_probe_clock_last", 0)
                     state.codec_present = bridge.codec is not None
                     if scheduled != 3:
                         state.codec_instructions = bridge._codec_instructions

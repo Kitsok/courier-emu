@@ -181,7 +181,7 @@ class NativeCourierDspBridge(CourierDspBridge):
 
 CLOCK_FIELDS = {
     '_instructions': 'board_instructions', '_x86_ticks': 'x86_ticks',
-    '_exchange_instructions': 'exchange_ticks', '_probe_clock_last': 'probe_last',
+    '_exchange_instructions': 'exchange_ticks',
     '_dsp_cycle_debt': 'debt', '_dsp_cpi': 'cpi', 'dsp_cycles_per_x86': 'cycles_per_x86',
 }
 

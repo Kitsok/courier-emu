@@ -2750,7 +2750,7 @@ struct WorkerPollState {
     uint64_t frame_instructions, int0_ok, int0_in_service, stack_depth;
     uint8_t stack[64];
     // DspBridge.clock_x86_fast's counters.
-    int64_t bridge_instructions, probe_last;
+    int64_t bridge_instructions;
     uint64_t codec_present;
     int64_t codec_instructions, line_frame_instructions, x86_ticks, batch;
     double debt, cpi, cycles_per_x86;

@@ -49,7 +49,7 @@ class WorkerPollState(ctypes.Structure):
         ("last_frame", I64),
         ("frame_instructions", U64), ("int0_ok", U64), ("int0_in_service", U64),
         ("stack_depth", U64), ("stack", ctypes.c_uint8 * STACK_SLOTS),
-        ("bridge_instructions", I64), ("probe_last", I64),
+        ("bridge_instructions", I64),
         ("codec_present", U64),
         ("codec_instructions", I64), ("line_frame_instructions", I64),
         ("x86_ticks", I64), ("batch", I64),
@@ -122,7 +122,7 @@ def _snapshot_pack(first, end, fmt):
 
 
 _CLOCK_PACK, _CLOCK_OFFSET = _snapshot_pack('instruction_base', 'stack', 'qQQqQqQQQQ')
-_BRIDGE_PACK, _BRIDGE_OFFSET = _snapshot_pack('bridge_instructions', 'debt', 'qqQqqqq')
+_BRIDGE_PACK, _BRIDGE_OFFSET = _snapshot_pack('bridge_instructions', 'debt', 'qQqqqq')
 _SCHEDULE_PACK, _SCHEDULE_OFFSET = _snapshot_pack('scheduled', 'exchange_codec_last', 'QQQqQq')
 _TICK_PACK, _TICK_OFFSET = _snapshot_pack('tick_period', 'native_ticks', '7Q')
 
@@ -132,7 +132,7 @@ YIELD_REASONS = dict(enumerate((
     'service_boundary', 'console_unsupported', 'console_ready', 'clock_failure',
     'pacing_wait', 'int0_vector_guard', 'irq_vector_guard', 'irq_stack_guard',
     'exchange_idle', 'tx_reset_or_resampler', 'clock_retune', 'resampler_config',
-    'line_frame_boundary', 'comparison_clock_batch', 'comparison_line_or_probe',
+    'line_frame_boundary', 'comparison_clock_batch', 'comparison_line',
     'comparison_vector_guard', 'comparison_stack_guard', 'comparison_stack_full',
     'comparison_tx_range', 'comparison_clock_retune', 'comparison_resampler_config',
     'comparison_frame_boundary', 'comparison_frame_state', 'comparison_send',
@@ -220,8 +220,7 @@ class WorkerPoll:
             s.codec_present = bridge.codec is not None
             s.line_frame_instructions, s.batch = line_period, bridge.batch
         else:
-            _BRIDGE_PACK(s, _BRIDGE_OFFSET, bridge._instructions,
-                     getattr(bridge, '_probe_clock_last', 0), bridge.codec is not None,
+            _BRIDGE_PACK(s, _BRIDGE_OFFSET, bridge._instructions, bridge.codec is not None,
                      bridge._codec_instructions, line_period, bridge._x86_ticks, bridge.batch)
         _SCHEDULE_PACK(s, _SCHEDULE_OFFSET, scheduled, dsp_active, bridge.exchange is not None,
                        0 if scheduled == 3 else bridge._exchange_instructions,

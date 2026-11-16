@@ -61,7 +61,6 @@ def run(native, count, lead):
         for index in range(count):
             total = (index+1)*1024
             line._next_frame_at = time.monotonic()+lead
-            board.state.probe_last = total
             s.pacer_next = 0
             code = call(poll.context, total, 0, c.byref(cpu))
             if code == 0:

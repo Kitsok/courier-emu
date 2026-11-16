@@ -55,7 +55,7 @@ def test_services_preserve_clock_debt_and_yield_before_exchange():
 
 @pytest.mark.parametrize("field,value", [
     ("console_owed", 1024), ("codec_instructions", 399000),
-    ("probe_last", -199000), ("elide_until", 1024),
+    ("elide_until", 1024),
 ])
 def test_due_events_leave_service_uncommitted(field, value):
     poll, run = scheduled()
