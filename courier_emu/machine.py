@@ -1191,6 +1191,11 @@ class CourierMachine:
             self._x86_const = _native_x86
 
         uc = Uc(UC_ARCH_X86, UC_MODE_16)
+        if (self.cpu_engine == 'interpreter' and uc.native_enabled
+                and hasattr(self, '_native_service_state') and type(self.uart) is EbSerial
+                and os.environ.get('COURIER_NATIVE_UART', '1') != '0'):
+            from .uart_native import NativeEbSerial
+            self.uart = NativeEbSerial(self.uart, self._native_service_state)
         self._native_irq_controller = (
             self.cpu_engine == 'interpreter' and uc.native_enabled
             and hasattr(self, '_native_service_state')
@@ -1779,13 +1784,14 @@ class CourierMachine:
         eoi_applied: list[bool] = [False]
 
         from .timers_native import NativeTimerBlock
+        from .uart_native import NativeEbSerial
         from .service_native import fold_native_eois
         self._native_eoi_writes = 0
         self._native_timer_writes = 0
         native_eoi_bookkeeping = (
             hasattr(self, '_native_service_state') and type(self.timers) is NativeTimerBlock
             and self.quad_board is None and self.hardware_map.dsp_reset_port != 0xff02
-            and (self.uart is None or type(self.uart) is EbSerial))
+            and (self.uart is None or type(self.uart) in (EbSerial, NativeEbSerial)))
 
         def replay_mmio_writes(events: memoryview, count: int) -> None:
             if (native_eoi_bookkeeping and len(self.mmio_events) >= self.max_io_events

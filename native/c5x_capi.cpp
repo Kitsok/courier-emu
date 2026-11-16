@@ -10,6 +10,7 @@
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
 #include "interrupts186.hpp"
+#include "serial186.hpp"
 #include "pacer_wait.hpp"
 #include "analog_devices.hpp"
 #include "rtp_media.hpp"
@@ -45,6 +46,23 @@ extern "C" unsigned courier_timer186_write(void *state, uint32_t address, unsign
 }
 extern "C" uint64_t courier_timer186_deadline(void *state) {
     return static_cast<courier::Timers186 *>(state)->deadline();
+}
+
+extern "C" void courier_serial186_layout(uint64_t *out) {
+    out[0]=sizeof(courier::Serial186);
+    out[1]=offsetof(courier::Serial186, transmitted);
+    out[2]=offsetof(courier::Serial186, clear_to_send);
+}
+extern "C" uint32_t courier_serial186_read(void *state, uint32_t address) {
+    return static_cast<courier::Serial186 *>(state)->read(address);
+}
+extern "C" int courier_serial186_write(void *state, void *irqs, uint32_t address, uint64_t value) {
+    return static_cast<courier::Serial186 *>(state)->write(address, value,
+        *static_cast<courier::MachineServiceState *>(irqs));
+}
+extern "C" void courier_serial186_deliver(void *state, void *irqs, uint8_t byte) {
+    static_cast<courier::Serial186 *>(state)->deliver(byte,
+        *static_cast<courier::MachineServiceState *>(irqs));
 }
 
 namespace {

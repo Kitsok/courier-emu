@@ -1,5 +1,5 @@
 Task: Move practical peripheral emulation from Python into native C++
-Status: Open
+Status: In progress
 
 Inventory the analog Courier's remaining Python peripheral implementation
 and move as much as practical into the native C++ runtime. Python should
@@ -34,3 +34,9 @@ Acceptance criteria:
 - Record remaining high-speed link errors separately from scheduler fixes.
 
 This follow-up is separate from the current IRQ starvation investigation.
+
+Milestone 1 complete: native integrated-UART state and device operations.
+Registers, RX holding state, TX accounting and request generation now use
+C++ state with Python inspection views and the shared native IRQ latches.
+Register routing, host output and DTE wire/admission remain in Python.
+COURIER_NATIVE_UART=0 retains the Python device for comparison.

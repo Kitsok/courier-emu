@@ -1535,6 +1535,16 @@ Python. `COURIER_NATIVE_IRQ=0` selects the reference IRQ dispatcher; watched
 vectors or stacks also retain a guarded fallback. `scheduler` reports native
 entries by source and the number of guarded IRQ fallbacks.
 
+The native analog runtime also owns the integrated 80C186EB UART register
+state, receive holding register, transmit accounting and interrupt request
+latches in C++. Python exposes live views for inspection and still routes
+register accesses and host terminal output. `COURIER_NATIVE_UART=0` retains
+`EbSerial` as the reference device. The migration preserves the existing
+immediate transmitter readiness and CTS stand-in; it does not add framing or
+overrun errors, RI status reporting, or a timed transmit shift register.
+DTE wire timing, byte admission and the firmware autobaud adapter remain in
+Python.
+
 Set `COURIER_DTE_PROBE=/tmp/courier-dte.jsonl` before launching a diagnostic
 session to record receive-path snapshots at most ten times per second and
 once at shutdown. The file is replaced on launch. Snapshots include CPU IF/PC,
