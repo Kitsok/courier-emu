@@ -167,8 +167,6 @@ extern "C" int courier_lifecycle_apply(void *handle,unsigned operation,unsigned 
         case 1:life.start_loader();return 0;
         case 2:if(value>255)throw std::invalid_argument("invalid loader strobe");life.commit(value);return 0;
         case 3:return life.armed();
-        case 4:if(!life.windows[value&255])throw std::invalid_argument("unknown loader window");
-            return life.accept(life.windows[value&255],bool(value&256));
         case 5:life.reset(bool(value));return 0;
         case 6:life.int1(bool(value));return 0;
         case 7:life.nmi();return 0;

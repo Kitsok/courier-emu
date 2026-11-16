@@ -467,3 +467,17 @@ Native/Python layout checks and packed snapshot offsets remain enforced.
 
 The native build and eleven selected existing scheduling/media checks
 passed. No new tests were added and no modem timing behavior was changed.
+
+
+Milestone 28 complete: remove unused bridge and lifecycle bookkeeping.
+The dial-command observer, its private write-only results and constants,
+and the never-read exchange codec marker were removed. Overlay readiness
+retains the active DSP write-count marker and no longer stores a redundant
+destination value. The unused lifecycle-dispatch bootstrap-accept operation
+was removed; the dedicated acceptance entry point remains in use.
+
+Nine existing bridge checks and focused native observer/overlay checks
+passed. Fresh isolated boot and AT/settings queries passed, including DSP
+loader completion. No tests were added; the destination test no longer sets
+the removed field. Historical dialling notes now distinguish the old mock-PBX
+experiment from current decoded-number routing.

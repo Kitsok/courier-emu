@@ -21,7 +21,7 @@ struct DspLifecycleState {
     uint64_t pins_seen=0,pin_sync=0;
     uint64_t runtime_header=0,runtime_data=0,pending_header=0,pending_data=0,pending_valid=0;
     uint64_t inbound_seen=0,inbound_count=0,host_delivered=0,messages_taken=0,stream_acks=0;
-    uint64_t overlay_status=7,overlay_pending=0,overlay_mark=0,overlay_write_mark=0;
+    uint64_t overlay_status=7,overlay_pending=0,overlay_write_mark=0;
     uint64_t overlay_halves=0,overlay_strobes=0,overlay_verified=0,overlay_unreadable=0;
     uint64_t overlay_downloads=0,overlay_id=~uint64_t(0),overlay_match=2,overlay_waits=0;
     uint64_t asic_started=0,v8_armed=0,call_resume=0,call_overlay_active=0;
@@ -180,7 +180,7 @@ struct DspLifecycle {
     void overlay_start() {
         if(s.overlay_halves){s.overlay_halves=0;return;}
         overlay_clear();s.overlay_status=3;s.overlay_pending=1;
-        s.overlay_mark=core->data(0xff62);s.overlay_write_mark=core->data_write_count(0xff62);
+        s.overlay_write_mark=core->data_write_count(0xff62);
     }
     uint16_t overlay_read() {
         if(s.overlay_pending) {

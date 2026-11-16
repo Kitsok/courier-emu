@@ -127,15 +127,13 @@ python -m courier_emu run --exchange --sip-server pbx.example:5060 \
     --sip-username courier --daa quiet
 ```
 
-`tests/test_ata.py::BridgeDialTests` runs it end to end against the mock PBX.
-Nothing there hands anyone the number: the supervisor's encoder sends one
-keypad index per digit as `0x16`/`0x13`/`0x16`, the board plays each tone, the
-exchange decodes `6245` off the line, and the ATA turns that into
-`INVITE sip:6245@...`. `_dial_digits_commanded` (what the supervisor asked
-for) and `exchange.dialed` (what the line heard) are asserted separately, which
-is the measurement. The peer's 200 OK then puts the loop through and the
-board's connected event is published; its BYE releases the loop and the DAA
-reports `disconnected`.
+The original mock-PBX experiment described here decoded `6245` from line
+audio and produced `INVITE sip:6245@...`. Its separate dial-command observer
+and `tests/test_ata.py` harness are no longer present in the current tree.
+
+The current subscriber path starts the SIP call with `exchange.dialed`, the
+digits decoded from the line. Reference `SipLine._route` and native
+`NativeSipLine.control_event` both hand that decoded number to SIP signalling.
 
 One bug came out of that last step. `SipSession._handle_request` answered an
 inbound BYE with `sendto` on a socket that is `connect`ed to the server, which

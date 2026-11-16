@@ -327,21 +327,6 @@ def asic_decodes(port: int, canonical: int) -> bool:
     "Does the ASIC see `port` as `canonical`? See ASIC_DSP_PORT_MASK."
     return (port & ASIC_DSP_PORT_MASK) == (canonical & ASIC_DSP_PORT_MASK)
 
-# How the supervisor's dialer asks for a tone. `0x6353c` folds a dial-string
-# character down to its keypad index and sends it as this tag; the encoder
-# emits `0x1600` first and again when the tone ends, so a digit is exactly a
-# `0x13` between two `0x1600`s. Both tags are also register lanes in the
-# call-start block, which is why the preceding message decides.
-DIAL_TONE_TAG = 0x13
-DIAL_SILENCE = (0x16, 0x0000)
-# The keypad index the supervisor sends, decoded from its own encoder at
-# 0x6353c: characters below '*' gain 6 and characters below '0' gain 0x11, so
-# '#' lands on 0x0a and '*' on 0x0b; 'A'-'D' lose 5 to land on 0x0c-0x0f; and
-# '0'-'9' pass through, leaving the low nibble equal to the digit. It is one
-# nibble, because the encoder masks it to one before it sends.
-DIAL_TONE_DIGITS = "0123456789#*ABCD"
-
-
 @dataclass
 class BridgeStatus:
     active: bool
@@ -593,10 +578,8 @@ class CourierDspBridge:
         # latch is still outstanding.
         self._hybrid_return_applied: int | None = None
         self._overlay_destination_pending = False
-        # ff62 as it stood when the start strobe arrived. The loader advances
-        # it through a transfer, so after the first one it is never zero and
-        # "nonzero" would pass instantly for every overlay after it.
-        self._overlay_destination_mark = 0
+        # Count DSP writes, including repeated destinations, after the start
+        # strobe so ready is withheld until the destination is acknowledged.
         self._overlay_destination_write_mark = 0
         # Half-block strobes taken since the last `4` on the overlay port.
         # The loader spends the same value on both ends of a transfer, so
@@ -699,13 +682,10 @@ class CourierDspBridge:
         )
         self._instructions = 0
         self._exchange_instructions = 0
-        self._exchange_codec_mark = 0
         self._exchange_codec_last = 0
         self._exchange_idle = 0
         self._exchange_tx_index = 0
         self._exchange_rx_samples: deque[int] = deque()
-        self._dial_tone_digit: str | None = None
-        self._dial_digits_commanded = ""
         self._codec_instructions = 0
         # DSP cycles owed, carried between batches so the average ratio stays
         # exact. It goes negative when a batch's last instruction overshoots.
@@ -1977,7 +1957,6 @@ class CourierDspBridge:
             # 82 bit 6 is manual calibration, not the older ASIC start
             # strobe. The DSP owns these commands and their replies.
             return
-        self._observe_dial_tone(header, data)
         if self._audio_only:
             # Observe host commands, but let the DSP execute their handlers.
             # No host-side register publication or forced overlay entry.
@@ -2033,37 +2012,6 @@ class CourierDspBridge:
         ):
             self._v8_armed = True
             self._call_resume_pending = True
-
-    def _observe_dial_tone(self, header: int, data: int) -> None:
-        """Play what the supervisor's dialer just asked the board to play.
-
-        The ASIC owns the tone generator, and its firmware is not in this
-        image, so the board half of the dial is modeled here. Everything
-        before it is the supervisor's: the number came from the dial string it
-        parsed, the digit from its own encoder, and the moment from its own
-        tone and interdigit timers.
-
-        Each digit goes out as a small block - `0x16:0000`, then the tone
-        generator's three constant lanes, with `0x13` carrying the keypad
-        index - and `0x16:0000` again when the tone ends.
-
-        Nothing here plays it. The tone generator is the ASIC's, and this only
-        records what the supervisor asked for, so a run can be compared
-        against what the C50 actually put on the line.
-        """
-        if self.exchange is None or self.daa is None:
-            return
-        if (header, data) == DIAL_SILENCE:
-            self._dial_tone_digit = None
-            return
-        if header != DIAL_TONE_TAG:
-            return
-        if not self.daa.off_hook or self.exchange.connected:
-            return
-        index = data & 0xFF
-        if index < len(DIAL_TONE_DIGITS):
-            self._dial_tone_digit = DIAL_TONE_DIGITS[index]
-            self._dial_digits_commanded += self._dial_tone_digit
 
     def _deliver_host_message(self, header: int, data: int) -> bool:
         """Hand a mailbox message to the DSP the way the ASIC does.
@@ -2658,7 +2606,6 @@ class CourierDspBridge:
                 # many words raced the mailbox.
                 self._overlay_status = 0x07 & ~0x04
                 self._overlay_destination_pending = True
-                self._overlay_destination_mark = self.core.data(0xFF62)
                 self._overlay_destination_write_mark = self.core.data_write_count(0xFF62)
             elif self.active and strobe in self._windows:
                 self._overlay_halves_since_start += 1

@@ -23,7 +23,6 @@ FIELDS = {
     '_runtime_inbound_seen': 'inbound_seen', 'host_messages_delivered': 'host_delivered',
     'dsp_messages_taken': 'messages_taken', 'dsp_stream_acks': 'stream_acks',
     '_overlay_status': 'overlay_status', '_overlay_destination_pending': 'overlay_pending',
-    '_overlay_destination_mark': 'overlay_mark',
     '_overlay_destination_write_mark': 'overlay_write_mark',
     '_overlay_halves_since_start': 'overlay_halves', 'overlay_strobes_native': 'overlay_strobes',
     'overlay_words_verified': 'overlay_verified', 'overlay_words_unreadable': 'overlay_unreadable',
@@ -53,7 +52,7 @@ class LifecycleState(c.Structure):
         'pending_header', 'pending_data', 'pending_valid', 'inbound_seen', 'inbound_count',
         'host_delivered', 'messages_taken', 'stream_acks')]
     _fields_ += [(name, c.c_uint64) for name in ('overlay_status', 'overlay_pending',
-        'overlay_mark', 'overlay_write_mark', 'overlay_halves', 'overlay_strobes',
+        'overlay_write_mark', 'overlay_halves', 'overlay_strobes',
         'overlay_verified', 'overlay_unreadable', 'overlay_downloads', 'overlay_id',
         'overlay_match', 'overlay_waits')]
     _fields_ += [(name, c.c_uint64) for name in ('asic_started', 'v8_armed', 'call_resume',

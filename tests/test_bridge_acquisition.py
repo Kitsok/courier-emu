@@ -209,7 +209,6 @@ def test_overlay_destination_acknowledges_a_same_value_dsp_write():
         bridge.transfer = SimpleNamespace(command_port=0x18)
         bridge.active = True
         bridge._overlay_destination_pending = True
-        bridge._overlay_destination_mark = core.data(0xFF62)
         bridge._overlay_destination_write_mark = core.data_write_count(0xFF62)
         bridge._overlay_status = 3
         bridge.overlay_destinations = []
