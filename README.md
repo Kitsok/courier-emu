@@ -1537,13 +1537,20 @@ entries by source and the number of guarded IRQ fallbacks.
 
 The native analog runtime also owns the integrated 80C186EB UART register
 state, receive holding register, transmit accounting and interrupt request
-latches in C++. Python exposes live views for inspection and still routes
-register accesses and host terminal output. `COURIER_NATIVE_UART=0` retains
-`EbSerial` as the reference device. The migration preserves the existing
-immediate transmitter readiness and CTS stand-in; it does not add framing or
-overrun errors, RI status reporting, or a timed transmit shift register.
-DTE wire timing, byte admission and the firmware autobaud adapter remain in
-Python.
+latches in C++. Once the initial MMIO trace is full, the native CPU directly
+reads and writes its UART registers. Read-to-clear status changes commit only
+after instruction guards pass. Additional memory observers retain synchronous
+callbacks, and host terminal output is drained before the next instruction
+or peripheral poll. Python exposes live device views for diagnostics.
+`COURIER_NATIVE_UART=0` retains `EbSerial` as the reference device;
+`COURIER_NATIVE_UART_MMIO=0` retains Python register routing while keeping the
+native device state. Direct register access requires native IRQ delivery.
+`scheduler.native_uart_reads` and `scheduler.native_uart_writes` count accesses
+handled in the native CPU, while `mmio_summary` retains total access counts.
+The migration preserves immediate transmitter readiness and the CTS stand-in;
+it does not add framing or overrun errors, RI status reporting, or a timed
+transmit shift register. DTE wire timing, byte admission and the firmware
+autobaud adapter remain in Python.
 
 Set `COURIER_DTE_PROBE=/tmp/courier-dte.jsonl` before launching a diagnostic
 session to record receive-path snapshots at most ten times per second and

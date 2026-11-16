@@ -1802,6 +1802,14 @@ class CourierMachine:
             # What the engine retired without leaving: replayed in order, ahead
             # of anything else that looks at the state they change.
             for offset in range(0, count * 8, 8):
+                if events[offset + 7] & 4:
+                    # Native UART writes already changed the registers and
+                    # IRQ latches. Host output runs before the CPU resumes.
+                    address = int.from_bytes(events[offset:offset + 4], 'little')
+                    self.mmio_counts[('write', address, events[offset + 6])] += 1
+                    if address == 0xff6a:
+                        self._capture_serial(events[offset + 4])
+                    continue
                 if events[offset + 7] == 2:
                     # T2 programming was committed with its native
                     # instruction. Replay diagnostics without writing twice.
@@ -2305,6 +2313,12 @@ class CourierMachine:
                 mmio_batched[0] = True
                 _uc.native_mmio_batch = ((0xFF02, 0xFF03),)
                 _uc.native_mmio_callback = replay_mmio_writes
+                if (type(self.uart) is NativeEbSerial and self._native_irq_controller
+                        and self.mem_watch is None
+                        and os.environ.get('COURIER_NATIVE_UART_MMIO', '1') != '0'):
+                    _uc.native_uart = self.uart
+                    _uc.native_uart_hooks = (on_mmio_read, on_mmio_write)
+                    _uc.native_uart_counts = self.mmio_counts
                 if (self._rom_tick and self.quad_board is None and self.mem_watch is None
                         and self.timers.answers_reads
                         and os.environ.get("COURIER_NATIVE_TIMERS", "1") != "0"):
@@ -4411,6 +4425,8 @@ class CourierMachine:
                       "native_codec_services": worker_poll.state.native_codec_services,
                       "native_eoi_writes": self._native_eoi_writes,
                       "native_timer_writes": self._native_timer_writes,
+                      "native_uart_reads": getattr(getattr(self.uart, 'native_state', None), 'native_reads', 0),
+                      "native_uart_writes": getattr(getattr(self.uart, 'native_state', None), 'native_writes', 0),
                       "native_configuration_refreshes": worker_poll.configuration_refreshes}
                      if worker_poll is not None else None)
         if scheduler is not None and self._native_irq_controller:

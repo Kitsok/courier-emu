@@ -21,7 +21,8 @@ def build_library():
     installed = packaged_library(LIBRARY.name)
     if installed is not None:
         return installed
-    sources = (SOURCE, SOURCE.with_name('timers186.hpp'), SOURCE.with_name('interrupts186.hpp'))
+    sources = (SOURCE, SOURCE.with_name('timers186.hpp'), SOURCE.with_name('interrupts186.hpp'),
+               SOURCE.with_name('serial186.hpp'))
     if not LIBRARY.exists() or any(LIBRARY.stat().st_mtime_ns < p.stat().st_mtime_ns for p in sources):
         require_build_allowed(LIBRARY)
         LIBRARY.parent.mkdir(exist_ok=True)
@@ -76,6 +77,7 @@ class NativeInterpreter:
         self.write_trace = None
         self.int_counts = bytearray(256 * 4)
         self.out_batch_callback = cpu._native_out_batch_callback
+        self.uart_access = bytearray(12)
 
     def statistics(self):
         return {"native_retired": self.retired, "batches": self.batches,
@@ -96,12 +98,14 @@ class NativeInterpreter:
         return bool(self._inject_interrupt(cpu.regs, cpu.memory, vector))
 
     def dispatch_interrupt(self, cpu, vector, software):
-        if self.signature != (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch, cpu.native_write_trace):
+        if self.signature != (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch,
+                              cpu.native_write_trace, id(cpu.native_uart)):
             return None
         return self._dispatch_interrupt(cpu.regs, cpu.memory, self.guard, vector, software)
 
     def execute(self, cpu, count):
-        signature = (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch, cpu.native_write_trace)
+        signature = (len(cpu.mapped), len(cpu.hooks), cpu.native_mmio_batch,
+                     cpu.native_write_trace, id(cpu.native_uart))
         if signature != self.signature:
             self.guard[:] = bytes(len(self.guard))
             for first, last, perms in cpu.mapped:
@@ -129,6 +133,18 @@ class NativeInterpreter:
                     self.guard[address] |= 128
             if cpu.native_write_trace and self.write_trace is None:
                 self.write_trace = bytearray(4096 * 32)
+            self.uart_access[:] = bytes(12)
+            if cpu.native_uart is not None:
+                # Only the board's own device hooks may be bypassed. Any
+                # additional observer keeps its normal synchronous behavior.
+                for bit, hooks, device_hook in (
+                        (1, cpu._read_hooks, cpu.native_uart_hooks[0]),
+                        (2, cpu._write_hooks, cpu.native_uart_hooks[1])):
+                    for address in range(0xff60, 0xff6c, 2):
+                        if not any(callback is not device_hook
+                                   and (end == 0 or begin <= address + 1 and end >= address)
+                                   for callback, _, begin, end in hooks):
+                            self.uart_access[address - 0xff60] |= bit
             self.signature = signature
         host_function = host_context = host_ports = host_base = None
         poll_function = poll_context = poll_state = None
@@ -152,7 +168,7 @@ class NativeInterpreter:
         # buffers keep their previous positions and None means disabled.
         if (host_function is None and not batching and timer_reads is None
                 and not cpu.native_write_trace and not cpu._clock_interrupt_retry
-                and cpu.native_irq_state is None):
+                and cpu.native_irq_state is None and cpu.native_uart is None):
             result = self.run(cpu.regs, cpu.memory, self.guard, self.fast_out,
                               self.io_events, count, cpu.native_int_mode, self.int_counts)
         else:
@@ -167,6 +183,8 @@ class NativeInterpreter:
                 self.write_trace if cpu.native_write_trace else None,
                 cpu._clock_interrupt_retry,
                 cpu.native_irq_state,
+                cpu.native_uart.buffer if cpu.native_uart is not None else None,
+                self.uart_access if cpu.native_uart is not None else None,
             )
         done, reason, direction, port, size, value, event_count, poll_next, poll_code, mmio_count, trace_count = result
         self.exit_reason = reason
@@ -177,6 +195,8 @@ class NativeInterpreter:
             cpu.native_write_trace_callback(memoryview(self.write_trace), trace_count)
         if timer_reads is not None:
             timer_reads.finish()
+        if cpu.native_uart is not None:
+            cpu.native_uart.finish_reads(cpu.native_uart_counts)
         self.poll_code = poll_code
         if polling and poll_next != cpu._clock_next:
             # Polls the engine ran itself: the next one falls due later.
@@ -198,7 +218,7 @@ class NativeInterpreter:
             pc = cpu._physical(cpu.regs[UC_X86_REG_CS], cpu.regs[UC_X86_REG_IP])
             names = ("budget", "unsupported", "boundary", "read-watch", "write-watch",
                      "wide-registers", "code-hook", "system", "io", "poll",
-                     "interrupt-window", "irq-guard")
+                     "interrupt-window", "irq-guard", "uart-output")
             self.exits[(names[reason], hex(pc), hex(cpu.memory[pc]))] += 1
         if event_count and self.out_batch_callback is not None:
             self.out_batch_callback(memoryview(self.io_events), event_count)

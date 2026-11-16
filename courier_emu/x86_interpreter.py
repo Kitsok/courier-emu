@@ -245,6 +245,9 @@ class Uc:
         self.native_poll: tuple[int, int] | None = None
         self.native_irq_state: bytearray | None = None
         self.native_irq_model = None
+        self.native_uart = None
+        self.native_uart_hooks = (None, None)
+        self.native_uart_counts = None
         self._native_irq_fallback = False
         self._native_irq_guard_fallbacks = 0
         self.native_poll_resume: Callable[[Any, int, int], None] | None = None
@@ -925,7 +928,7 @@ class Uc:
                     clock_next = self._clock_next
                     if count and retired >= count:
                         break
-                    if native.handled_io:
+                    if native.handled_io or native.exit_reason == 12:
                         continue
             start_ip = cpu_regs[REG_IP]
             code_base = cpu_regs[UC_X86_REG_CS] * 16

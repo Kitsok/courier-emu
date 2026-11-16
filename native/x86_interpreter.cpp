@@ -5,6 +5,7 @@
 #include <csetjmp>
 #include "timers186.hpp"
 #include "interrupts186.hpp"
+#include "serial186.hpp"
 namespace {
 enum { AX,CX,DX,BX,SP,BP,SI,DI,ES,CS,SS,DS,IP,F };
 constexpr uint32_t CF=1, PF=4, AF=16, ZF=64, SF=128, IF=512, DF=1024, OF=2048;
@@ -79,6 +80,26 @@ struct Core {
     TimerReadState *timers=nullptr;
     courier::Timers186 *timer_model=nullptr;
     courier::MachineServiceState *irqs=nullptr;
+    courier::Serial186 *uart=nullptr;
+    const uint8_t *uart_access=nullptr;
+    courier::Serial186 uart_preview{};
+    struct UartRead { uint32_t address, value; unsigned size; };
+    UartRead uart_reads[8]; unsigned nu=0;
+    bool uart_tx=false;
+    bool serial_access(uint32_t a,int n,bool write) {
+        if(!uart || !uart_access || !irqs || !mmio_events || a<0xff60 || a>0xff6a
+                || (a&1) || (n!=1 && n!=2))return false;
+        const unsigned bit=write?2:1;
+        if(!(uart_access[a-0xff60]&bit))return false;
+        for(int i=0;i<n;++i)if(!(guard[a+i]&bit))return false;
+        return write ? a!=0xff66 && a!=0xff68 : a!=0xff6a;
+    }
+    bool serial_read(uint32_t a,int n,uint32_t &value) {
+        if(!serial_access(a,n,false) || nu==8)return false;
+        if(!nu)uart_preview=*uart;
+        value=uart_preview.read(a)&(n==1?255:65535);
+        uart_reads[nu++]={a,value,unsigned(n)};return true;
+    }
     bool interrupt_block=false;
     uint32_t irq_entered=0;
     void retire_irq_shadow() {
@@ -136,7 +157,7 @@ struct Core {
             yield(p==1?3:4);
         }
     }
-    uint32_t load(uint32_t a,int n) {uint32_t v;if(timer_read(a,n,v))return v;check(a,n,1); v=mem[a]; if(n>=2)v|=uint32_t(mem[a+1])<<8; if(n==4)v|=uint32_t(mem[a+2])<<16|uint32_t(mem[a+3])<<24; return v;}
+    uint32_t load(uint32_t a,int n) {uint32_t v;if(serial_read(a,n,v)||timer_read(a,n,v))return v;check(a,n,1); v=mem[a]; if(n>=2)v|=uint32_t(mem[a+1])<<8; if(n==4)v|=uint32_t(mem[a+2])<<16|uint32_t(mem[a+3])<<24; return v;}
     uint32_t stack_word(unsigned offset) {
         uint32_t value=0;
         for(unsigned i=0;i<2;++i) {
@@ -161,7 +182,7 @@ struct Core {
         std::memcpy(write_trace+32*trace_count++,event,sizeof(event));
     }
     void store(uint32_t a,int n,uint32_t v) {
-        check(a,n,2,v); if(nw==8)yield();
+        if(!serial_access(a,n,true))check(a,n,2,v); if(nw==8)yield();
         writes[nw++]={a,v,n};
     }
     uint32_t get(int k,int n) {return n==1?(r[k&3]>>((k&4)?8:0))&255:r[k];}
@@ -404,7 +425,19 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
         } else if(opcode==0xcd||opcode==0x0f||opcode==0xf4){c.reason=7;break;}
         std::memcpy(c.saved,c.r,sizeof(c.r));
         if constexpr(Trace) c.instruction_trace_count=c.trace_count;
+        c.nu=0;c.uart_tx=false;
         c.step();
+        // UART reads can clear status. Publish their effects only once all
+        // instruction guards have passed, so fallback cannot consume twice.
+        if(c.nu)*c.uart=c.uart_preview;
+        for(unsigned j=0;j<c.nu;++j) {
+            const auto &read=c.uart_reads[j];
+            const unsigned index=(read.address-0xff60)/2;
+            ++c.uart->native_reads;
+            ++c.uart->read_counts[index][read.size-1];
+            c.uart->read_mask|=uint64_t(1)<<(2*index+read.size-1);
+            for(unsigned k=0;k<read.size;++k)c.mem[read.address+k]=uint8_t(read.value>>(8*k));
+        }
         for(unsigned j=0;j<c.nr;++j){const auto &read=c.timer_reads[j];
             if(c.timer_model){
                 c.timer_model->slots[read.timer].advance(int64_t(read.tick));
@@ -422,7 +455,12 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
         for(int j=0;j<c.nw;++j){const auto &w=c.writes[j];for(int i=0;i<w.size;++i)c.mem[w.address+i]=w.value>>(8*i);
             const bool irq_eoi=c.irqs && c.irqs->irq_enabled && w.address==0xff02;
             if(irq_eoi)c.irqs->eoi(uint16_t(w.value));
-            if(c.mmio_events&&(c.guard[w.address]&64)){
+            const bool serial_applied=c.serial_access(w.address,w.size,true);
+            if(serial_applied) {
+                ++c.uart->native_writes;
+                if(c.uart->write(w.address,w.value,*c.irqs)>=0)c.uart_tx=true;
+            }
+            if(c.mmio_events&&((c.guard[w.address]&64)||serial_applied)){
                 // T2 register writes have no board callback. Apply only after
                 // the entire instruction passed its guards, at the same
                 // pre-retirement timestamp used by the Python memory hook.
@@ -434,9 +472,12 @@ static uint32_t run_batch(Core<Trace> &c, uint32_t count) {
                 uint8_t *event=c.mmio_events+8*c.mmio_count++;
                 event[0]=w.address;event[1]=w.address>>8;event[2]=w.address>>16;event[3]=w.address>>24;
                 event[4]=w.value;event[5]=w.value>>8;event[6]=uint8_t(w.size);
-                event[7]=(timer_applied ? 2 : 0) | (irq_eoi ? 1 : 0);
+                event[7]=(timer_applied ? 2 : 0) | (irq_eoi ? 1 : 0) | (serial_applied ? 4 : 0);
             }}
         c.retire_irq_shadow();
+        // Host terminal output observes CONNECT and other mode transitions.
+        // Drain it before another instruction or peripheral poll can run.
+        if(c.uart_tx){++c.done;c.reason=12;break;}
     }
     return c.done;
 }
@@ -459,12 +500,13 @@ static PyObject *run_python_impl(PyObject *, PyObject *args) {
     PyObject *timer_model = Py_None;
     PyObject *write_trace = Py_None;
     PyObject *irq_state = Py_None;
+    PyObject *uart_state = Py_None, *uart_access = Py_None;
     unsigned int count;
     int interrupt_retry = 0;
-    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOOOpO", &registers, &memory, &guard,
+    if (!PyArg_ParseTuple(args, "OOOOOI|OOOOOOOOOOOOOpOOO", &registers, &memory, &guard,
         &fast_out, &io_events, &count, &int_mode, &int_counts,
         &host_io, &host_context, &host_ports, &host_base,
-        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model, &write_trace, &interrupt_retry, &irq_state)) return nullptr;
+        &poll_fn, &poll_context, &poll_state, &mmio_events, &timer_reads, &timer_model, &write_trace, &interrupt_retry, &irq_state, &uart_state, &uart_access)) return nullptr;
     if (!PyList_Check(registers) || PyList_GET_SIZE(registers)!=14 ||
         !PyByteArray_Check(memory) || !PyByteArray_Check(guard) ||
         !PyByteArray_Check(fast_out) || PyByteArray_GET_SIZE(fast_out)!=65536 ||
@@ -487,6 +529,14 @@ static PyObject *run_python_impl(PyObject *, PyObject *args) {
             PyErr_SetString(PyExc_ValueError,"invalid native IRQ state");return nullptr;
         }
         c.irqs=reinterpret_cast<courier::MachineServiceState*>(PyByteArray_AS_STRING(irq_state));
+    }
+    if(uart_state!=Py_None) {
+        if(!PyByteArray_Check(uart_state) || PyByteArray_GET_SIZE(uart_state)!=sizeof(courier::Serial186)
+                || !PyByteArray_Check(uart_access) || PyByteArray_GET_SIZE(uart_access)!=12) {
+            PyErr_SetString(PyExc_ValueError,"invalid native UART state");return nullptr;
+        }
+        c.uart=reinterpret_cast<courier::Serial186*>(PyByteArray_AS_STRING(uart_state));
+        c.uart_access=reinterpret_cast<uint8_t*>(PyByteArray_AS_STRING(uart_access));
     }
     uint32_t original[14];
     for (int i=0;i<14;++i) {

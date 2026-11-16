@@ -40,3 +40,20 @@ Registers, RX holding state, TX accounting and request generation now use
 C++ state with Python inspection views and the shared native IRQ latches.
 Register routing, host output and DTE wire/admission remain in Python.
 COURIER_NATIVE_UART=0 retains the Python device for comparison.
+
+Milestone 2 complete: native CPU access to the integrated-UART registers.
+After the initial MMIO trace fills, register reads/writes and their UART
+side effects stay in C++. Status reads are transactional across instruction
+guard failures; extra observers keep synchronous callbacks. Host TX output
+is drained before the next instruction/poll. Native access counts appear
+in scheduler diagnostics; COURIER_NATIVE_UART_MMIO=0 retains Python routing.
+
+Remaining ownership boundary:
+- Python: DTE input queue, wire frame timing, byte admission, command-mode
+  adapter and host terminal output/transport.
+- Python: parallel-port board wiring, EEPROM pin protocol, DSP reset/NMI
+  transitions and remaining MMIO routing.
+- Native: integrated-UART register/RX state, TX accounting/request latches,
+  eligible CPU register accesses and shared interrupt arbitration/entry.
+- Native timers retain their existing shared-state implementation; their
+  board callbacks and some register access paths still use Python.

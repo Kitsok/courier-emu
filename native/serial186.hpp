@@ -8,6 +8,8 @@ struct Serial186 {
     uint64_t control=0, baud_compare=0, baud_count=0, receive_holding=0;
     uint64_t transmitted=0, received=0, holding=0, receive_ready=0, clear_to_send=0;
 
+    uint64_t native_reads=0, native_writes=0, read_counts[5][2]{}, read_mask=0;
+
     static void request(MachineServiceState &irqs, uint64_t vector) {
         for (uint64_t i=0; i<irqs.serial_count; ++i)
             if (irqs.serial_pending[i]==vector) return;
