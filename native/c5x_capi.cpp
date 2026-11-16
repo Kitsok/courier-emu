@@ -60,6 +60,14 @@ extern "C" size_t courier_lifecycle_read(void *handle,uint8_t *out,size_t capaci
     const auto &data=static_cast<courier::DspLifecycle*>(handle)->bootstrap;
     const auto size=std::min(capacity,data.size());if(size)std::memcpy(out,data.data(),size);return size;
 }
+extern "C" size_t courier_lifecycle_resets(void *handle,int64_t *out,size_t capacity) {
+    const auto &records=static_cast<courier::DspLifecycle*>(handle)->resets;
+    const auto count=std::min(capacity,records.size());
+    for(size_t k=0;k<count;++k) {
+        out[3*k]=records[k].frame;out[3*k+1]=records[k].instructions;out[3*k+2]=records[k].tx_written;
+    }
+    return records.size();
+}
 extern "C" int courier_lifecycle_accept(void *handle,const uint8_t *window,unsigned codec) {
     auto &life=*static_cast<courier::DspLifecycle*>(handle);
     try{return life.accept(window,bool(codec));}
@@ -73,7 +81,13 @@ extern "C" int courier_lifecycle_apply(void *handle,unsigned operation,unsigned 
         case 1:life.start_loader();return 0;
         case 2:if(value>255)throw std::invalid_argument("invalid loader strobe");life.commit(value);return 0;
         case 3:return life.armed();
-        case 4:return life.accept(life.windows[value&255],bool(value&256));
+        case 4:if(!life.windows[value&255])throw std::invalid_argument("unknown loader window");
+            return life.accept(life.windows[value&255],bool(value&256));
+        case 5:life.reset(bool(value));return 0;
+        case 6:life.int1(bool(value));return 0;
+        case 7:life.nmi();return 0;
+        case 8:life.core->configure_line_frame_interrupt(life.frame_irq,0xffff);return 0;
+        case 9:life.float_bus();return 0;
         default:throw std::invalid_argument("invalid lifecycle operation");
         }
     } catch(const std::exception &e) {

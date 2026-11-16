@@ -2,6 +2,7 @@
 #pragma once
 #include "board_media.hpp"
 #include <array>
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 namespace courier {
@@ -22,6 +23,8 @@ struct DspLifecycle {
     C5xCore *core;
     std::array<uint8_t*,256> windows{};
     std::vector<uint8_t> bootstrap,expected;
+    struct ResetRecord {int64_t frame,instructions,tx_written;};
+    std::vector<ResetRecord> resets;
     uint64_t target=0;
     unsigned first=1,dispatch_cell=0x6a,nmi_entry=0x610,frame_irq=5;
     DspLifecycle(DspLifecycleState &state,analog::BoardMedia &board,C5xCore &dsp):
@@ -30,6 +33,31 @@ struct DspLifecycle {
         if(operation==2){expected.assign(data,data+size);return;}
         if(!operation)bootstrap.clear();
         bootstrap.insert(bootstrap.end(),data,data+size);s.bootstrap_size=bootstrap.size();
+    }
+    void float_bus() {s.runtime_mode=s.runtime_ready=0;s.runtime_delay=0;}
+    void reset(bool asserted) {
+        if(asserted&&windows[first])
+            s.destination=windows[first][0]|unsigned(windows[first][1])<<8;
+        const bool edge=asserted&&!s.reset_asserted;
+        if(edge) {
+            resets.push_back({-1,media.s.board_instructions,int64_t(media.s.tx_index)});
+            float_bus();core->reset();media.s.cushion_rate=0;
+            media.s.tx_index=0;s.line_tx_index=s.sip_tx_index=0;
+            media.s.codec_last=0;s.audio_frames=0;media.line_buffer.clear();s.audio_samples_due=0;
+            core->configure_line_frame_interrupt(frame_irq,0xffff);
+            s.loader_started=s.nmi_seen=0;s.restarted=1;s.launched=s.active=0;
+            bootstrap.clear();s.bootstrap_size=0;s.match=2;
+        }
+        s.reset_asserted=asserted;
+        if(edge)media.reset(true);
+    }
+    void int1(bool asserted) {
+        const bool before=s.cpu_int1;s.cpu_int1=asserted;
+        if(asserted&&!before&&!s.reset_asserted)core->interrupt(0);
+    }
+    void nmi() {
+        s.loader_started=0;bootstrap.clear();s.bootstrap_size=0;s.match=2;
+        core->set_io(0x58,uint16_t(s.destination));settle();core->nmi();s.nmi_seen=1;
     }
     void settle() {
         if(!s.restarted)return;

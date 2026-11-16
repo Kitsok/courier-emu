@@ -301,3 +301,18 @@ shared reset state. Fresh isolated firmware boot, AT commands and settings
 queries passed with a matching DSP download. No probes or new debugging
 interfaces were added. Work continues with native reset/media ownership
 and direct P1 pin routing, as requested after the earlier boundary report.
+
+
+Milestone 17 complete: native DSP reset and media lifecycle operations.
+The shared owner now performs reset-edge detection and destination sampling,
+native DSP reset/NMI/INT1 delivery, runtime-bus invalidation, output cursor
+and buffer cleanup, and loader invalidation. Existing reset records are
+owned in C++ and exposed through the current report view. Native reset
+preserves codec input and FIR history; repeated reset assertions do not
+reset the part twice, and NMI preserves DSP/media state.
+
+Two selected bridge checks passed reset and replacement behavior. A focused
+current-change check disabled the Python DSP reset/NMI/step/interrupt APIs
+and still verified native reset/media cleanup, repeated-reset gating,
+loader startup and non-resetting NMI. Fresh firmware boot and AT/settings
+queries passed. Direct native P1 routing is the next milestone.

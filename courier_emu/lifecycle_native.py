@@ -53,6 +53,8 @@ class NativeLifecycle:
             raise RuntimeError('native DSP lifecycle ABI mismatch')
         self.state = LifecycleState()
         self.media, self.core = bridge._native_media_owner, bridge.core
+        self._past_resets = list(bridge._reset_log)
+        self._final_resets = []
 
         def bind(name, result, *args):
             return c.PYFUNCTYPE(result, *args)(
@@ -77,6 +79,7 @@ class NativeLifecycle:
         self._read = bind('read', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
         self._apply = bind('apply', c.c_int, c.c_void_p, c.c_uint, c.c_uint)
         self._accept = bind('accept', c.c_int, c.c_void_p, c.c_char_p, c.c_uint)
+        self._resets = bind('resets', c.c_size_t, c.c_void_p, c.c_void_p, c.c_size_t)
         self.bootstrap = NativeBootstrap(self)
         self.write_bytes(bridge.bootstrap, 0)
         self.write_bytes(bridge.expected_bootstrap, 2)
@@ -107,9 +110,19 @@ class NativeLifecycle:
         self.core = core
         self._configure(self.handle, core.handle, self._config)
 
+    def resets(self):
+        if not self._finalizer.alive:
+            return self._final_resets
+        count = self._resets(self.handle, None, 0)
+        rows = (c.c_int64 * (3 * count))()
+        self._resets(self.handle, rows, count)
+        return self._past_resets + [dict(frame=rows[3*i], instructions=rows[3*i+1],
+                                        tx_written=rows[3*i+2]) for i in range(count)]
+
     def close(self):
         if self._finalizer.alive:
             self._final_bootstrap = self.bytes()
+            self._final_resets = self.resets()
             self._finalizer()
 
 
@@ -151,6 +164,14 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
     def _rom_loader_armed(self): return bool(self._native_lifecycle.apply(3))
     def _accept_bootstrap_window(self, window):
         return self._native_lifecycle.accept(window, self.codec is not None)
+
+    _reset_log = property(lambda self: self._native_lifecycle.resets())
+
+    def set_reset(self, asserted): self._native_lifecycle.apply(5, bool(asserted))
+    def set_cpu_int1(self, asserted): self._native_lifecycle.apply(6, bool(asserted))
+    def pulse_nmi(self): self._native_lifecycle.apply(7)
+    def _configure_frame_interrupt(self): self._native_lifecycle.apply(8)
+    def float_runtime_bus(self): self._native_lifecycle.apply(9)
 
     def close(self):
         self._native_lifecycle.close()

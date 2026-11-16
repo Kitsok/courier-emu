@@ -275,6 +275,10 @@ in C++. The native bus samples the EEPROM output and DTE wire directly.
 The standalone native C51 bridge owns bootstrap storage, completion matching,
 loader startup, NMI settling and transfer acknowledgement loops in C++.
 Python exposes live loader/runtime fields and retains host completion events.
+The same owner performs DSP reset, NMI/INT1 delivery, runtime-bus invalidation
+and media output cleanup. Repeated asserted-reset writes still sample the
+download destination; reset preserves the codec input queue and FIR history.
+NMI restarts loader bookkeeping without resetting the DSP or media pipeline.
 DSP pin transitions and writes while DSP reset is held retain the existing
 board handler; EEPROM image loading/saving remains host orchestration.
 The MAME runtime's plain PTY console also uses C++ for nonblocking reads,
