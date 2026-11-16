@@ -245,17 +245,20 @@ Use an isolated test configuration and NVRAM file for comparisons. Unset
 `COURIER_X86_BACKEND` or set it to `native` to select the existing backend.
 The MAME backend executes instructions entirely in the vendored 16-bit
 80186 core; it does not invoke the Python instruction decoder. The MAME bus
-uses shared native UART state, per-instruction IRQ delivery and DSP port
-handlers to avoid Python callbacks for those accesses. Interrupt entry obeys
-MAME's instruction shadow, and native EOI writes are applied once. Additional
-UART memory observers retain synchronous callbacks. Python still handles
-remaining board accesses and the service clock; the custom CPU's native
+uses shared native UART/timer state, per-instruction IRQ delivery and DSP
+port handlers to avoid Python callbacks for those accesses. Interrupt entry
+obeys MAME's instruction shadow, and native EOI writes are applied once. Additional
+device memory observers retain synchronous callbacks. Timer delay grants and
+the timer-0 board-clock selection callback retain their existing slow paths.
+Python still handles remaining board accesses and the service clock; the custom CPU's native
 worker batching ABI is disabled for this backend.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog
-Courier board only, is not included in the packaged runtime, and has not
-been validated for connected data or AT&T1.
+Courier board only and is not included in the packaged runtime. A short
+local AT&T1 check using the prepared profile and `ATE0&M5&U1&N12` passed at
+24,000 bit/s with exact data and working escape handling. This is observed
+validation of that configuration, not unrestricted-rate qualification.
 
 The CPU and standalone compatibility layer are BSD-3-Clause; provenance,
 copyright notices and the local address-space bounds fix are recorded in

@@ -138,3 +138,40 @@ def test_mame_native_uart_and_irq_delivery_avoid_device_callbacks():
     assert output == [0x55] and state.irq_entries[2] == 1
     assert state.stack_depth == 0 and list(uart.pending) == [0x15]
     assert uart.native_state.native_reads == uart.native_state.native_writes == 1
+
+
+def test_mame_native_timer_bus_matches_reference_without_register_callbacks():
+    from collections import Counter
+    from courier_emu.timers import TimerBlock
+    from courier_emu.timers_native import NativeTimerBlock
+    from courier_emu.native_timers import NativeTimerReads
+
+    results = []
+    accesses = []
+    for native in (False, True):
+        machine = cpu()
+        timers = NativeTimerBlock(TimerBlock(fast=False, answers_reads=True))
+        calls = []
+
+        def read(owner, _access, address, size, _value, _user):
+            calls.append('read')
+            owner.mem_write(address, timers.read(address, size, owner.retired).to_bytes(size, 'little'))
+
+        def write(owner, _access, address, size, value, _user):
+            calls.append('write')
+            timers.write(address, size, value, owner.retired)
+
+        machine.hook_add(x.UC_HOOK_MEM_READ, read, None, 0xff30, 0xff47)
+        machine.hook_add(x.UC_HOOK_MEM_WRITE, write, None, 0xff30, 0xff47)
+        machine.native_uart_hooks = (read, write)
+        machine.native_mmio_callback = lambda events, count: None
+        if native:
+            machine.native_timer_reads = NativeTimerReads(timers, Counter())
+        machine.mem_write(0x1000, bytes.fromhex(
+            'c7 06 42 ff 34 12 c6 06 40 ff 56 a1 40 ff a3 00 20 '
+            'c7 06 46 ff 01 c0 90 a1 40 ff'))
+        machine.emu_start(0x1000, 0, count=7)
+        results.append((machine.regs, bytes(machine.memory), timers.reference()))
+        accesses.append(calls)
+    assert results[0] == results[1]
+    assert accesses[0] and accesses[1] == []

@@ -123,3 +123,16 @@ UART callbacks to zero (about 61 ms to 2.7 ms CPU in one local comparison).
 This is a register-loop measurement, not an end-to-end modem speed claim.
 Six focused adapter checks and the fresh-NVRAM AT/OK smoke passed. Timer
 register paths, remaining board wiring and host transport still need work.
+
+Milestone 6 complete: MAME native timer/controller register fast paths.
+Ordinary count, compare and control reads and timer/controller writes now
+operate on shared native state without Python callbacks. Delay acceleration
+and timer-0 board-clock selection retain their existing slow paths. Existing
+access totals are folded by batch; extra memory observers remain synchronous.
+
+Observed: 40,000 timer reads produced matching register/timer state while
+removing all Python callbacks (about 95 ms to 2.3 ms in one local comparison).
+Seven focused adapter checks passed. A 15-second AT&T1 run at 24,000 bit/s
+with required LAPM returned 6,016 exact bytes, escaped successfully, and
+reported zero block errors, resends or timeouts. No additional firmware
+probes or debugging interfaces were added.

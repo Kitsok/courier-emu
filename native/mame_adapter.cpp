@@ -6,6 +6,7 @@
 #include "i86inline.h"
 #include "interrupts186.hpp"
 #include "serial186.hpp"
+#include "timers186.hpp"
 
 namespace {
 struct Stop {};
@@ -29,7 +30,8 @@ public:
     bool failed=false, stop_after=false, irq_fallback=false;
     courier::MachineServiceState *irqs=nullptr;
     courier::Serial186 *uart=nullptr;
-    const uint8_t *uart_access=nullptr,*host_ports=nullptr;
+    courier::Timers186 *timers=nullptr;
+    const uint8_t *device_access=nullptr,*host_ports=nullptr;
     uint8_t *mmio_events=nullptr;
     uint32_t mmio_count=0,mmio_capacity=0;
     using HostIo=int (*)(void*,int,uint16_t,int,uint16_t,uint64_t,uint16_t*);
@@ -48,10 +50,33 @@ public:
         m_ip=uint16_t(values[12]);ExpandFlags(uint16_t(values[13]));
     }
     bool serial_access(uint32_t a,unsigned n,bool write) const {
-        if(!uart||!irqs||!uart_access||!mmio_events||a<0xff60||a>0xff6a
+        if(!uart||!irqs||!device_access||!mmio_events||a<0xff60||a>0xff6a
                 ||(a&1)||(n!=1&&n!=2))return false;
-        return (uart_access[a-0xff60]&(write?2:1)) &&
+        return (device_access[a&255]&(write?2:1)) &&
             (write ? a!=0xff66&&a!=0xff68 : a!=0xff6a);
+    }
+    bool timer_access(uint32_t a,unsigned n,bool write) const {
+        if(!timers||!device_access||!mmio_events||(a&1)||(n!=1&&n!=2)
+                ||!(device_access[a&255]&(write?2:1)))return false;
+        if(a>=0xff30&&a<=0xff46&&a!=0xff44)return write||timers->answers_reads;
+        return write&&(a==0xff08||(a>=0xff12&&a<=0xff1e));
+    }
+    bool timer_read(uint32_t a,unsigned n,uint32_t &value) {
+        if(!timer_access(a,n,false))return false;
+        const unsigned offset=(a-0xff30)/2,index=offset/4,field=offset%4;
+        const int64_t tick=timers->tick_at(timers->instruction_base+done);
+        auto preview=timers->slots[index];preview.advance(tick);
+        // Delay acceleration and board-specific grants retain their existing
+        // slow path; ordinary control/count/compare reads stay native.
+        if(field==3&&timers->fast&&!(preview.control&0x20)&&preview.counting())return false;
+        timers->slots[index]=preview;
+        value=uint32_t(field==0?preview.count:field==1?preview.compare_a:
+                       field==2?preview.compare_b:preview.control)&(n==1?255:65535);
+        const unsigned entry=offset>10?offset-1:offset;
+        ++timers->reads;++timers->revision;++timers->read_counts[entry][n-1];
+        timers->read_mask|=uint64_t(1)<<(2*entry+n-1);
+        timers->last_read_tick[index]=uint64_t(tick);
+        return true;
     }
     void queue_write(uint32_t a,unsigned n,uint32_t value,unsigned applied) {
         if(mmio_count==mmio_capacity) {
@@ -119,6 +144,11 @@ public:
             memory[a]=uint8_t(value);if(n==2)memory[a+1]=uint8_t(value>>8);
             return value;
         }
+        uint32_t timer_value;
+        if(timer_read(a,n,timer_value)) {
+            memory[a]=uint8_t(timer_value);if(n==2)memory[a+1]=uint8_t(timer_value>>8);
+            return timer_value;
+        }
         if(guard[a]&16)event(1,a,n);
         uint32_t value=memory[a];
         if(n==2)value|=uint32_t(memory[(a+1)&0xfffff])<<8;
@@ -130,6 +160,9 @@ public:
             ++uart->native_writes;
             if(uart->write(a,value,*irqs)>=0)stop_after=true;
             queue_write(a,n,value,4);
+        } else if(a!=0xff32&&timer_access(a,n,true)) {
+            timers->write(a,n,value,timers->instruction_base+done);
+            queue_write(a,n,value,2);
         } else if(mmio_events&&(guard[a]&64)) {
             const bool eoi=irqs&&irqs->irq_enabled&&a==0xff02;
             if(eoi)irqs->eoi(uint16_t(value));
@@ -223,10 +256,10 @@ PyObject *run(PyObject *,PyObject *args) {
         PyErr_SetString(PyExc_ValueError,"invalid MAME CPU registers or callback");return nullptr;
     }
     auto &cpu=instance->cpu;cpu.registers=registers;cpu.callback=callback;
-    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.uart_access=nullptr;cpu.mmio_events=nullptr;
+    cpu.irqs=nullptr;cpu.uart=nullptr;cpu.timers=nullptr;cpu.device_access=nullptr;cpu.mmio_events=nullptr;
     cpu.host_io=nullptr;cpu.host_context=nullptr;cpu.host_ports=nullptr;
     if(bindings!=Py_None) {
-        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=8) {
+        if(!PyTuple_Check(bindings)||PyTuple_GET_SIZE(bindings)!=9) {
             PyErr_SetString(PyExc_ValueError,"invalid MAME device bindings");return nullptr;
         }
         auto buffer=[&](unsigned index,Py_ssize_t size)->uint8_t* {
@@ -239,7 +272,7 @@ PyObject *run(PyObject *,PyObject *args) {
         };
         cpu.irqs=reinterpret_cast<courier::MachineServiceState*>(buffer(0,sizeof(courier::MachineServiceState)));
         cpu.uart=reinterpret_cast<courier::Serial186*>(buffer(1,sizeof(courier::Serial186)));
-        cpu.uart_access=buffer(2,12);
+        cpu.device_access=buffer(2,256);
         cpu.mmio_events=buffer(3,8*8*65536);cpu.mmio_capacity=8*65536;
         if(PyTuple_GET_ITEM(bindings,4)!=Py_None) {
             cpu.host_io=reinterpret_cast<CourierCpu::HostIo>(PyLong_AsVoidPtr(PyTuple_GET_ITEM(bindings,4)));
@@ -247,6 +280,7 @@ PyObject *run(PyObject *,PyObject *args) {
             cpu.host_ports=buffer(6,65536);
         }
         cpu.host_base=PyLong_AsUnsignedLongLong(PyTuple_GET_ITEM(bindings,7));
+        cpu.timers=reinterpret_cast<courier::Timers186*>(buffer(8,sizeof(courier::Timers186)));
         if(PyErr_Occurred())return nullptr;
         if(cpu.host_io&&!cpu.host_ports) {
             PyErr_SetString(PyExc_ValueError,"missing MAME native port table");return nullptr;

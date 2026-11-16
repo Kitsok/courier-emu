@@ -27,7 +27,7 @@ def build_library():
     sources = [ROOT / 'native/mame_adapter.cpp', VENDOR / 'cpu/i86.cpp',
                VENDOR / 'cpu/i186.cpp', VENDOR / 'shim/emu.cpp']
     dependencies = sources + list(VENDOR.rglob('*.h')) + [
-        ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp']
+        ROOT / 'native/interrupts186.hpp', ROOT / 'native/serial186.hpp', ROOT / 'native/timers186.hpp']
     if not LIBRARY.exists() or any(p.stat().st_mtime_ns > LIBRARY.stat().st_mtime_ns
                                    for p in dependencies):
         require_build_allowed(LIBRARY)
@@ -71,11 +71,12 @@ class MameUc(x86.Uc):
         self._mame_signature = None
         self._mame_base = 0
         self.mame_retired = 0
-        self._mame_uart_access = bytearray(12)
+        self._mame_device_access = bytearray(256)
         self._mame_mmio_events = bytearray(8 * 8 * 65536)
 
     def _prepare_guard(self):
-        signature = (len(self.mapped), len(self.hooks), self.native_mmio_batch, id(self.native_uart))
+        signature = (len(self.mapped), len(self.hooks), self.native_mmio_batch,
+                     id(self.native_uart), id(self.native_timer_reads))
         if signature == self._mame_signature:
             return
         guard = self._mame_guard
@@ -91,15 +92,16 @@ class MameUc(x86.Uc):
         for first, last in self.native_mmio_batch:
             for address in range(first, last + 1):
                 guard[address] |= 64
-        self._mame_uart_access[:] = bytes(12)
-        if self.native_uart is not None:
+        self._mame_device_access[:] = bytes(256)
+        if self.native_uart is not None or self.native_timer_reads is not None:
             for bit, hooks, own_hook in ((1, self._read_hooks, self.native_uart_hooks[0]),
                                          (2, self._write_hooks, self.native_uart_hooks[1])):
-                for address in range(0xff60, 0xff6c, 2):
+                for address in (0xff08, *range(0xff12, 0xff20, 2),
+                                *range(0xff30, 0xff48, 2), *range(0xff60, 0xff6c, 2)):
                     if not any(callback is not own_hook
                                and (end == 0 or begin <= address + 1 and end >= address)
                                for callback, _, begin, end in hooks):
-                        self._mame_uart_access[address - 0xff60] |= bit
+                        self._mame_device_access[address & 255] |= bit
         self._mame_signature = signature
 
     def _mame_event(self, kind, address, size, value, done):
@@ -152,12 +154,16 @@ class MameUc(x86.Uc):
                 continue
             self._mame_base = self.retired
             host_function, host_context, host_ports = self.native_host_io or (None, None, None)
+            timer_reads = self.native_timer_reads
+            if timer_reads is not None:
+                timer_reads.prepare(self.native_host_base + self._mame_base)
             bindings = (self.native_irq_state,
                         self.native_uart.buffer if self.native_uart is not None else None,
-                        self._mame_uart_access,
+                        self._mame_device_access,
                         self._mame_mmio_events if self.native_mmio_callback is not None else None,
                         host_function, host_context, host_ports,
-                        self.native_host_base + self._mame_base)
+                        self.native_host_base + self._mame_base,
+                        timer_reads.model_buffer if timer_reads is not None else None)
             try:
                 done, halted, irq_fallback, mmio_count = self._mame_run(
                     self._mame_handle, self.regs, budget, self._mame_event, bindings)
@@ -166,6 +172,8 @@ class MameUc(x86.Uc):
             self.retired = self._mame_base + done
             self.mame_retired += done
             retired += done
+            if timer_reads is not None:
+                timer_reads.finish()
             if self.native_uart is not None:
                 self.native_uart.finish_reads(self.native_uart_counts)
             if mmio_count:
