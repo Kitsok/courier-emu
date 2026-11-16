@@ -354,3 +354,18 @@ A focused current-change check matched mixing, ties-to-even rounding and
 clamping, mute gating and direct media delivery with Python frame export
 disabled. The existing custom-monitor ordering check passed. Fresh boot
 and AT/settings smoke checks passed. No new firmware probes were added.
+
+
+Milestone 20 complete: native terminal input and receive service ownership.
+Plain-PTY input reads feed the native receive queue directly, preserving the
+existing input limit and console/timer service cadence. The native worker
+advances wire/INT1/UART state, echoes command input and observes complete
+commands without per-payload-byte Python callbacks or trace construction.
+Only completed command/log notifications, adapter-open and close/error events
+return to host code. Full Python services call the same native operations
+when other host work is due. Alternate consoles/probes retain their paths.
+
+A focused worker check disabled Python input methods and verified terminal
+reads, queueing, echo, completed-command notifications and binary payload.
+Three selected scheduling/MAME checks passed. A fifteen-second required-LAPM
+AT&T1 run at 24,000 bit/s echoed 6,016 exact bytes and escaped successfully.

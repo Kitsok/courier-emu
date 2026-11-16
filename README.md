@@ -296,8 +296,13 @@ alone no longer ends a CPU batch. Python receives completed result lines
 and mode/scheduled-input events, preserving the existing operational log.
 For recognized analog ROM layouts, the DTE input queue, receive admission,
 firmware attention-adapter updates and character completion/UART delivery
-also run in C++. Python retains command observation, echo and service-call
-orchestration; unknown layouts retain their previous receive path.
+also run in C++. The plain-PTY path reads directly into this native queue;
+the existing native worker advances input at console/timer deadlines.
+Command echo and observation run natively and publish completed command
+notifications to host signalling. Ordinary payload bytes do not pass through
+Python observation or per-byte trace formatting. Python services call the
+same native implementation when host work is due. Unknown layouts, custom
+consoles and explicit input probes retain their existing receive paths.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog

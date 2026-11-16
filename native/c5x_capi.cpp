@@ -7,6 +7,7 @@
 #include "sip_port.hpp"
 #include "board_media.hpp"
 #include "dsp_lifecycle.hpp"
+#include "dte_service.hpp"
 #include "silicon_daa.hpp"
 #include "codec_bringup.hpp"
 #include "timers186.hpp"
@@ -49,6 +50,21 @@ extern "C" void courier_speaker_feed(void *handle,const int32_t *tx,size_t nt,co
 }
 extern "C" void courier_board_media_speaker(void *handle,void *speaker) {
     static_cast<courier::analog::BoardMedia*>(handle)->attach_speaker(static_cast<courier::Speaker*>(speaker));
+}
+
+extern "C" size_t courier_input_layout() {return sizeof(courier::InputState);}
+extern "C" void *courier_input_create(void *state,void **parts) {
+    try{return new courier::DteService(*static_cast<courier::InputState*>(state),parts);}catch(...){return nullptr;}
+}
+extern "C" void courier_input_destroy(void *handle) {delete static_cast<courier::DteService*>(handle);}
+extern "C" void courier_input_poll(void *handle) {static_cast<courier::DteService*>(handle)->poll();}
+extern "C" void courier_input_tick(void *handle,uint8_t *memory,uint64_t now,uint32_t flags) {
+    static_cast<courier::DteService*>(handle)->tick(memory,now,flags);
+}
+extern "C" size_t courier_input_text(void *handle,unsigned which,char *out,size_t capacity) {
+    const auto &input=*static_cast<courier::DteService*>(handle);
+    const auto &value=which?input.log:input.command;
+    const size_t size=std::min(capacity,value.size());if(size)std::memcpy(out,value.data(),size);return size;
 }
 
 extern "C" size_t courier_lifecycle_layout() {return sizeof(courier::DspLifecycleState);}
@@ -2736,6 +2752,7 @@ struct WorkerPollState {
     uint64_t *yield_counts;
     courier::PacerWait pacer_wait;
     uint64_t interrupt_retry;
+    courier::DteService *input_model;
 };
 
 // A line frame can change the predicates that made the DSP/ASIC tail static.
@@ -3043,7 +3060,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             || clock_bridge_instructions + elapsed - clock_probe_last >= 200000) {
             return leave(5);
         }
-        if (console_due) {
+        if (console_due && !s.input_model) {
             if (!s.console_poll_period) { return leave(6); }
             pollfd entry{int(s.console_fd), POLLIN, 0};
             // Never consume input or hide HUP/ERR/NVAL (or EINTR). Python
@@ -3181,6 +3198,7 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
         if (console_due) {
             service_console_owed += int64_t(s.console_poll_period);
             ++s.native_console_polls;
+            if(s.input_model)s.input_model->poll();
         }
         if (pacer_due) {
             s.pacer_next = uint64_t(total) + s.pacer_period;
@@ -3284,8 +3302,10 @@ extern "C" int courier_worker_poll(void *context, uint64_t now, uint32_t flags, 
             if (s.timer_model ? !(s.timer_model->controller_mask & 16) : bool(s.int1_enabled))
                 irq_int1_pending = 13;
         }
+        if(s.input_model&&timer_poll)s.input_model->tick(cpu.memory,uint64_t(total),flags);
         if(s.service_model)s.service_model->refresh_pending();
         ++s.polls;
+        if(s.input_model&&s.input_model->s.events)return leave(46,8);
         return 1;
     }
     // clock_x86_fast's tests that a service can change.

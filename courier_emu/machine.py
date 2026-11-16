@@ -1250,6 +1250,14 @@ class CourierMachine:
             from .transmit_native import NativeTransmitMachine
             uc._mame_transmitter = NativeTransmitMachine.adopt(self, uc)
 
+        native_input = None
+        if (native_receiver is not None and uc._mame_transmitter is not None
+                and hasattr(self.timers, 'address') and self.int1_after_ms is None
+                and self.console.lamps_fd is None and self._dte_probe is None
+                and hasattr(self.dsp_bridge, '_native_lifecycle')):
+            from .input_native import NativeInput
+            native_input = self._native_input = NativeInput(self, native_receiver, uc._mame_transmitter)
+
         def native_irq_owned() -> bool:
             return (self._native_irq_controller and self._native_service_state.irq_enabled
                     and not uc._native_irq_fallback)
@@ -1882,6 +1890,10 @@ class CourierMachine:
                               and os.environ.get("COURIER_NATIVE_WORKER_TICK", "1") != "0")
 
         def poll_console() -> None:
+            if native_input is not None:
+                native_input.poll()
+                native_input.finish(self)
+                return
             typed = self.console.poll(CONSOLE_INPUT_FIFO - len(self.serial_rx))
             if typed:
                 self.serial_rx.extend(typed)
@@ -1989,7 +2001,11 @@ class CourierMachine:
             ):
                 self._timer_interrupt_pending = self.timers.take_interrupt()
                 request_interrupt_dispatch(_uc)
-            if native_receiver is not None:
+            if native_input is not None:
+                native_input.tick(self.instructions, _uc.reg_read(UC_X86_REG_FLAGS))
+                native_input.finish(self)
+                request_interrupt_dispatch(_uc)
+            elif native_receiver is not None:
                 if self.serial_rx:
                     bridge = self.dsp_bridge
                     dsp_ready = bridge is None or not (
@@ -2555,10 +2571,10 @@ class CourierMachine:
             all coming out the way that leaves only the frame edge to take."""
             uart = self.uart
             return not (
-                self.dte_line._edge or self.int1_after_ms is not None
-                or self.serial_rx
-                or (uart is not None and uart.pending)
-                or self._external_interrupt_pending is not None
+                (self.dte_line._edge and native_input is None) or self.int1_after_ms is not None
+                or (self.serial_rx and native_input is None)
+                or (uart is not None and uart.pending and native_input is None)
+                or (self._external_interrupt_pending is not None and native_input is None)
                 or (self._int1_pending is not None and not pending_native)
                 or (self._timer_interrupt_pending is not None and not timer_native)
                 or self.quad_usart is not None or self._quad_profile
@@ -3586,6 +3602,9 @@ class CourierMachine:
                                       and scheduled and self._rom_tick
                                       and not self._serial_in_handler and not self._timer_in_handler)
                 timer_native = bool(native_timer_poll and pending_native)
+                if native_input is not None and not timer_native:
+                    return
+                state.input_model = native_input.handle if native_input is not None else None
                 if (core is None or len(self._interrupt_stack) > STACK_SLOTS
                         or (scheduled and not scheduled_static())
                         or not timer_poll_static(pending_native=pending_native, timer_native=timer_native)):
@@ -3610,7 +3629,8 @@ class CourierMachine:
                 console_fd = None
                 if (scheduled in (2, 3) and native_idle_checks
                         and isinstance(self.console, SerialConsole)):
-                    console_fd = self.console.native_idle_poll_fd()
+                    console_fd = (self.console.fd if native_input is not None
+                                  else self.console.native_idle_poll_fd())
                 native_pacer = bool(
                     scheduled in (2, 3) and native_idle_checks and sip_pacer is not None
                     and native_monotonic
@@ -3801,7 +3821,7 @@ class CourierMachine:
                     and not self._serial_started and not self._supervisor_23
                     and self.quad_c50 is None and self.quad_terminal is None
                     and self.quad_usart is None and not self._quad_profile
-                    and not (self.uart is not None and self.uart.holding)
+                    and not (self.uart is not None and self.uart.holding and native_input is None)
                     and (mmio_batched[0] or not mmio_batch_ok
                          or len(self.mmio_events) < self.max_io_events)
                     and bridge.line is None and not bridge._audio_only
@@ -4039,6 +4059,12 @@ class CourierMachine:
                         take_back_frames(bridge)
 
             def resume(_uc: Any, _total: int, code: int) -> None:
+                if code == 8:
+                    native_input.finish(self)
+                    if self.stop_requested:
+                        _uc.emu_stop()
+                    worker_arm[0] = True
+                    return
                 if code == 7:
                     raise RuntimeError('native media service failed: ' + state.error.decode('utf-8', 'replace'))
                 if code == 6:
