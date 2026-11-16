@@ -179,6 +179,8 @@ class MameUc(x86.Uc):
         if self._physical(self.regs[x86.UC_X86_REG_CS], self.regs[x86.UC_X86_REG_IP]) != begin:
             self.regs[x86.UC_X86_REG_IP] = (begin - self.regs[x86.UC_X86_REG_CS] * 16) & 0xffff
         self._prepare_guard()
+        if self._mame_lifecycle is not None:
+            self._mame_lifecycle.bind_cpu(self)
         self.running, self.halted = True, False
         retired = 0
         while self.running and (not count or retired < count):

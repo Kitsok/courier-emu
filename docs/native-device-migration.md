@@ -587,3 +587,36 @@ fixed-work comparison confirmed default native waits occurred and matched
 reference memory, registers, DSP/serial state, timers and service phases.
 These checks qualify the tested local configuration, not unrestricted
 speeds or physical calls; no full-call speedup measurement is claimed.
+
+
+## Passive mailbox observation
+
+The C51 lifecycle owner applies ASIC mailbox effects, DSP delivery,
+detector/status replies and acknowledgements in C++. Diagnostic collection
+does not request an execution handoff. Existing watched accesses and
+functional legacy call-entry continuations retain their host behavior.
+
+`native/mailbox_observer.hpp` maintains exact aggregate totals and bounded
+diagnostic storage: the last 64 captured records and a 4096-slot message
+summary table with bounded lookup. Records carry a sequence number, guest
+instruction timestamp, commit PC, header and data. Ring overwrites and
+uncaptured summary events are exposed in the existing report as
+`runtime_history_overwritten` and `runtime_summary_overflow`. Per-message
+counts and first-seen metadata cover captured summaries; aggregate totals
+remain exact through overflow or disabled history capture.
+
+`courier_emu/mailbox_observer_native.py` is a passive observer. It copies and
+formats records only when requested; it supplies no replies or model state.
+Snapshots are taken while the CPU thread has yielded, and final snapshots
+remain readable after shutdown. Native components communicate directly
+inside the process, so this path introduces no IPC file, socket, polling
+thread or synchronous Python message consumer.
+
+Focused verification ran 5000 commits in one native call with Python
+observation/behavior handlers disabled, matched emulated state with history
+enabled and disabled, and checked overflow, totals, sequence/timestamp/PC
+metadata and final snapshots. A ten-second &M5 AT&T1 check echoed 4042 exact
+bytes at 24000 bit/s. An uninstrumented local pair also negotiated
+24000/ARQ/V34/LAPM/V42BIS and exchanged exact markers in both directions.
+These observations qualify the tested local configuration, not unrestricted
+speeds or physical calls. Verification scripts were temporary.

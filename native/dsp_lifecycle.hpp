@@ -1,6 +1,7 @@
 // Native ownership of the existing analog DSP loader and board lifecycle.
 #pragma once
 #include "board_media.hpp"
+#include "mailbox_observer.hpp"
 #include <array>
 #include <deque>
 #include <map>
@@ -20,7 +21,6 @@ struct DspLifecycleState {
     uint64_t pins_seen=0,pin_sync=0;
     uint64_t runtime_header=0,runtime_data=0,pending_header=0,pending_data=0,pending_valid=0;
     uint64_t inbound_seen=0,inbound_count=0,host_delivered=0,messages_taken=0,stream_acks=0;
-    uint64_t host_event=0,event_header=0,event_data=0,event_ack=0;
     uint64_t overlay_status=7,overlay_pending=0,overlay_mark=0,overlay_write_mark=0;
     uint64_t overlay_halves=0,overlay_strobes=0,overlay_verified=0,overlay_unreadable=0;
     uint64_t overlay_downloads=0,overlay_id=~uint64_t(0),overlay_match=2,overlay_waits=0;
@@ -28,12 +28,15 @@ struct DspLifecycleState {
     uint64_t asic_commits=0,asic_register_commits=0,detector_replies=0,rate_trace=0;
     uint64_t audio_only=0,has_overlay=0,has_exchange=0;
     uint64_t asic_registers[256]{},asic_valid[256]{},asic_writes[256]{};
+    MailboxObserverState observer;
     char error[512]{};
 };
 struct DspLifecycle {
     DspLifecycleState &s;
     analog::BoardMedia &media;
     C5xCore *core;
+    uint32_t *cpu_registers=nullptr;
+    MailboxObserver observer;
     std::array<uint8_t*,256> windows{};
     std::vector<uint8_t> bootstrap,expected;
     struct ResetRecord {int64_t frame,instructions,tx_written;};
@@ -52,7 +55,7 @@ struct DspLifecycle {
     uint64_t target=0;
     unsigned first=1,dispatch_cell=0x6a,nmi_entry=0x610,frame_irq=5;
     DspLifecycle(DspLifecycleState &state,analog::BoardMedia &board,C5xCore &dsp):
-        s(state),media(board),core(&dsp) {}
+        s(state),media(board),core(&dsp),observer(s.observer) {}
     void bytes(const uint8_t *data,size_t size,unsigned operation) {
         if(operation==2){expected.assign(data,data+size);return;}
         if(!operation)bootstrap.clear();
@@ -127,7 +130,7 @@ struct DspLifecycle {
         if(value&4)++s.stream_acks;
         core->set_io(uint16_t(status_cell),uint16_t(core->io(uint16_t(status_cell))|(value&6)));
     }
-    int mailbox(unsigned direction,uint16_t port,uint16_t value,uint16_t &answer) {
+    int mailbox(unsigned direction,uint16_t port,uint16_t value,uint16_t &answer,uint64_t now) {
         if(!s.active)return 0;
         if(direction==2&&port>=0x58&&port<=0x5e&&!(port&1)) {
             s.runtime_mode=1;
@@ -147,9 +150,18 @@ struct DspLifecycle {
                 return 1;
             }
             if((value&1)&&s.pending_valid) {
-                s.host_event=1;s.event_header=s.runtime_header;s.event_data=s.runtime_data;s.event_ack=value;
-                complete_message(uint16_t(s.event_header),uint16_t(s.event_data),value);
-                return 2;
+                const auto header=uint16_t(s.runtime_header),data=uint16_t(s.runtime_data);
+                const uint64_t pc=cpu_registers
+                    ? ((uint64_t(cpu_registers[9])<<4)+cpu_registers[12])&0xfffff : ~uint64_t(0);
+                observer.record(header,data,now,pc);
+                const bool resume_before=s.call_resume;
+                complete_message(header,data,value);
+                // A legacy call-entry continuation is functional host work.
+                // Diagnostic records never request a host handoff.
+                const bool phase_pending=s.asic_started&&s.call_overlay_active
+                    &&s.asic_valid[0x82]&&s.asic_registers[0x82]==0x60;
+                if(bool(s.call_resume)!=resume_before||phase_pending){s.pin_sync=1;return 2;}
+                return 1;
             }
             acknowledge(value);return 1;
         }

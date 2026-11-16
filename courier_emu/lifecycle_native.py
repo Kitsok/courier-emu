@@ -4,6 +4,7 @@ import weakref
 from collections.abc import MutableMapping
 from .dsp import load_library
 from .bridge_native import NativeCourierDspBridge
+from .mailbox_observer_native import NativeMailboxObserver, ObserverState
 
 
 FIELDS = {
@@ -50,8 +51,7 @@ class LifecycleState(c.Structure):
                     'boot_strobes_native', 'pins_seen', 'pin_sync')]
     _fields_ += [(name, c.c_uint64) for name in ('runtime_header', 'runtime_data',
         'pending_header', 'pending_data', 'pending_valid', 'inbound_seen', 'inbound_count',
-        'host_delivered', 'messages_taken', 'stream_acks', 'host_event', 'event_header',
-        'event_data', 'event_ack')]
+        'host_delivered', 'messages_taken', 'stream_acks')]
     _fields_ += [(name, c.c_uint64) for name in ('overlay_status', 'overlay_pending',
         'overlay_mark', 'overlay_write_mark', 'overlay_halves', 'overlay_strobes',
         'overlay_verified', 'overlay_unreadable', 'overlay_downloads', 'overlay_id',
@@ -60,6 +60,7 @@ class LifecycleState(c.Structure):
         'call_overlay_active', 'asic_commits', 'asic_register_commits', 'detector_replies',
         'rate_trace', 'audio_only', 'has_overlay', 'has_exchange')]
     _fields_ += [(name, c.c_uint64 * 256) for name in ('asic_registers', 'asic_valid', 'asic_writes')]
+    _fields_ += [('observer', ObserverState)]
     _fields_ += [('error', c.c_char * 512)]
 
 
@@ -97,7 +98,7 @@ class NativeLifecycle:
         self._anchors = []
         self._finalizer = weakref.finalize(self, destroy, self.handle)
         self._configure = bind('configure', None, c.c_void_p, c.c_void_p, c.c_void_p)
-        self._config = (c.c_uint64 * 9)(bridge.transfer.first_strobe, bridge.bootstrap_target_size,
+        self._config = (c.c_uint64 * 10)(bridge.transfer.first_strobe, bridge.bootstrap_target_size,
             C51_NMI_DISPATCH_CELL, C51_ROM_NMI_ENTRY, C50_ROM_FRAME_IRQ,
             HOST_TAG_CELL, HOST_WORD_CELL, HOST_STATUS_CELL, DSP_STREAM_PORT)
         self._configure(self.handle, self.core.handle, self._config)
@@ -137,6 +138,8 @@ class NativeLifecycle:
         self.asic_registers, self.asic_writes = NativeAsicRegisters(self), NativeAsicWrites(self)
         self.asic_registers.update(bridge.asic_registers)
         self.asic_writes.update(bridge.asic_writes)
+        self.observer = NativeMailboxObserver(self, bind)
+        self._cpu_registers = self._cpu_anchor = None
         self.bootstrap = NativeBootstrap(self)
         self.write_bytes(bridge.bootstrap, 0)
         self.write_bytes(bridge.expected_bootstrap, 2)
@@ -167,6 +170,13 @@ class NativeLifecycle:
         self.core = core
         self._configure(self.handle, core.handle, self._config)
 
+    def bind_cpu(self, cpu):
+        if self._cpu_registers is cpu.regs: return
+        self._cpu_registers = cpu.regs
+        self._cpu_anchor = (c.c_uint32 * 14).from_buffer(cpu.regs)
+        self._config[9] = c.addressof(self._cpu_anchor)
+        self._configure(self.handle, self.core.handle, self._config)
+
     def resets(self):
         if not self._finalizer.alive:
             return self._final_resets
@@ -179,17 +189,9 @@ class NativeLifecycle:
     def finish(self, machine):
         if self.state.error:
             raise RuntimeError(self.state.error.decode('utf-8', 'replace'))
-        if not self.state.pin_sync and not self.state.host_event:
+        if not self.state.pin_sync:
             return False
         self.state.pin_sync = 0
-        if self.state.host_event:
-            from .x86_interpreter import UC_X86_REG_CS, UC_X86_REG_IP
-            self.state.host_event = 0
-            words = self.state.event_header, self.state.event_data
-            cpu = machine.uc
-            pc = ((cpu.reg_read(UC_X86_REG_CS) << 4) + cpu.reg_read(UC_X86_REG_IP)) & 0xfffff
-            bridge = machine.dsp_bridge
-            bridge._record_runtime_history(words, pc)
         machine._dsp_in_reset = bool(self.state.reset_asserted)
         machine._dsp_nmi_low = bool(self.state.nmi_low)
         if machine.uc.native_after_io is not None:
@@ -209,7 +211,9 @@ class NativeLifecycle:
             self._final_inbound = tuple(self.inbound)
             self._final_delivered = dict(self.delivered)
             self._final_overlay_logs = (list(self.heads), list(self.destinations))
+            self.observer.close()
             self._finalizer()
+            self._cpu_anchor = self._cpu_registers = None
 
 
 class LifecycleField:
@@ -246,6 +250,16 @@ class NativeLifecycleBridge(NativeCourierDspBridge):
     overlay_destinations = property(lambda self: self._native_lifecycle.destinations)
     asic_registers = property(lambda self: self._native_lifecycle.asic_registers)
     asic_writes = property(lambda self: self._native_lifecycle.asic_writes)
+    runtime_messages = property(lambda self: self._native_lifecycle.observer.messages)
+    runtime_message_counts = property(lambda self: self._native_lifecycle.observer.counts)
+    runtime_message_first_seen = property(lambda self: self._native_lifecycle.observer.first_seen)
+    runtime_message_first_pc = property(lambda self: self._native_lifecycle.observer.first_pc)
+    runtime_words_queued = property(lambda self: self._native_lifecycle.state.observer.words)
+    runtime_history_overwritten = property(lambda self: self._native_lifecycle.state.observer.history_overwritten)
+    runtime_summary_overflow = property(lambda self: self._native_lifecycle.state.observer.summary_overflow)
+
+    def _record_runtime_history(self, words, pc):
+        self._native_lifecycle.observer.record(words, self._instructions, pc)
 
     def _observe_asic_command(self, header, data):
         self._native_lifecycle.message(7, ((header & 65535) << 16) | (data & 65535))

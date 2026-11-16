@@ -37,6 +37,7 @@ LIBRARY_SOURCES = (SOURCES[:1] + (NATIVE_DIRECTORY / "c5x_capi.cpp",) + SOURCES[
                       NATIVE_DIRECTORY / "terminal_io.hpp",
                       NATIVE_DIRECTORY / "dte_transmit.hpp",
                       NATIVE_DIRECTORY / "dsp_lifecycle.hpp",
+                      NATIVE_DIRECTORY / "mailbox_observer.hpp",
                       NATIVE_DIRECTORY / "speaker.hpp",
                       NATIVE_DIRECTORY / "dte_service.hpp",
                       NATIVE_DIRECTORY / "microwire93c66.hpp"))

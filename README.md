@@ -291,10 +291,18 @@ loading/saving remains host orchestration.
 The native C51 runtime also owns mailbox byte latches, status reads, reply
 queues, DSP deliveries and acknowledgement accounting. ASIC command-register
 updates, call-start effects and detector/status poll replies also execute
-there, with live register/counter views for host code. A completed host
-message currently yields only for history recording; its board behavior,
-delivery, replies and acknowledgement complete before that notification.
-Ordinary byte reads and writes remain inside the native batch.
+there, with live register/counter views for host code. Mailbox commits no
+longer yield for Python history recording. Native execution updates exact
+aggregate totals, a 64-record history ring and a 4096-slot bounded summary
+table. History records carry sequence numbers, guest instruction timestamps
+and the commit PC. `runtime_history_overwritten` counts ring overwrites;
+`runtime_summary_overflow` counts messages omitted from bounded per-message
+summaries. Aggregate totals remain exact when history is disabled or those
+diagnostic limits are reached. Python copies/formats snapshots on demand;
+an absent or slow observer never stalls the native producer. These views
+share the current process; no socket or shared-memory file is required.
+Existing watched accesses and functional legacy call-entry continuations
+retain their host boundary. Ordinary mailbox traffic stays in C++.
 Overlay start/end framing, destination-ready polling, byte accumulation,
 payload identification and installed-program verification also run in the
 native lifecycle owner. Successful native strobes update its counters

@@ -80,6 +80,7 @@ extern "C" void courier_lifecycle_configure(void *handle,void *core,const uint64
     life.nmi_entry=unsigned(values[3]);life.frame_irq=unsigned(values[4]);
     life.tag_cell=unsigned(values[5]);life.word_cell=unsigned(values[6]);
     life.status_cell=unsigned(values[7]);life.stream_cell=unsigned(values[8]);
+    life.cpu_registers=reinterpret_cast<uint32_t*>(uintptr_t(values[9]));
 }
 extern "C" void courier_lifecycle_window(void *handle,unsigned strobe,uint8_t *window) {
     if(strobe<256)static_cast<courier::DspLifecycle*>(handle)->windows[strobe]=window;
@@ -112,6 +113,15 @@ extern "C" uint64_t courier_lifecycle_message(void *handle,unsigned op,uint64_t 
 extern "C" size_t courier_lifecycle_message_keys(void *handle,uint32_t *out,size_t capacity) {
     const auto &values=static_cast<courier::DspLifecycle*>(handle)->delivered;
     size_t k=0;for(const auto &entry:values){if(k==capacity)break;out[k++]=entry.first;}return values.size();
+}
+
+extern "C" size_t courier_lifecycle_observer(void *handle,unsigned kind,void *out,size_t capacity) {
+    const auto &observer=static_cast<courier::DspLifecycle*>(handle)->observer;
+    return kind?observer.copy_summaries(static_cast<courier::MailboxSummary*>(out),capacity)
+        :observer.copy_history(static_cast<courier::MailboxRecord*>(out),capacity);
+}
+extern "C" void courier_lifecycle_record(void *handle,unsigned header,unsigned data,uint64_t instructions,uint64_t pc) {
+    static_cast<courier::DspLifecycle*>(handle)->observer.record(uint16_t(header),uint16_t(data),instructions,pc);
 }
 
 extern "C" void courier_lifecycle_overlay_add(void *handle,unsigned index,unsigned entry,const uint8_t *data,size_t size) {
@@ -1382,7 +1392,7 @@ int courier_laneio_access(void *context, int direction, uint16_t port,
         std::memset(io->fixed_valid, 0, sizeof io->fixed_valid);
     }
     if(io->lifecycle) {
-        const int handled=io->lifecycle->mailbox(unsigned(direction),port,value,*out);
+        const int handled=io->lifecycle->mailbox(unsigned(direction),port,value,*out,now);
         if(handled) {
             if(direction==1)++io->in_count[port];
             else {++io->out_count[port];io->out_last[port]=value;io->out_seen[port]=1;}

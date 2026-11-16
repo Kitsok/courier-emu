@@ -437,3 +437,23 @@ register-block commit edges, detector/status replies, audio-only suppression
 and held-start qualification including the exchange's answer-tone phase.
 The existing guest-mailbox current-change check and fresh isolated firmware
 boot/AT/settings smoke passed. Tests were temporary verification scripts.
+
+
+Milestone 26 complete: passive bounded mailbox history and native counters.
+Diagnostic collection no longer ends a native CPU batch. A 64-record native
+history ring carries sequence numbers, guest timestamps and commit PCs;
+a 4096-slot bounded summary table preserves per-message counts and first
+occurrences within its limits. Reported overwrite/summary-overflow counters
+make diagnostic limits explicit. Aggregate counters remain exact. Python
+copies snapshots on demand and has no synchronous message-consumer role.
+Existing watched accesses and functional legacy call-entry transitions
+retain their host boundary. No IPC endpoint or debug thread was introduced.
+
+A focused check ran 5000 commits in one native call with Python observation
+and behavior handlers disabled, matched emulated state with history enabled
+and disabled, and verified bounded overflow, exact totals, sequence/timestamp/
+PC records and post-close snapshots. Native/reference controls and two
+selected existing port/clock checks passed. A ten-second required-LAPM AT&T1
+run at 24000 bit/s echoed 4042 exact bytes and escaped. An uninstrumented
+local pair negotiated LAPM/V42bis at 24000 and exchanged exact bidirectional
+markers. No permanent tests or physical calls were added.

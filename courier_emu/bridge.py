@@ -422,6 +422,8 @@ class BridgeStatus:
     dsp_mmr_writes: dict[str, int] | None = None
     dsp_cells: dict[str, str] | None = None
     dsp_writes: list[dict[str, int]] | None = None
+    runtime_history_overwritten: int = 0
+    runtime_summary_overflow: int = 0
 
 
 class CourierDspBridge:
@@ -3950,6 +3952,8 @@ class CourierDspBridge:
             runtime_message_first_seen=dict(self.runtime_message_first_seen),
             runtime_message_first_pc=dict(self.runtime_message_first_pc),
             runtime_words_queued=self.runtime_words_queued,
+            runtime_history_overwritten=getattr(self, 'runtime_history_overwritten', 0),
+            runtime_summary_overflow=getattr(self, 'runtime_summary_overflow', 0),
             detector_replies=self.detector_replies,
             host_messages_delivered=self.host_messages_delivered,
             dsp_messages_taken=self.dsp_messages_taken,
