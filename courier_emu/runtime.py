@@ -182,6 +182,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="register with the configured SIP server")
     args = parser.parse_args(argv)
     try:
+        os.environ.setdefault('COURIER_X86_BACKEND', 'mame')
         arguments, nvram = read_config(args.config.absolute())
         if args.sip_register:
             arguments.append("--sip-register")

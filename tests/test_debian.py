@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-from courier_emu import debian, dsp, x86_native
+from courier_emu import debian, dsp, x86_native, x86_mame
 from courier_emu.terminal import _pty_channel
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,7 +25,9 @@ def test_serial_pty_uses_service_primary_group_and_mode():
 
 def test_package_loads_prebuilt_cores_and_operates_without_sources(tmp_path):
     root=tmp_path/'package';root.mkdir()
-    debian.stage(root,'0.1.0-test','amd64',[x86_native.build_library(),dsp.build_library()])
+    debian.stage(root,'0.1.0-test','amd64',[x86_native.build_library(),dsp.build_library(),x86_mame.build_library()])
+    assert (root/'usr/lib/courier-emu/lib'/x86_mame.LIBRARY.name).is_file()
+    assert (root/'usr/share/doc/courier-emu/mame186-NOTICE').is_file()
     assert not (root/'usr/lib/courier-emu/native').exists()
     assert json.loads((root/'usr/lib/courier-emu/runtime.json').read_text())['python_abi']==sys.implementation.cache_tag
     assert '/etc/courier-emu/config.ini' in (root/'DEBIAN/conffiles').read_text()
@@ -41,6 +43,7 @@ def test_package_loads_prebuilt_cores_and_operates_without_sources(tmp_path):
     command=[str(root/'usr/bin/courier-emu'),'--config',str(path)]
     env=dict(os.environ,PATH='/nonexistent')
     env.pop('PYTHONPATH',None)
+    env.pop('COURIER_X86_BACKEND',None)
     subprocess.run(command+['--check-config'],env=env,cwd=tmp_path,check=True,capture_output=True)
     assert not (tmp_path/'settings.nvram').exists()
     log=(tmp_path/'log').open('w')

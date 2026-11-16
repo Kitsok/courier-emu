@@ -1,0 +1,13 @@
+MAME CPU and standalone compatibility layer: BSD-3-Clause.
+The BSD-3-Clause license text is reproduced in the accompanying LICENSE.
+
+CPU source copyright holders:
+  Carl: i86inline.h
+  Carl, Christopher Toth: i86.cpp, i86.h, i186.cpp, i186.h
+  Aaron Giles, Vas Crabb: endianness.h
+
+Standalone compatibility-layer copyright holder:
+  David Sexton: shim/emu.cpp, shim/emu.h, shim/logmacro.h,
+                shim/cpu/i386/i386dasm.h
+
+See ORIGIN.txt for the pinned source revision and local modifications.

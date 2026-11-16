@@ -1,4 +1,4 @@
-"""Experimental MAME 80186 CPU adapter for the Courier board model.
+"""MAME 80186 CPU adapter for the Courier board model.
 
 All instruction decoding/execution runs in MAME. The Python superclass supplies
 the existing register, memory and hook API; its instruction interpreter is
@@ -60,7 +60,7 @@ def load_library():
 class MameUc(x86.Uc):
     def __init__(self, arch, mode, *, profile='186eb'):
         if profile != '186eb':
-            raise ValueError('the experimental MAME backend supports only the 186eb board')
+            raise ValueError('the MAME backend supports only the 186eb board')
         super().__init__(arch, mode, profile=profile)
         # Existing board code uses this flag to enable the custom CPU's batch
         # ABI. The MAME backend deliberately does not advertise that ABI.

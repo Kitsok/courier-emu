@@ -37,7 +37,8 @@ def missing_dependencies() -> list[str]:
     if sys.version_info < (3, 10):
         missing.append("Python 3.10 or later (Debian: python3)")
     if shutil.which("c++") is None:
-        missing.append("C++17 compiler (Debian: g++ or build-essential)")
+        standard = 'C++20' if os.environ.get('COURIER_X86_BACKEND', 'mame') == 'mame' else 'C++17'
+        missing.append(f"{standard} compiler (Debian: g++ or build-essential)")
     if not Path(sysconfig.get_path("include"), "Python.h").is_file():
         missing.append("headers for the selected Python interpreter (Debian: python3-dev)")
     return missing
@@ -81,9 +82,9 @@ def main(argv: list[str] | None = None) -> int:
         spec.loader.exec_module(module)
         print("Building the native C5x DSP library...", flush=True)
         dsp.load_library()
-        if os.environ.get('COURIER_X86_BACKEND') == 'mame':
+        if os.environ.get('COURIER_X86_BACKEND', 'mame') == 'mame':
             from . import x86_mame
-            print("Building the experimental MAME 80186 backend...", flush=True)
+            print("Building the MAME 80186 backend...", flush=True)
             x86_mame.load_library()
         print("Analog Courier build complete; native libraries loaded successfully.")
         return 0

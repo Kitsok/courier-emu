@@ -1,5 +1,5 @@
 Task: Move practical peripheral emulation from Python into native C++
-Status: In progress; evaluating a reusable native CPU backend
+Status: In progress; MAME is the configuration-driven runtime default
 
 Inventory the analog Courier's remaining Python peripheral implementation
 and move as much as practical into the native C++ runtime. Python should
@@ -162,3 +162,18 @@ Two focused checks matched the reference EEPROM protocol and verified that
 native clock traffic bypasses Python while a DSP reset edge still reaches
 the board. Fresh temporary-NVRAM boot, AT commands, DSP download and AT&W
 save passed. No additional firmware tracing/debug interfaces were added.
+
+Milestone 9 complete: MAME is the configuration-driven analog runtime default.
+The default build includes the MAME core; packaged builds ship its prebuilt
+library and BSD license/provenance/notices. Runtime startup verifies it before
+launch. COURIER_X86_BACKEND=native retains the previous CPU path. Legacy CLI
+and direct reference/CPU APIs retain their prior defaults for comparison.
+
+The staged-package check passed without native sources or a compiler on PATH:
+configuration checking, default-MAME AT/OK, normal shutdown and ABI mismatch
+handling were verified. This does not claim a fully standalone native modem.
+Remaining work includes cycle-based scheduling/native ownership of board
+services, the DTE admission/firmware adapter, rare DSP pin/reset callbacks,
+and serialsim control-aware transport. Existing timer delay/clock callbacks
+also retain their current slow paths. Unused peripheral features have not
+been added solely for completeness; current work prioritizes hot paths.

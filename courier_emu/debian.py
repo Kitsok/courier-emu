@@ -12,7 +12,7 @@ import subprocess
 import sys
 import tempfile
 
-from . import build, dsp, x86_native
+from . import build, dsp, x86_native, x86_mame
 from .boot_rom import MASK_ROM
 from .profiles import ANALOG403_IMAGE
 
@@ -38,6 +38,9 @@ def stage(destination: Path, version: str, architecture: str, libraries) -> None
     copy(ROOT/'packaging/courier-emu.service', destination/'usr/lib/systemd/system/courier-emu.service')
     copy(ROOT/'packaging/courier-emu.tmpfiles', destination/'usr/lib/tmpfiles.d/courier-emu.conf')
     copy(ROOT/'native/LICENSE', destination/'usr/share/doc/courier-emu/native-LICENSE')
+    for name in ('LICENSE', 'NOTICE', 'ORIGIN.txt'):
+        copy(ROOT/'native/vendor/mame186'/name,
+             destination/'usr/share/doc/courier-emu'/('mame186-' + name))
     config = configparser.ConfigParser(interpolation=None)
     config.read(ROOT/'courier-emu.ini')
     config['modem']['tty']='/run/courier-emu/tty'
@@ -91,7 +94,7 @@ def main(argv=None):
     if build.main([]):
         return 1
     architecture = subprocess.check_output(['dpkg-architecture','-qDEB_HOST_ARCH'],text=True).strip()
-    libraries = [x86_native.build_library(),dsp.build_library()]
+    libraries = [x86_native.build_library(),dsp.build_library(),x86_mame.build_library()]
     args.output.mkdir(parents=True,exist_ok=True)
     output = args.output.resolve()/f'courier-emu_{args.version}_{architecture}.deb'
     with tempfile.TemporaryDirectory(prefix='courier-deb-') as directory:

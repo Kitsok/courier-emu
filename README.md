@@ -233,23 +233,25 @@ ISDN per-address profiling is enabled by `--report`; ordinary runs use bounded
 instruction-clock callbacks instead. `COURIER_X86_NATIVE=0` selects the Python
 reference for comparison.
 
-An experimental MAME CPU backend is available for the analog Courier board
-(`--cpu-engine interpreter`). Build it explicitly with a C++20 compiler:
+The configuration-driven analog runtime uses MAME by default. Build with a
+C++20 compiler and launch the runtime normally:
 
 ```sh
-COURIER_X86_BACKEND=mame ./build.sh
-COURIER_X86_BACKEND=mame python3 -m courier_emu.runtime --config /path/to/test.ini
+./build.sh
+python3 -m courier_emu.runtime --config /path/to/test.ini
 ```
 
-Use an isolated test configuration and NVRAM file for comparisons. Unset
-`COURIER_X86_BACKEND` or set it to `native` to select the existing backend.
+Use an isolated test configuration and NVRAM file for comparisons.
+`COURIER_X86_BACKEND=native` selects the previous CPU backend. The legacy
+`run --cpu-engine interpreter` tool retains that previous backend by default;
+set `COURIER_X86_BACKEND=mame` to use MAME with that tool.
 The MAME backend executes instructions entirely in the vendored 16-bit
 80186 core; it does not invoke the Python instruction decoder. The MAME bus
 uses shared native UART/timer state, per-instruction IRQ delivery and DSP
 port handlers to avoid Python callbacks for those accesses. Interrupt entry
 obeys MAME's instruction shadow, and native EOI writes are applied once.
-Additional device memory observers retain synchronous callbacks. Timer delay grants and
-the timer-0 board-clock selection callback retain their existing slow paths.
+Additional device memory observers retain synchronous callbacks. Timer delay
+grants and the timer-0 board-clock selection callback retain their existing slow paths.
 Python still handles remaining board accesses and the service clock; the
 custom CPU's native worker batching ABI is disabled for this backend.
 EEPROM Microwire commands and ordinary parallel-register traffic also execute
@@ -263,7 +265,7 @@ subclasses retain their existing control-aware paths.
 Board scheduling retains instruction-based time rather than adopting MAME
 cycle timing; it is not a claim of cycle-accurate 80C186EB emulation. The
 fork's incomplete 80C188EB peripherals are bypassed. It supports the analog
-Courier board only and is not included in the packaged runtime. A short
+Courier board only and is included prebuilt in the packaged runtime. A short
 local AT&T1 check using the prepared profile and `ATE0&M5&U1&N12` passed at
 24,000 bit/s with exact data and working escape handling. This is observed
 validation of that configuration, not unrestricted-rate qualification.
@@ -271,7 +273,7 @@ validation of that configuration, not unrestricted-rate qualification.
 The CPU and standalone compatibility layer are BSD-3-Clause; provenance,
 copyright notices and the local address-space bounds fix are recorded in
 `native/vendor/mame186/ORIGIN.txt`. Focused adapter checks are in
-`tests/test_mame_backend.py`; the optional backend must be built first.
+`tests/test_mame_backend.py`; build the native libraries first.
 
 Measure firmware execution with `python tools/benchmark_x86.py Ie030002.nac`
 or `python tools/benchmark_x86.py IDSDL302.ROM --with-dsp`. Add `--profile-exits`
@@ -1503,12 +1505,14 @@ Build the analog runtime explicitly before launching it:
 ./build.sh
 ```
 
-The build checks for Python 3.10+, a C++17 compiler, the selected Python's
+The default build checks for Python 3.10+, a C++20 compiler, the selected Python's
 development headers, and the captured board and DSP mask ROMs. On Debian the
 build packages are `python3`, `python3-dev`, and `g++` (or `build-essential`).
 It does not install packages, create a virtual environment, or require the
 optional Unicorn and Capstone backends. Set `PYTHON` to build for another
-interpreter. Both native libraries are loaded to check the resulting build.
+interpreter. All selected native libraries are loaded to check the resulting
+build. `COURIER_X86_BACKEND=native ./build.sh` builds only the previous CPU
+backend and DSP library, which require C++17.
 
 For direct source-tree execution without the legacy `./courier` launcher's
 automatic virtualenv setup, use `python3 -m courier_emu` from the repository
