@@ -1,0 +1,36 @@
+Task: Move practical peripheral emulation from Python into native C++
+Status: Open
+
+Inventory the analog Courier's remaining Python peripheral implementation
+and move as much as practical into the native C++ runtime. Python should
+retain configuration, orchestration, diagnostics, and a reference path;
+per-byte, per-sample, and interrupt-sensitive device work should run natively.
+
+Prioritize:
+1. The 80C186 UART: registers, RX/TX buffers, status, handshake signals,
+   interrupt request generation, and character timing.
+2. The DTE wire/autobaud model and admission of terminal bytes into the UART.
+3. Parallel I/O and peripheral-register callbacks, including the DSP reset
+   pins, serial input, EEPROM signals, and board latch wiring.
+4. Remaining timer/controller access glue and memory-map/register routing
+   where migration removes frequent Python callbacks.
+
+Build on shared native device state and the native IRQ controller. Avoid
+duplicating authoritative state or moving host configuration work merely
+because it is written in Python. Document any device behavior that remains
+in Python, or is only a placeholder rather than a complete hardware model.
+
+Acceptance criteria:
+- Audit and document the ownership boundary for each relevant peripheral.
+- Migrate and validate devices in separate logical changes with focused
+  register, timing, interrupt, and native/reference comparison tests.
+- Preserve firmware-driven behavior, interrupt masks, pending requests,
+  priority, interrupt shadows, and exactly-once EOI processing.
+- Verify boot, AT commands, escape handling, AT&T1, and sustained data with
+  error correction required (&M5). Use fresh temporary NVRAM and retain
+  existing persistent settings. Do not force CONNECT or assist acquisition.
+- Measure callback counts and host CPU/throughput before and after each
+  migration; distinguish idle, training, and sustained connected workloads.
+- Record remaining high-speed link errors separately from scheduler fixes.
+
+This follow-up is separate from the current IRQ starvation investigation.
