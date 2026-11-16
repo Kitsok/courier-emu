@@ -1,0 +1,3 @@
+usage: courier-emu [-h]
+                   {info,recovery-run,rom-info,xmp-info,nac-info,isdn-run,extract,run,link,parameters,dsp-run} ...
+courier-emu: error: --diagnostic-report requires --log-level

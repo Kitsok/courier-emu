@@ -1,0 +1,3 @@
+Waiting for both firmware AT interfaces
+Dialling local peer; waiting for firmware CONNECT
+TimeoutError: modem setup/handshake timed out

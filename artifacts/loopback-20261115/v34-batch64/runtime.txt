@@ -1,0 +1,3 @@
+serial console on /dev/pts/0
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/v34-batch64/tty
+stop with: Ctrl-C here

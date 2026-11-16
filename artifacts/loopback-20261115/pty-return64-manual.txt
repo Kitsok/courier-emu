@@ -1,0 +1,6 @@
+connected b'ATE0&M0&N3S14.0=0&T1\r\r\nCONNECT 2400/NONE\r\n'
+Traceback (most recent call last):
+  File "/tmp/check_courier_loopback_short.py", line 19, in <module>
+    if got!=payload:raise RuntimeError(('mismatch',count,got,payload))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ('mismatch', 13, b'00001\x95U\x12', b'000013\r\n')

@@ -1,0 +1,18 @@
+serial console on /dev/pts/1
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/connected-local-20261115/existing-regression/test_native_courier_pair_negot0/answerer/artifacts/courier-emu.tty
+stop with: Ctrl-C here
+[INFO] [sip] tx REGISTER cseq=1
+[INFO] [line] SIP transmit gain=0.25 synthetic local echo=off
+[INFO] [runtime] analog Courier starting
+[INFO] [at] command: 'ATS0=1'
+[INFO] [at] result: OK
+[INFO] [sip] rx INVITE from 201
+[INFO] [sip] tx 100
+[INFO] [sip] tx 180
+[INFO] [at] result: RING
+[INFO] [sip] tx 200
+[INFO] [sip] rx ACK
+[INFO] [sip] tx REGISTER cseq=2
+[INFO] [at] result: CONNECT 31200/ARQ/V34/LAPM/V42BIS
+[INFO] [sip] tx BYE cseq=1
+[INFO] [runtime] stopped: stop-requested

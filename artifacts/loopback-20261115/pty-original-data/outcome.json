@@ -1,0 +1,5 @@
+{
+  "command": "ATE0&M0&N6S18=10&T1",
+  "terminal": "ATE0&M0&N6S18=10&T1\r",
+  "data_sent": true
+}

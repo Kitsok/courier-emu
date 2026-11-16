@@ -1,0 +1,4 @@
+serial console on /dev/pts/0
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/v34-internal-t8/tty
+stop with: Ctrl-C here
+[ERROR] [runtime] emulation-error: unsupported 8F group

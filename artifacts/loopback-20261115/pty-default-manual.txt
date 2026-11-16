@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/check_courier_loopback_short.py", line 9, in <module>
+    pair.wait_for(lambda:re.search(rb'CONNECT[^\r\n]*\r\n',pair.transcripts['caller']),35)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/kostik/work/voip/courier-emu/tools/benchmark_connected.py", line 102, in wait_for
+    raise TimeoutError('modem setup/handshake timed out')
+TimeoutError: modem setup/handshake timed out

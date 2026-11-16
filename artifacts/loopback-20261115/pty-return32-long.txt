@@ -1,0 +1,6 @@
+connected b'\r\nATE0&M0&N6&T1\r\r\nCONNECT 9600/V34/NONE\r\n'
+Traceback (most recent call last):
+  File "/tmp/check_courier_loopback_long.py", line 17, in <module>
+    if got!=payload:raise RuntimeError(('mismatch',count,got,payload))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ('mismatch', 0, b'L\xdc\xd0\xdb\xee=\xffPBACK 000000 \xb8\xf3$\xf6\xff0123456789 abcdefghij\xe2\xfbZ\x1bQ\xf6mn\x17', b'LOOPBACK 000000 0123456789 abcdefghijklmnopqrstuvwxyz\r\n')

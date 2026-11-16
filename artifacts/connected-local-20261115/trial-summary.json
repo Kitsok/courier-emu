@@ -1,0 +1,174 @@
+{
+  "run-01": {
+    "status": "failed",
+    "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "duration": 60.0,
+    "command": [
+      "tools/benchmark_connected.py",
+      "--duration",
+      "60",
+      "--output",
+      "artifacts/connected-local-20261115/run-01"
+    ],
+    "offered_fraction": 0.75,
+    "seeds": {
+      "caller": 403,
+      "answerer": 404
+    },
+    "error": "TimeoutError: modem setup/handshake timed out",
+    "endpoints": {
+      "caller": {
+        "peak_late_ms": 2620.6,
+        "underrun_samples": 17280,
+        "sip_events": [
+          "tx INVITE cseq=1",
+          "rx 100",
+          "rx 180",
+          "rx 200",
+          "tx ACK cseq=1",
+          "tx BYE cseq=2",
+          "rx 200 BYE"
+        ],
+        "rtp_packets_sent": 2674,
+        "rtp_packets_received": 2695
+      },
+      "answerer": {
+        "peak_late_ms": 2547.0,
+        "underrun_samples": 20640,
+        "sip_events": [
+          "rx INVITE from caller",
+          "tx 100",
+          "tx 180",
+          "tx 200",
+          "rx ACK",
+          "rx BYE"
+        ],
+        "rtp_packets_sent": 2695,
+        "rtp_packets_received": 2674
+      }
+    }
+  },
+  "run-02-reference": {
+    "status": "failed",
+    "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "duration": 60.0,
+    "command": [
+      "tools/benchmark_connected.py",
+      "--duration",
+      "60",
+      "--output",
+      "artifacts/connected-local-20261115/run-02-reference"
+    ],
+    "offered_fraction": 0.75,
+    "seeds": {
+      "caller": 403,
+      "answerer": 404
+    },
+    "optimization_switches": {
+      "COURIER_WORKER_CONFIG": "0",
+      "COURIER_NATIVE_TIMER2_PROGRAMMING": "0",
+      "COURIER_NATIVE_LINE_CLOCK": "0",
+      "COURIER_NATIVE_LANE_PENDING": "0"
+    },
+    "error": "RuntimeError: firmware returned NO CARRIER before the data window",
+    "endpoints": {
+      "caller": {
+        "peak_late_ms": 2597.2,
+        "underrun_samples": 5760,
+        "sip_events": [
+          "tx INVITE cseq=1",
+          "rx 100",
+          "rx 180",
+          "rx 200",
+          "tx ACK cseq=1"
+        ],
+        "rtp_packets_sent": 1213,
+        "rtp_packets_received": 1190
+      },
+      "answerer": {
+        "peak_late_ms": 2548.1,
+        "underrun_samples": 4960,
+        "sip_events": [
+          "rx INVITE from caller",
+          "tx 100",
+          "tx 180",
+          "tx 200",
+          "rx ACK",
+          "tx BYE cseq=1"
+        ],
+        "rtp_packets_sent": 1190,
+        "rtp_packets_received": 1213
+      }
+    }
+  },
+  "run-03": {
+    "status": "failed",
+    "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "duration": 60.0,
+    "command": [
+      "tools/benchmark_connected.py",
+      "--duration",
+      "60",
+      "--output",
+      "artifacts/connected-local-20261115/run-03"
+    ],
+    "offered_fraction": 0.75,
+    "seeds": {
+      "caller": 403,
+      "answerer": 404
+    },
+    "optimization_switches": {
+      "COURIER_WORKER_CONFIG": "1",
+      "COURIER_NATIVE_TIMER2_PROGRAMMING": "1",
+      "COURIER_NATIVE_LINE_CLOCK": "1",
+      "COURIER_NATIVE_LANE_PENDING": "1"
+    },
+    "connect": {
+      "caller": "CONNECT 31200/ARQ/V34/LAPM/V42BIS",
+      "answerer": "CONNECT 31200/ARQ/V34/LAPM/V42BIS"
+    },
+    "setup_wall_seconds": 31.77724346800096,
+    "error": "RuntimeError: caller payload mismatch at byte 1989",
+    "endpoints": {
+      "caller": {
+        "peak_late_ms": 14246.1,
+        "underrun_samples": 1440,
+        "sip_events": [
+          "tx REGISTER cseq=1",
+          "tx INVITE cseq=1",
+          "rx 100",
+          "rx 180",
+          "rx 200",
+          "tx ACK cseq=1",
+          "tx REGISTER cseq=2",
+          "tx REGISTER cseq=3",
+          "tx BYE cseq=2"
+        ],
+        "rtp_packets_sent": 2430,
+        "rtp_packets_received": 2728
+      },
+      "answerer": {
+        "peak_late_ms": 8267.6,
+        "underrun_samples": 50400,
+        "sip_events": [
+          "tx REGISTER cseq=1",
+          "rx INVITE from 201",
+          "tx 100",
+          "tx 180",
+          "tx 200",
+          "rx ACK",
+          "tx REGISTER cseq=2",
+          "tx REGISTER cseq=3"
+        ],
+        "rtp_packets_sent": 2740,
+        "rtp_packets_received": 2430
+      }
+    }
+  }
+}

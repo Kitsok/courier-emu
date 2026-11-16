@@ -1,0 +1,5 @@
+{
+  "command": "AT&T1",
+  "terminal": "\r\nAT&T1\r\r\nCONNECT 28800/ARQ/V34/LAPM/V42BIS\r\nLOOPBACK-VERI",
+  "data_sent": true
+}

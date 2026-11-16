@@ -1,0 +1,8 @@
+Waiting for both firmware AT interfaces
+Dialling local peer; waiting for firmware CONNECT
+{"phase": "connected", "connect": {"caller": "CONNECT 31200/ARQ/V34/LAPM/V42BIS", "answerer": "CONNECT 31200/ARQ/V34/LAPM/V42BIS"}, "offered_bytes_per_second": {"caller": 2340.0, "answerer": 2340.0}}
+{"phase": "transfer", "seconds": 10.0, "received": {"caller": 1686, "answerer": 817}}
+{"phase": "transfer", "seconds": 20.0, "received": {"caller": 1989, "answerer": 817}}
+{"phase": "transfer", "seconds": 30.0, "received": {"caller": 1989, "answerer": 817}}
+{"phase": "transfer", "seconds": 40.0, "received": {"caller": 1989, "answerer": 817}}
+RuntimeError: caller payload mismatch at byte 1989

@@ -1,0 +1,35 @@
+{
+  "status": "failed",
+  "revision": "8ea9710b696782600c06d181a5c21a2803ae1ccf",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "duration": 60.0,
+  "command": [
+    "tools/benchmark_connected.py",
+    "--duration",
+    "60",
+    "--bytes-per-second",
+    "100",
+    "--output",
+    "artifacts/connected-local-20261115/run-07-s39-fixed"
+  ],
+  "offered_fraction": 0.75,
+  "seeds": {
+    "caller": 403,
+    "answerer": 404
+  },
+  "explicit_bytes_per_second": 100.0,
+  "payload": "binary",
+  "optimization_switches": {
+    "COURIER_WORKER_CONFIG": "1",
+    "COURIER_NATIVE_TIMER2_PROGRAMMING": "1",
+    "COURIER_NATIVE_LINE_CLOCK": "1",
+    "COURIER_NATIVE_LANE_PENDING": "1"
+  },
+  "connect": {
+    "caller": "CONNECT 31200/ARQ/V34/LAPM/V42BIS",
+    "answerer": "CONNECT 26400/ARQ/V34/LAPM/V42BIS"
+  },
+  "setup_wall_seconds": 44.13956699700066,
+  "error": "RuntimeError: caller payload mismatch at byte 4130"
+}

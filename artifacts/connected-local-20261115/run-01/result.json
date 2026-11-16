@@ -1,0 +1,20 @@
+{
+  "status": "failed",
+  "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "duration": 60.0,
+  "command": [
+    "tools/benchmark_connected.py",
+    "--duration",
+    "60",
+    "--output",
+    "artifacts/connected-local-20261115/run-01"
+  ],
+  "offered_fraction": 0.75,
+  "seeds": {
+    "caller": 403,
+    "answerer": 404
+  },
+  "error": "TimeoutError: modem setup/handshake timed out"
+}

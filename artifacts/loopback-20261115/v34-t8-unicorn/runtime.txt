@@ -1,0 +1,25 @@
+serial console on /dev/pts/0
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/v34-t8-unicorn/tty
+stop with: Ctrl-C here
+Traceback (most recent call last):
+  File "/home/kostik/work/voip/courier-emu/courier_emu/machine.py", line 1148, in run
+    from unicorn import (
+    ...<10 lines>...
+    )
+ModuleNotFoundError: No module named 'unicorn'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/kostik/work/voip/courier-emu/courier_emu/worker.py", line 368, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/kostik/work/voip/courier-emu/courier_emu/worker.py", line 352, in main
+    result = machine.run(args.instructions)
+  File "/home/kostik/work/voip/courier-emu/courier_emu/machine.py", line 1182, in run
+    raise RuntimeError(
+        "execution needs Unicorn: install with `python -m pip install '.[execute]'`"
+    ) from exc
+RuntimeError: execution needs Unicorn: install with `python -m pip install '.[execute]'`

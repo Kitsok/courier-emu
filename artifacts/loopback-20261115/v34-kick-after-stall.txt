@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/courier_v34_kick_probe.py", line 25, in <module>
+    ns['test_firmware_analog_loopback_echoes_exact_data_for_60_seconds'](out,3)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "v34-loopback-probe", line 90, in test_firmware_analog_loopback_echoes_exact_data_for_60_seconds
+  File "v34-loopback-probe", line 69, in poll_until
+AssertionError: b'00177\r\nKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK'

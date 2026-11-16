@@ -1,0 +1,4 @@
+/tmp/courier-loopback-filter/c5x_core.cpp: In static member function ‘static void courier::C5xCore::threaded(courier::C5xCore*)’:
+/tmp/courier-loopback-filter/c5x_core.cpp:2385:9: warning: attributes at the beginning of statement are ignored [-Wattributes]
+ 2385 |         [[clang::always_inline]] (core->*F)();
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~

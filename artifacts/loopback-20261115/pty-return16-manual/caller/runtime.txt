@@ -1,0 +1,3 @@
+serial console on /dev/pts/1
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/pty-return16-manual/caller/tty
+stop with: Ctrl-C here

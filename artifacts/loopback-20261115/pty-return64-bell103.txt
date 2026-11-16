@@ -1,0 +1,4 @@
+connected b'ATE0&M0&N1S14.0=0&T1\r\r\nCONNECT\r\n'
+100 24.64
+200 52.4
+PASS 227 60.02

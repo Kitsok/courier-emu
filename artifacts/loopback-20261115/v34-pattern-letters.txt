@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/courier_v34_pattern_probe.py", line 10, in <module>
+    ns['test_firmware_analog_loopback_echoes_exact_data_for_60_seconds'](out,3)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "v34-pattern-probe", line 83, in test_firmware_analog_loopback_echoes_exact_data_for_60_seconds
+  File "v34-pattern-probe", line 62, in poll_until
+AssertionError: b'ABCDEFG'

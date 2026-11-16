@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.4, pytest-9.2.0, pluggy-1.7.0 -- /home/kostik/work/voip/courier-emu/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/kostik/work/voip/courier-emu
+configfile: pyproject.toml
+collecting ... collected 22 items
+
+tests/test_bridge_acquisition.py::test_t1_acquisition_assist_opens_decision_gate_once PASSED
+tests/test_bridge_acquisition.py::test_t1_acquisition_assist_requires_opt_in_and_proven_return PASSED
+tests/test_bridge_acquisition.py::test_rom_loader_armed_only_inside_the_mask_rom_download_loop PASSED
+tests/test_bridge_acquisition.py::test_answered_dial_leaves_the_overlay_request_to_the_resident PASSED
+tests/test_bridge_acquisition.py::test_leased_originate_keeps_its_firmware_overlay_route PASSED
+tests/test_bridge_acquisition.py::test_dial_seizure_waits_for_digits_before_requesting_overlay PASSED
+tests/test_bridge_acquisition.py::test_presenting_a_host_word_raises_pa7_and_rings_int2 PASSED
+tests/test_bridge_acquisition.py::test_cpu_int1_pin_edges_and_reset PASSED
+tests/test_bridge_acquisition.py::test_overlay_destination_acknowledges_a_same_value_dsp_write PASSED
+tests/test_c5x_interrupts.py::test_masked_interrupt_latches_ifr_then_vectors_when_enabled 

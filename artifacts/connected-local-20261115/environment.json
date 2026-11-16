@@ -1,0 +1,9 @@
+{
+  "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+  "load": " 20:29:41 up 1 day, 19 min,  1 user,  load average: 4.67, 2.76, 1.87\n",
+  "thermal_during_setup": {
+    "/sys/class/thermal/thermal_zone2/temp": "99000",
+    "/sys/class/thermal/thermal_zone0/temp": "83500",
+    "/sys/class/thermal/thermal_zone1/temp": "26500"
+  }
+}

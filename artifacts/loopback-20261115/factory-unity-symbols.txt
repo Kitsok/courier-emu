@@ -1,0 +1,81 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_firmware_analog_loopback_echoes_exact_data_for_60_seconds[v22bis-2400] __
+
+tmp_path = PosixPath('/home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/factory-unity-symbols/test_firmware_analog_loopback_0')
+rate = 3
+
+    @pytest.mark.skipif(os.environ.get('COURIER_TEST_LOOPBACK') != '1',
+                        reason='set COURIER_TEST_LOOPBACK=1 for a 60-second AT&T1 test')
+    @pytest.mark.parametrize('rate', [1, 2, 3], ids=['bell103-300', 'v22-1200', 'v22bis-2400'])
+    def test_firmware_analog_loopback_echoes_exact_data_for_60_seconds(tmp_path, rate):
+        settings = configparser.ConfigParser(interpolation=None)
+        settings.read(ROOT / 'courier-emu.ini')
+        settings['modem'] = dict(profile='analog403', tty=str(tmp_path/'tty'),
+                                 serialsim='', nvram=str(tmp_path/'nvram.sav'))
+        reservations = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for _ in range(2)]
+        try:
+            for sock in reservations:
+                sock.bind(('127.0.0.1', 0))
+            sip_port, rtp_port = [sock.getsockname()[1] for sock in reservations]
+        finally:
+            for sock in reservations:
+                sock.close()
+        settings['sip'] = dict(server='127.0.0.1:9', target='sip:{number}@127.0.0.1:9',
+                               username='loopback-test', password_env='COURIER_LOOPBACK_UNUSED_PASSWORD',
+                               bind='127.0.0.1', advertise='127.0.0.1', port=str(sip_port),
+                               rtp_port=str(rtp_port), codec='pcmu')
+        settings['logging'] = dict(level='quiet', report=str(tmp_path/'worker.json'))
+        settings['audio'] = dict(enabled='false', volume='.25')
+        settings['line'] = dict(tx_gain='.25', local_echo='false')
+        with (tmp_path/'modem.ini').open('w') as output:
+            settings.write(output)
+        environment = os.environ.copy()
+        environment.pop('COURIER_LOOPBACK_UNUSED_PASSWORD', None)
+        received = bytearray()
+        fd = None
+        process = None
+        packets = 0
+        with (tmp_path/'runtime.txt').open('w') as log:
+            try:
+                process = subprocess.Popen(
+                    [sys.executable, '-m', 'courier_emu.runtime', '--config', str(tmp_path/'modem.ini')],
+                    cwd=ROOT, env=environment, stdout=log, stderr=subprocess.STDOUT,
+                    start_new_session=True)
+    
+                def poll_until(predicate, timeout):
+                    deadline = time.monotonic() + timeout
+                    while not predicate():
+                        assert process.poll() is None, 'runtime exited'
+                        assert time.monotonic() < deadline, repr(bytes(received))
+                        if fd is None:
+                            time.sleep(.02)
+                        elif select.select([fd], [], [], .02)[0]:
+                            received.extend(os.read(fd, 8192))
+    
+                poll_until(lambda: (tmp_path/'tty').exists(), 60)
+                fd = os.open(tmp_path/'tty', os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+                tty.setraw(fd)
+                os.write(fd, b'AT\r')
+                poll_until(lambda: b'OK\r\n' in received, 30)
+                received.clear()
+                # The manual requires ARQ off and a fixed rate for AT&T1.
+                # Use the profile's transmit level and the original unity return.
+                os.write(fd, f'ATE0&M0&N{rate}S14.0=0&T1\r'.encode('ascii'))
+                poll_until(lambda: re.search(rb'CONNECT[^\r\n]*\r\n', received), 40)
+                received.clear()
+                start = time.monotonic()
+                while time.monotonic() - start < 60:
+                    payload = f'{packets:06d}\r\n'.encode('ascii')
+                    assert os.write(fd, payload) == len(payload)
+                    poll_until(lambda: len(received) >= len(payload), 10)
+>                   assert bytes(received[:len(payload)]) == payload
+E                   AssertionError: assert b'\xff\x03\x8...\x92\xa2\xb2j' == b'000246\r\n'
+E                     
+E                     At index 0 diff: b'\xff' != b'0'
+E                     Use -v to get more diff
+
+tests/test_analog_loopback.py:84: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_analog_loopback.py::test_firmware_analog_loopback_echoes_exact_data_for_60_seconds[v22bis-2400]
+1 failed, 2 deselected in 18.85s

@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/tmp/courier_v34_internal_probe.py", line 24, in <module>
+    ns['test_firmware_analog_loopback_echoes_exact_data_for_60_seconds'](out,3)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "v34-loopback-probe", line 79, in test_firmware_analog_loopback_echoes_exact_data_for_60_seconds
+  File "v34-loopback-probe", line 61, in poll_until
+AssertionError: runtime exited

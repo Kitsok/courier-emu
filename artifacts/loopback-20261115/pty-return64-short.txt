@@ -1,0 +1,6 @@
+connected b'ATE0&M0&T1\r\r\nCONNECT 28800/V34/NONE\r\n'
+Traceback (most recent call last):
+  File "/tmp/check_courier_loopback_short.py", line 19, in <module>
+    if got!=payload:raise RuntimeError(('mismatch',count,got,payload))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: ('mismatch', 0, b'\xe7\x02\xfbv\xe4\xea\xc9!', b'000000\r\n')

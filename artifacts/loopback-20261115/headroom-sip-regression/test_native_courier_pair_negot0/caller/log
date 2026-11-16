@@ -1,0 +1,19 @@
+serial console on /dev/pts/1
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/loopback-20261115/headroom-sip-regression/test_native_courier_pair_negot0/caller/artifacts/courier-emu.tty
+stop with: Ctrl-C here
+[INFO] [sip] tx REGISTER cseq=1
+[INFO] [line] SIP transmit gain=0.25 synthetic local echo=off
+[INFO] [runtime] analog Courier starting
+[INFO] [at] command: 'AT'
+[INFO] [at] result: OK
+[INFO] [at] command: 'ATDT100'
+[INFO] [call] dialing sip:100@127.0.0.1:35400
+[INFO] [sip] tx INVITE cseq=1
+[INFO] [sip] rx 100
+[INFO] [sip] rx 180
+[INFO] [sip] rx 200
+[INFO] [sip] tx ACK cseq=1
+[INFO] [sip] tx REGISTER cseq=2
+[INFO] [at] result: CONNECT 31200/ARQ/V34/LAPM/V42BIS
+[INFO] [sip] tx BYE cseq=2
+[INFO] [runtime] stopped: stop-requested

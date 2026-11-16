@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/tmp/courier_loopback_rate_probe.py", line 9, in <module>
+    ns['test_firmware_bell103_loopback_echoes_exact_data_for_60_seconds'](out)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "loopback-rate-probe", line 108, in test_firmware_bell103_loopback_echoes_exact_data_for_60_seconds
+AssertionError

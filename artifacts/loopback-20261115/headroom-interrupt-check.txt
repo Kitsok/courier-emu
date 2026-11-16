@@ -1,0 +1,27 @@
+.........F
+=================================== FAILURES ===================================
+_________ test_masked_interrupt_latches_ifr_then_vectors_when_enabled __________
+
+    def test_masked_interrupt_latches_ifr_then_vectors_when_enabled():
+        # SPLK @IMR,#XINT ; CLRC INTM. The interrupt arrives first, while both
+        # IMR and global recognition are disabled.
+        words = [0xAE04, 1 << 5, 0xBE40]
+        words.extend([0x8B00] * (0x0D - len(words)))
+        with NativeC5x.from_program(0, program(*words), rebuild=True) as core:
+            core.interrupt(5)
+    
+            assert core.register(0x06) == 1 << 5
+            assert core.state()["pc"] == 0
+    
+            core.step(1)  # IMR enables XINT, but INTM is still set.
+            assert core.state()["pc"] == 2
+>           assert core.register(0x06) == 1 << 5
+E           assert 40 == (1 << 5)
+E            +  where 40 = register(6)
+E            +    where register = <courier_emu.dsp.NativeC5x object at 0x7b200e4be850>.register
+
+tests/test_c5x_interrupts.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_c5x_interrupts.py::test_masked_interrupt_latches_ifr_then_vectors_when_enabled
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 9 passed in 39.81s

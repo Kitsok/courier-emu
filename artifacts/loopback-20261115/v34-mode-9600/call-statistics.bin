@@ -1,0 +1,26 @@
++++
+OK
+
+USRobotics Courier V.Everything Link Diagnostics...
+
+Modulation               V.34
+Carrier Freq    ( Hz )   1959/1959
+Symbol Rate              3429/3429
+Trellis Code             64S-4D/64S-4D
+Nonlinear Encoding       ON/ON
+Precoding                OFF/OFF
+Shaping                  ON/ON
+Preemphasis Index        0/0
+Recv/Xmit Level (-dBm)   19.9/11.8
+SNR             ( dB )   80.7
+Near Echo Loss  ( dB )   82.3
+Far Echo Loss   ( dB )   79.8
+Roundtrip Delay (msec)   0
+Timing Offset   ( ppm)   32
+Carrier Offset  ( ppm)   40
+RX Upshifts              0
+RX Downshifts            0
+TX Speedshifts           0
+V.90 Status              0000
+
+OK

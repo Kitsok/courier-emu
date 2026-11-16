@@ -1,0 +1,37 @@
+{
+  "status": "failed",
+  "revision": "d004ee2912be27285f451cc06204272a74c3375f",
+  "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "duration": 60.0,
+  "command": [
+    "tools/benchmark_connected.py",
+    "--duration",
+    "60",
+    "--bytes-per-second",
+    "100",
+    "--payload",
+    "printable",
+    "--output",
+    "artifacts/connected-local-20261115/run-05-printable"
+  ],
+  "offered_fraction": 0.75,
+  "seeds": {
+    "caller": 403,
+    "answerer": 404
+  },
+  "explicit_bytes_per_second": 100.0,
+  "payload": "printable",
+  "optimization_switches": {
+    "COURIER_WORKER_CONFIG": "1",
+    "COURIER_NATIVE_TIMER2_PROGRAMMING": "1",
+    "COURIER_NATIVE_LINE_CLOCK": "1",
+    "COURIER_NATIVE_LANE_PENDING": "1"
+  },
+  "connect": {
+    "caller": "CONNECT 31200/ARQ/V34/LAPM/V42BIS",
+    "answerer": "CONNECT 31200/ARQ/V34/LAPM/V42BIS"
+  },
+  "setup_wall_seconds": 31.19239738900069,
+  "error": "RuntimeError: caller payload mismatch at byte 986"
+}

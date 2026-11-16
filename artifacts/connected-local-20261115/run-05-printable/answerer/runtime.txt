@@ -1,0 +1,3 @@
+serial console on /dev/pts/0
+attach with: tio /home/kostik/work/voip/courier-emu/artifacts/connected-local-20261115/run-05-printable/answerer/tty
+stop with: Ctrl-C here
